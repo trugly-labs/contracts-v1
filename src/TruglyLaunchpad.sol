@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {SignatureChecker} from "@openzeppelin/utils/cryptography/SignatureChecker.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {WETH} from "@solmate/tokens/WETH";
+import {WETH} from "@solmate/tokens/WETH.sol";
 
 import {SqrtPriceX96} from "./libraries/external/SqrtPriceX96.sol";
 import {INonfungiblePositionManager} from "./interfaces/external/INonfungiblePositionManager.sol";

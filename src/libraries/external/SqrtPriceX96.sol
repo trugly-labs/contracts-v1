@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+
 import {FullMath} from "./FullMath.sol";
 
 library SqrtPriceX96 {
