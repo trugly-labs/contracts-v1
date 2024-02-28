@@ -1,5 +1,4 @@
-@solmate/=lib/v4-core/lib/solmate/src/
-@uniswap/universal-router/=lib/universal-router/contracts/
-@openzeppelin/=lib/openzeppelin-contracts/contracts/
+@solmate/=lib/solmate/
 @uniswap/v2-core/=lib/v2-core/
 @uniswap/v3-core/=lib/v3-core/
+@openzeppelin/=node_modules/@openzeppelin
