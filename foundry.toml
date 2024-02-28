@@ -1,0 +1,24 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+optimizer_runs = 800
+ffi = true
+fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
+gas_reports = ["TruglyLaunchpad", "TruglyLaunchpadTest", "TruglyUniversalRouterBaseTest", "TruglyUniversalRouter"]
+# cancun = true
+
+[profile.default.fuzz]
+runs = 1000
+seed = "0x2121"
+
+[profile.ci.fuzz]
+runs = 100000
+
+[rpc_endpoints]
+mainnet = "https://mainnet.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
+goerli = "https://goerli.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
+
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
