@@ -1,4 +1,4 @@
 @solmate/=lib/solmate/
 @uniswap/v2-core/=lib/v2-core/
 @uniswap/v3-core/=lib/v3-core/
-@openzeppelin/=node_modules/@openzeppelin
+@openzeppelin/=lib/openzeppelin-contracts/contracts/
