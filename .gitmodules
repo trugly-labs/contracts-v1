@@ -4,3 +4,6 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
+[submodule "lib/universal-router-fork"]
+	path = lib/universal-router-fork
+	url = https://github.com/trugly-labs/universal-router-fork
