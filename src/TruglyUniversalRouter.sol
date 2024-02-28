@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import {UniversalRouter} from "@uniswap/universal-router/UniversalRouter.sol";
-import {RouterParameters} from "@uniswap/universal-router/base/RouterImmutables.sol";
+import {UniversalRouter} from "@trugly-labs/universal-router-fork/UniversalRouter.sol";
+import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
 import {ERC20} from "solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/src/utils/SafeTransferLib.sol";
 
