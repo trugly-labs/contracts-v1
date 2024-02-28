@@ -1,14 +1,14 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {RouterParameters} from "@uniswap/universal-router/base/RouterImmutables.sol";
+import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
 
 import {Test, console2} from "forge-std/Test.sol";
 import {MEMERC20} from "../types/MEMERC20.sol";
 import {TruglyUniversalRouter} from "../TruglyUniversalRouter.sol";
 import {DeploymentAddresses} from "./DeploymentAddresses.sol";
 
-contract TruglyUniversalRouterBaseTest is Test, DeploymentAddresses {
+contract RouterBaseTest is Test, DeploymentAddresses {
     TruglyUniversalRouter router;
     address public treasury = 0x0804a74CB85d6bE474a4498fCe76481822AdFFa4;
 

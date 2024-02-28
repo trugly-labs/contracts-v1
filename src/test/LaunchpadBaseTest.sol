@@ -11,7 +11,7 @@ import {DeploymentAddresses} from "./DeploymentAddresses.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FullMath} from "../libraries/external/FullMath.sol";
 
-contract TruglyLaunchpadBaseTest is Test, DeploymentAddresses, Constant {
+contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
     using FullMath for uint256;
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       EVENTS                      */

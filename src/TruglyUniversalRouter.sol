@@ -3,8 +3,8 @@ pragma solidity ^0.8.23;
 
 import {UniversalRouter} from "@trugly-labs/universal-router-fork/UniversalRouter.sol";
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
 /// @title The Trugly UniversalRouter
 /// @notice Dispatching swaps to UniV2 or UniV3

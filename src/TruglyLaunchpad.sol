@@ -142,7 +142,7 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
         }
         v3Factory = IUniswapV3Factory(_v3Factory);
         v3PositionManager = INonfungiblePositionManager(_v3PositionManager);
-        WETH9 = WETH(_WETH9);
+        WETH9 = WETH(payable(_WETH9));
         admin = msg.sender;
         memeSigner = _memeSigner;
 

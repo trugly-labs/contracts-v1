@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 /// @notice Ethereum Mainnet contract addresses
-contract Deployments {
+contract DeploymentAddresses {
     /// @dev Addresses listed here: https://docs.uniswap.org/contracts/v3/reference/deployments
     address public constant UNISWAP_V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
     address public constant UNISWAP_V3_POSITION_MANAGER = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
