@@ -14,7 +14,7 @@ contract ExitMemeceptionTest is Deployers {
         initCreateMeme();
         initDepositMemeception(depositAmount);
 
-        vm.warp(block.timestamp + 4 days);
+        vm.warp(block.timestamp + 7 days);
     }
 
     function test_exitMemeception_success() public {

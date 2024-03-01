@@ -8,36 +8,45 @@ import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
 import {MEMERC20} from "../../src/types/MEMERC20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {DeploymentAddresses} from "../../src/test/DeploymentAddresses.sol";
+import {TruglyVesting} from "../../src/TruglyVesting.sol";
 
 contract Deployers is Test, Constant, DeploymentAddresses {
     // Global variables
     LaunchpadBaseTest launchpadBaseTest;
     RouterBaseTest routerBaseTest;
     MEMERC20 memeToken;
+    TruglyVesting vesting;
 
     // Parameters
     ITruglyLaunchpad.MemeCreationParams public createMemeParams = ITruglyLaunchpad.MemeCreationParams({
         name: "MEME Coin",
         symbol: "MEME",
-        startAt: block.timestamp + 3 days,
+        startAt: uint64(block.timestamp + 3 days),
         cap: 100 ether,
-        swapFeeBps: 100
+        swapFeeBps: 100,
+        vestingAllocBps: 500
     });
 
     function setUp() public virtual {
         string memory rpc = vm.rpcUrl("mainnet");
         vm.createSelectFork(rpc, 19287957);
+        deployVesting();
         deployLaunchpad();
         deployUniversalRouter();
     }
 
+    function deployVesting() public virtual {
+        vesting = new TruglyVesting();
+    }
+
     function deployLaunchpad() public virtual {
         address signer = address(this);
-        launchpadBaseTest = new LaunchpadBaseTest(signer);
+        launchpadBaseTest = new LaunchpadBaseTest(signer, address(vesting));
+        vesting.setLaunchpad(address(launchpadBaseTest.launchpad()), true);
     }
 
     function initCreateMeme() public virtual {
-        createMemeParams.startAt = block.timestamp + 3 days;
+        createMemeParams.startAt = uint64(block.timestamp) + 3 days;
         (address meme,) = launchpadBaseTest.createMeme(createMemeParams);
         memeToken = MEMERC20(meme);
     }
