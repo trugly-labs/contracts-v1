@@ -8,8 +8,6 @@ import {IERC721Receiver} from "./external/IERC721Receiver.sol";
 interface ITruglyLaunchpad is IERC721Receiver {
     /// @dev Struct containing information about the Memeception and the UniV3 Pool
     struct Memeception {
-        /// @dev Date when the Memeception will/has started
-        uint256 startAt;
         /// @dev Address of the UniV3 Pool
         address pool;
         /// @dev Address of the creator of the Memeception
@@ -18,6 +16,8 @@ interface ITruglyLaunchpad is IERC721Receiver {
         uint80 balance;
         /// @dev Cap to reach before the Memeception ends
         uint80 cap;
+        /// @dev Date when the Memeception will/has started
+        uint64 startAt;
         /// @dev Swap Fee of the UniV3 Pool (in bps)
         uint16 swapFeeBps;
     }
@@ -29,11 +29,13 @@ interface ITruglyLaunchpad is IERC721Receiver {
         /// @dev Symbol of the MemeRC20
         string symbol;
         /// @dev Date when the Memeception will start
-        uint256 startAt;
+        uint64 startAt;
         /// @dev Cap to reach before the Memeception ends
         uint80 cap;
         /// @dev Swap Fee of the UniV3 Pool (in bps)
         uint16 swapFeeBps;
+        /// @dev Amount of the MEMERC20 allocated to the team and vested (in bps)
+        uint16 vestingAllocBps;
     }
 
     /// @dev Create a MemeRC20, its UniV3 Pool and setup the Memeception
@@ -56,11 +58,6 @@ interface ITruglyLaunchpad is IERC721Receiver {
     /// @dev Only possible after the cap is reached
     /// @param memeToken Address of the MemeRC20
     function claimMemeception(address memeToken) external;
-
-    /// @notice Transfer the admin role to a new account
-    /// @dev Only the current admin can call this function
-    /// @param _newAdmin Address of the new admin
-    function transferAdmin(address _newAdmin) external;
 
     /// @notice Set the signer address in charge of signing Memeception participation
     /// @dev Only the admin can call this function

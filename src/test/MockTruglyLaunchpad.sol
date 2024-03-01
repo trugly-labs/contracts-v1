@@ -5,8 +5,8 @@ import {TruglyLaunchpad} from "../TruglyLaunchpad.sol";
 import {ITruglyLaunchpad} from "../interfaces/ITruglyLaunchpad.sol";
 
 contract MockTruglyLaunchpad is TruglyLaunchpad {
-    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _memeSigner)
-        TruglyLaunchpad(_v3Factory, _v3PositionManager, _WETH9, _memeSigner)
+    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _memeSigner, address _vesting)
+        TruglyLaunchpad(_v3Factory, _v3PositionManager, _WETH9, _memeSigner, _vesting)
     {}
 
     function _verifyDeposit(address memeToken, bytes calldata sig) internal view override {

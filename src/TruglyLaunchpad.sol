@@ -4,20 +4,22 @@ pragma solidity ^0.8.23;
 import {SignatureChecker} from "@openzeppelin/utils/cryptography/SignatureChecker.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
+import {Owned} from "@solmate/auth/Owned.sol";
 
-import {SqrtPriceX96} from "./libraries/external/SqrtPriceX96.sol";
+import {Constant} from "./libraries/Constant.sol";
+import {FullMath} from "./libraries/external/FullMath.sol";
 import {INonfungiblePositionManager} from "./interfaces/external/INonfungiblePositionManager.sol";
 import {ITruglyLaunchpad} from "./interfaces/ITruglyLaunchpad.sol";
 import {IUniswapV3Factory} from "./interfaces/external/IUniswapV3Factory.sol";
 import {IUniswapV3Pool} from "./interfaces/external/IUniswapV3Pool.sol";
-import {FullMath} from "./libraries/external/FullMath.sol";
-import {SafeCast} from "./libraries/external/SafeCast.sol";
+import {ITruglyVesting} from "./interfaces/ITruglyVesting.sol";
 import {MEMERC20} from "./types/MEMERC20.sol";
-import {Constant} from "./libraries/Constant.sol";
+import {SafeCast} from "./libraries/external/SafeCast.sol";
+import {SqrtPriceX96} from "./libraries/external/SqrtPriceX96.sol";
 
 /// @title The interface for the Trugly Launchpad
 /// @notice Launchpad is in charge of creating MEMERC20 and their Memeception
-contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
+contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
     using FullMath for uint256;
     using SafeCast for uint256;
     using SafeTransferLib for WETH;
@@ -30,7 +32,12 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
 
     /// @dev Emitted when a memeceptions is created
     event MemeCreated(
-        address indexed memeToken, address indexed creator, uint256 cap, uint256 startAt, uint256 creatorSwapFeeBps
+        address indexed memeToken,
+        address indexed creator,
+        uint80 cap,
+        uint64 startAt,
+        uint16 creatorSwapFeeBps,
+        uint16 vestingAllocBps
     );
 
     /// @dev Emitted when a OG participates in the memeceptions
@@ -45,9 +52,6 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     /// @dev Emitted when an OG exits the memeceptions
     event MemeceptionExit(address indexed memeToken, address indexed backer, uint256 amount);
 
-    /// @dev Emitted when the admin is updated
-    event AdminUpdated(address indexed oldAdmin, address indexed newAdmin);
-
     /// @dev Emited when the memeSigner is updated
     event MemeSignerUpdated(address indexed oldSigner, address indexed newSigner);
 
@@ -59,11 +63,11 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     /*                       ERRORS                      */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
-    /// @dev Thrown when the caller is not the admin
-    error OnlyAdmin();
-
     /// @dev Thrown when the swap fee is too high
     error MemeSwapFeeTooHigh();
+
+    /// @dev Thrown when the vesting allocation is too high
+    error VestingAllocTooHigh();
 
     /// @dev Thrown when the Meme symbol already exists
     error MemeSymbolExist();
@@ -92,12 +96,12 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     /// @dev Thrown when the signature is invalid
     error InvalidMemeceptionSig();
 
-    /// @dev Zero bytes
-    bytes internal constant ZERO_BYTES = new bytes(0);
-
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
+
+    /// @dev Zero bytes
+    bytes internal constant ZERO_BYTES = new bytes(0);
 
     /// @dev Address of the UniswapV3 Factory
     IUniswapV3Factory public immutable v3Factory;
@@ -105,11 +109,11 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     /// @dev Address of the UniswapV3 NonfungiblePositionManager
     INonfungiblePositionManager public immutable v3PositionManager;
 
+    /// @dev Vesting contract for MEMERC20 tokens
+    ITruglyVesting public immutable vesting;
+
     /// @dev Address of the WETH9 contract
     WETH public immutable WETH9;
-
-    /// @dev Address of the TruglyLaunchpad Admin
-    address private admin;
 
     /// @dev Address of the signer for any memeceptions
     address private memeSigner;
@@ -123,30 +127,21 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     /// @dev Mapping to determine if a token symbol already exists
     mapping(string => bool) private memeSymbolExist;
 
-    /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
-    /*                       MODIFIERS                   */
-    /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
-
-    /// @dev Modifier to check if the caller is the admin
-    modifier onlyAdmin() {
-        if (admin != msg.sender) revert OnlyAdmin();
-        _;
-    }
-
-    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _memeSigner) {
+    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _memeSigner, address _vesting)
+        Owned(msg.sender)
+    {
         if (
             _v3Factory == address(0) || _v3PositionManager == address(0) || _WETH9 == address(0)
-                || _memeSigner == address(0)
+                || _memeSigner == address(0) || _vesting == address(0)
         ) {
             revert ZeroAddress();
         }
         v3Factory = IUniswapV3Factory(_v3Factory);
         v3PositionManager = INonfungiblePositionManager(_v3PositionManager);
         WETH9 = WETH(payable(_WETH9));
-        admin = msg.sender;
+        vesting = ITruglyVesting(_vesting);
         memeSigner = _memeSigner;
 
-        emit AdminUpdated(address(0), admin);
         emit MemeSignerUpdated(address(0), memeSigner);
     }
 
@@ -169,7 +164,17 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
 
         memeSymbolExist[params.symbol] = true;
 
-        emit MemeCreated(address(memeToken), msg.sender, params.cap, params.startAt, params.swapFeeBps);
+        if (params.vestingAllocBps > 0) {
+            uint256 vestingAlloc = TOKEN_TOTAL_SUPPLY.mulDiv(params.vestingAllocBps, 1e4);
+            memeToken.safeApprove(address(vesting), vestingAlloc);
+            vesting.startVesting(
+                address(memeToken), msg.sender, vestingAlloc, params.startAt, VESTING_DURATION, VESTING_CLIFF
+            );
+        }
+
+        emit MemeCreated(
+            address(memeToken), msg.sender, params.cap, params.startAt, params.swapFeeBps, params.vestingAllocBps
+        );
         return (address(memeToken), pool);
     }
 
@@ -182,10 +187,11 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
             revert InvalidMemeceptionCap();
         }
         if (
-            params.startAt < block.timestamp + MEMECEPTION_MIN_START_AT
-                || params.startAt > block.timestamp + MEMECEPTION_MAX_START_AT
+            params.startAt < uint64(block.timestamp) + MEMECEPTION_MIN_START_AT
+                || params.startAt > uint64(block.timestamp) + MEMECEPTION_MAX_START_AT
         ) revert InvalidMemeceptionDate();
         if (params.swapFeeBps > CREATOR_MAX_FEE_BPS) revert MemeSwapFeeTooHigh();
+        if (params.vestingAllocBps > CREATOR_MAX_VESTED_ALLOC_BPS) revert VestingAllocTooHigh();
     }
 
     /// @inheritdoc ITruglyLaunchpad
@@ -200,7 +206,8 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
 
         if (memeception.balance + amount == memeception.cap) {
             /// Cap is reached - Adding liquidity to Uni V3 Pool
-            _addLiquidityToUniV3Pool(memeToken, memeception.cap);
+            uint256 tokenPoolSupply = MEMERC20(memeToken).balanceOf(address(this)) - TOKEN_MEMECEPTION_SUPPLY;
+            _addLiquidityToUniV3Pool(memeToken, memeception.cap, tokenPoolSupply);
 
             /// Refund as the Cap has been reached
             if (msgValueUint80 > amount) {
@@ -208,7 +215,7 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
                 if (!success) revert("Refund failed");
             }
 
-            emit MemeLiquidityAdded(memeToken, memeception.cap, TOKEN_LP_SUPPLY);
+            emit MemeLiquidityAdded(memeToken, memeception.cap, tokenPoolSupply);
         }
 
         memeception.balance += amount;
@@ -219,17 +226,18 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     /// @dev Add liquidity to the UniV3 Pool and initialize the pool
     /// @param memeToken Address of the MEMERC20
     /// @param amountETH Amount of ETH to add to the pool
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH) internal {
+    /// @param amountMemeToken Amount of MEMERC20 to add to the pool
+    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMemeToken) internal {
         (address token0, address token1) = _getTokenOrder(address(memeToken));
-        uint256 amount0 = token0 == address(WETH9) ? amountETH : TOKEN_LP_SUPPLY;
-        uint256 amount1 = token0 == address(WETH9) ? TOKEN_LP_SUPPLY : amountETH;
+        uint256 amount0 = token0 == address(WETH9) ? amountETH : amountMemeToken;
+        uint256 amount1 = token0 == address(WETH9) ? amountMemeToken : amountETH;
 
         uint160 sqrtPriceX96 = SqrtPriceX96.calcSqrtPriceX96(amount0, amount1);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
 
         WETH9.deposit{value: amountETH}();
         WETH9.safeApprove(address(v3PositionManager), amountETH);
-        MEMERC20(memeToken).safeApprove(address(v3PositionManager), TOKEN_LP_SUPPLY);
+        MEMERC20(memeToken).safeApprove(address(v3PositionManager), amountMemeToken);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
             token0: token0,
@@ -312,7 +320,7 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
         emit MemeClaimed(memeToken, msg.sender, claimableMeme);
     }
 
-    // function collectProtocolFees(Currency currency) external onlyAdmin {
+    // function collectProtocolFees(Currency currency) external onlyOwner {
     //     uint256 amount = abi.decode(
     //         poolManager.lock(address(this), abi.encodeCall(this.lockCollectProtocolFees, (jug, currency))), (uint256)
     //     );
@@ -320,7 +328,7 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     //     emit CollectProtocolFees(Currency.unwrap(currency), jug, amount);
     // }
 
-    // function collectLPFees(PoolKey[] calldata poolKeys) external onlyAdmin {
+    // function collectLPFees(PoolKey[] calldata poolKeys) external onlyOwner {
     //     IPoolManager.ModifyLiquidityParams memory modifyLiqParams =
     //         IPoolManager.ModifyLiquidityParams({tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: 0});
 
@@ -347,13 +355,7 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant {
     // }
 
     /// @inheritdoc ITruglyLaunchpad
-    function transferAdmin(address _newAdmin) external onlyAdmin {
-        emit AdminUpdated(admin, _newAdmin);
-        admin = _newAdmin;
-    }
-
-    /// @inheritdoc ITruglyLaunchpad
-    function setMemeSigner(address _memeSigner) external onlyAdmin {
+    function setMemeSigner(address _memeSigner) external onlyOwner {
         emit MemeSignerUpdated(memeSigner, _memeSigner);
         memeSigner = _memeSigner;
     }

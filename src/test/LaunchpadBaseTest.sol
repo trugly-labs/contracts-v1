@@ -51,6 +51,7 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
         uint256 userMeme;
         uint256 launchpadMeme;
         uint256 poolMeme;
+        uint256 vestingMeme;
         uint256 memeception;
         uint256 og;
     }
@@ -59,8 +60,9 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
 
     uint256 constant TOLERANCE = 1 gwei;
 
-    constructor(address _memeSigner) {
-        launchpad = new MockTruglyLaunchpad(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _memeSigner);
+    constructor(address _memeSigner, address _vesting) {
+        launchpad =
+            new MockTruglyLaunchpad(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _memeSigner, _vesting);
 
         assertEq(address(launchpad.v3Factory()), UNISWAP_V3_FACTORY);
         assertEq(address(launchpad.v3PositionManager()), UNISWAP_V3_POSITION_MANAGER);
@@ -75,11 +77,12 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
 
         /// Assert Token Creation
         MEMERC20 memeToken = MEMERC20(memeTokenAddr);
+        uint256 vestingAllocSupply = TOKEN_TOTAL_SUPPLY.mulDiv(params.vestingAllocBps, 1e4);
         assertEq(memeToken.name(), params.name, "memeName");
-        assertEq(memeToken.decimals(), memeToken.MEME_DECIMALS(), "memeDecimals");
+        assertEq(memeToken.decimals(), TOKEN_DECIMALS, "memeDecimals");
         assertEq(memeToken.symbol(), params.symbol, "memeSymbol");
-        assertEq(memeToken.totalSupply(), memeToken.MEME_TOTAL_SUPPLY(), "memeSupply");
-        assertEq(memeToken.balanceOf(address(launchpad)), memeToken.MEME_TOTAL_SUPPLY(), "memeSupplyMinted");
+        assertEq(memeToken.totalSupply(), TOKEN_TOTAL_SUPPLY, "memeSupply");
+        assertEq(memeToken.balanceOf(address(launchpad)), TOKEN_TOTAL_SUPPLY - vestingAllocSupply, "memeSupplyMinted");
 
         /// Assert Memeception Creation
         ITruglyLaunchpad.Memeception memory memeception = launchpad.getMemeception(memeTokenAddr);
@@ -97,6 +100,9 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
             assertEq(IUniswapV3Pool(pool).token0(), memeTokenAddr, "v3Pool.token0");
             assertEq(IUniswapV3Pool(pool).token1(), WETH9, "v3Pool.token1");
         }
+
+        /// Assert Vesting Contract
+        assertEq(memeToken.balanceOf(address(launchpad.vesting())), vestingAllocSupply, "vestingAllocSupply");
     }
 
     function depositMemeception(address memeToken) external payable {
@@ -116,7 +122,11 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
             assertEqTol(afterBal.poolWETH, memeception.cap, "poolWETH Balance (Cap reached)");
             assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap reached)");
             assertEqTol(afterBal.launchpadMeme, TOKEN_MEMECEPTION_SUPPLY, "LaunchpadMeme Balance (Cap reached)");
-            assertEqTol(afterBal.poolMeme, TOKEN_LP_SUPPLY, "PoolMemeBalance (Cap reached)");
+            assertEqTol(
+                afterBal.poolMeme,
+                TOKEN_TOTAL_SUPPLY - TOKEN_MEMECEPTION_SUPPLY - beforeBal.vestingMeme,
+                "PoolMemeBalance (Cap reached)"
+            );
 
             /// Assert Memeception Deposit
             assertEq(memeception.balance, memeception.cap, "memeception.balance (Cap reached)");
@@ -130,7 +140,11 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
             );
             assertEq(afterBal.poolWETH, 0, "poolWETH Balance (Cap not reached)");
             assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap not reached)");
-            assertEq(afterBal.launchpadMeme, TOKEN_TOTAL_SUPPLY, "LaunchpadMeme Balance (Cap not reached)");
+            assertEq(
+                afterBal.launchpadMeme,
+                TOKEN_TOTAL_SUPPLY - beforeBal.vestingMeme,
+                "LaunchpadMeme Balance (Cap not reached)"
+            );
             assertEq(afterBal.poolMeme, 0, "PoolMemeBalance (Cap not reached)");
 
             /// Assert Memeception Deposit
@@ -151,7 +165,11 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
         assertEq(afterBal.launchpadETH, beforeBal.launchpadETH - beforeBal.og, "launchpadETH Balance");
         assertEq(afterBal.poolWETH, 0, "poolWETH Balance");
         assertEq(afterBal.userMeme, 0, "userMeme Balance");
-        assertEq(afterBal.launchpadMeme, TOKEN_TOTAL_SUPPLY, "LaunchpadMeme Balance");
+        assertEq(
+            afterBal.launchpadMeme,
+            TOKEN_TOTAL_SUPPLY - launchpad.vesting().getVestingInfo(memeToken).totalAllocation,
+            "LaunchpadMeme Balance"
+        );
         assertEq(afterBal.poolMeme, 0, "PoolMemeBalance");
 
         /// Assert Memeception Exit
@@ -192,6 +210,7 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
             userMeme: MEMERC20(memeToken).balanceOf(address(this)),
             launchpadMeme: MEMERC20(memeToken).balanceOf(address(launchpad)),
             poolMeme: MEMERC20(memeToken).balanceOf(launchpad.getMemeception(memeToken).pool),
+            vestingMeme: MEMERC20(memeToken).balanceOf(address(launchpad.vesting())),
             memeception: launchpad.getMemeception(memeToken).balance,
             og: launchpad.getBalanceOG(memeToken, address(this))
         });
