@@ -10,16 +10,23 @@ interface ITruglyLaunchpad is IERC721Receiver {
     struct Memeception {
         /// @dev Address of the UniV3 Pool
         address pool;
+        /// @dev Date when the Memeception will/has started
+        uint40 startAt;
+        /// @dev Amount of token currently sold in the Memeception Auction
+        uint48 auctionTokenSold;
         /// @dev Address of the creator of the Memeception
         address creator;
-        /// @dev Total Amount contributed to the Memeception
-        uint80 balance;
-        /// @dev Cap to reach before the Memeception ends
-        uint80 cap;
-        /// @dev Date when the Memeception will/has started
-        uint64 startAt;
+        /// @dev Auction final price (0 is not finished or auction ended without selling all tokens)
+        uint64 auctionFinalPrice;
         /// @dev Swap Fee of the UniV3 Pool (in bps)
         uint16 swapFeeBps;
+    }
+
+    struct Bid {
+        /// @dev Amount deposited by the bidder
+        /// enough to store <10,000 ether
+        uint80 amountETH;
+        uint48 amountMemeToken;
     }
 
     /// @dev Containing the parameters to create a MemeRC20
@@ -29,9 +36,7 @@ interface ITruglyLaunchpad is IERC721Receiver {
         /// @dev Symbol of the MemeRC20
         string symbol;
         /// @dev Date when the Memeception will start
-        uint64 startAt;
-        /// @dev Cap to reach before the Memeception ends
-        uint80 cap;
+        uint40 startAt;
         /// @dev Swap Fee of the UniV3 Pool (in bps)
         uint16 swapFeeBps;
         /// @dev Amount of the MEMERC20 allocated to the team and vested (in bps)
@@ -46,8 +51,7 @@ interface ITruglyLaunchpad is IERC721Receiver {
 
     /// @dev Deposit ETH to the Memeception
     /// @param memeToken Address of the MemeRC20
-    /// @param sig Signature to authorize the deposit
-    function depositMemeception(address memeToken, bytes calldata sig) external payable;
+    function depositMemeception(address memeToken) external payable;
 
     /// @notice Exit the Memeception
     /// @dev Only possible after deadline is reached & cap not reached

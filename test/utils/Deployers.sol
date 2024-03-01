@@ -40,8 +40,7 @@ contract Deployers is Test, Constant, DeploymentAddresses {
     }
 
     function deployLaunchpad() public virtual {
-        address signer = address(this);
-        launchpadBaseTest = new LaunchpadBaseTest(signer, address(vesting));
+        launchpadBaseTest = new LaunchpadBaseTest(address(vesting));
         vesting.setLaunchpad(address(launchpadBaseTest.launchpad()), true);
     }
 

@@ -6,39 +6,13 @@ import {Test, console2} from "forge-std/Test.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEMERC20} from "../types/MEMERC20.sol";
 import {ITruglyLaunchpad} from "../interfaces/ITruglyLaunchpad.sol";
-import {MockTruglyLaunchpad} from "../test/MockTruglyLaunchpad.sol";
+import {TruglyLaunchpad} from "../TruglyLaunchpad.sol";
 import {DeploymentAddresses} from "./DeploymentAddresses.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FullMath} from "../libraries/external/FullMath.sol";
 
 contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
     using FullMath for uint256;
-    /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
-    /*                       EVENTS                      */
-    /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
-
-    /// @dev Emitted when a memeceptions is created
-    event MemeCreated(
-        address indexed memeToken, address indexed creator, uint256 cap, uint256 startAt, uint256 creatorSwapFeeBps
-    );
-
-    /// @dev Emitted when a OG participates in the memeceptions
-    event MemeceptionDeposit(address indexed memeToken, address indexed og, uint256 amount);
-
-    /// @dev Emitted when liquidity has been added to the UniV3 Pool
-    event MemeLiquidityAdded(address indexed memeToken, uint256 amount0, uint256 amount1);
-
-    /// @dev Emitted when an OG claims their allocated Meme tokens
-    event MemeClaimed(address indexed memeToken, address indexed claimer, uint256 amountMeme);
-
-    /// @dev Emitted when an OG exits the memeceptions
-    event MemeceptionExit(address indexed memeToken, address indexed backer, uint256 amount);
-
-    /// @dev Emitted when the admin is updated
-    event AdminUpdated(address indexed oldAdmin, address indexed newAdmin);
-
-    /// @dev Emited when the memeSigner is updated
-    event MemeSignerUpdated(address indexed oldSigner, address indexed newSigner);
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -56,13 +30,12 @@ contract LaunchpadBaseTest is Test, DeploymentAddresses, Constant {
         uint256 og;
     }
 
-    MockTruglyLaunchpad public launchpad;
+    TruglyLaunchpad public launchpad;
 
     uint256 constant TOLERANCE = 1 gwei;
 
-    constructor(address _memeSigner, address _vesting) {
-        launchpad =
-            new MockTruglyLaunchpad(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _memeSigner, _vesting);
+    constructor(address _vesting) {
+        launchpad = new TruglyLaunchpad(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _vesting);
 
         assertEq(address(launchpad.v3Factory()), UNISWAP_V3_FACTORY);
         assertEq(address(launchpad.v3PositionManager()), UNISWAP_V3_POSITION_MANAGER);

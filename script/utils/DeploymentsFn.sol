@@ -48,7 +48,7 @@ contract DeploymentsFn is SepoliaParameters {
 
     function deployLaunchpad(address vesting) public returns (TruglyLaunchpad launchpad) {
         console2.log("Deploying TruglyLaunchpad..");
-        launchpad = new TruglyLaunchpad(V3_FACTORY, V3_POSITION_MANAGER, WETH9, MEMECEPTION_SIGNER, vesting);
+        launchpad = new TruglyLaunchpad(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting);
         console2.log("TruglyLaunchpad Deployed:", address(launchpad));
     }
 }

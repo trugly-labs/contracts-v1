@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 contract SepoliaParameters {
     // Trugly
     address public constant TREASURY = 0x0804a74CB85d6bE474a4498fCe76481822AdFFa4;
-    address public constant MEMECEPTION_SIGNER = 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD;
     // General
     address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address public constant WETH9 = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;

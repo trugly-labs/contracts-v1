@@ -1,10 +1,11 @@
 /// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import {SignatureChecker} from "@openzeppelin/utils/cryptography/SignatureChecker.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
+import {LinearVRGDA} from "@transmissions11/LinearVRGDA.sol";
+import {wadDiv} from "@solmate/utils/SignedWadMath.sol";
 
 import {Constant} from "./libraries/Constant.sol";
 import {FullMath} from "./libraries/external/FullMath.sol";
@@ -19,7 +20,7 @@ import {SqrtPriceX96} from "./libraries/external/SqrtPriceX96.sol";
 
 /// @title The interface for the Trugly Launchpad
 /// @notice Launchpad is in charge of creating MEMERC20 and their Memeception
-contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
+contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned, LinearVRGDA {
     using FullMath for uint256;
     using SafeCast for uint256;
     using SafeTransferLib for WETH;
@@ -35,25 +36,22 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
         address indexed memeToken,
         address indexed creator,
         uint80 cap,
-        uint64 startAt,
+        uint40 startAt,
         uint16 creatorSwapFeeBps,
         uint16 vestingAllocBps
     );
 
     /// @dev Emitted when a OG participates in the memeceptions
-    event MemeceptionDeposit(address indexed memeToken, address indexed og, uint256 amount);
+    event MemeceptionBid(address indexed memeToken, address indexed og, uint256 amountETH, uint256 amountMeme);
 
     /// @dev Emitted when liquidity has been added to the UniV3 Pool
     event MemeLiquidityAdded(address indexed memeToken, uint256 amount0, uint256 amount1);
 
     /// @dev Emitted when an OG claims their allocated Meme tokens
-    event MemeClaimed(address indexed memeToken, address indexed claimer, uint256 amountMeme);
+    event MemeClaimed(address indexed memeToken, address indexed claimer, uint256 amountMeme, uint256 refundETH);
 
     /// @dev Emitted when an OG exits the memeceptions
     event MemeceptionExit(address indexed memeToken, address indexed backer, uint256 amount);
-
-    /// @dev Emited when the memeSigner is updated
-    event MemeSignerUpdated(address indexed oldSigner, address indexed newSigner);
 
     //     event CollectProtocolFees(address indexed token, address recipient, uint256 amount);
 
@@ -71,9 +69,6 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
 
     /// @dev Thrown when the Meme symbol already exists
     error MemeSymbolExist();
-
-    // @dev Thrown when the memeceptions cap is too low or too high
-    error InvalidMemeceptionCap();
 
     /// @dev Thrown when the memeceptions startAt is invalid (too early/too late)
     error InvalidMemeceptionDate();
@@ -93,8 +88,8 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
     /// @dev Thrown when the amount is 0
     error ZeroAmount();
 
-    /// @dev Thrown when the signature is invalid
-    error InvalidMemeceptionSig();
+    /// @dev Thrown when the amount is too high
+    error BidAmountTooHigh();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -115,24 +110,22 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
     /// @dev Address of the WETH9 contract
     WETH public immutable WETH9;
 
-    /// @dev Address of the signer for any memeceptions
-    address private memeSigner;
-
     /// @dev Mapping of memeToken => memeceptions
     mapping(address => Memeception) private memeceptions;
 
-    /// @dev Amount contributed per OG
-    mapping(address => mapping(address => uint256)) balanceOG;
+    /// @dev Amount bid by OGs
+    mapping(address => mapping(address => Bid)) bidsOG;
 
     /// @dev Mapping to determine if a token symbol already exists
     mapping(string => bool) private memeSymbolExist;
 
-    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _memeSigner, address _vesting)
+    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _vesting)
+        LinearVRGDA(AUCTION_TARGET_PRICE, AUCTION_PRICE_DECAY_PCT, AUCTION_TOKEN_PER_TIME_UNIT)
         Owned(msg.sender)
     {
         if (
             _v3Factory == address(0) || _v3PositionManager == address(0) || _WETH9 == address(0)
-                || _memeSigner == address(0) || _vesting == address(0)
+                || _vesting == address(0)
         ) {
             revert ZeroAddress();
         }
@@ -140,9 +133,6 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
         v3PositionManager = INonfungiblePositionManager(_v3PositionManager);
         WETH9 = WETH(payable(_WETH9));
         vesting = ITruglyVesting(_vesting);
-        memeSigner = _memeSigner;
-
-        emit MemeSignerUpdated(address(0), memeSigner);
     }
 
     /// @inheritdoc ITruglyLaunchpad
@@ -154,11 +144,11 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
         address pool = v3Factory.createPool(token0, token1, UNI_LP_SWAPFEE);
 
         memeceptions[address(memeToken)] = Memeception({
+            auctionTokenSold: 0,
+            startAt: params.startAt,
             pool: pool,
             creator: msg.sender,
-            startAt: params.startAt,
-            balance: 0,
-            cap: params.cap,
+            auctionFinalPrice: 0,
             swapFeeBps: params.swapFeeBps
         });
 
@@ -183,45 +173,70 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
     /// Revert if any parameters are invalid
     function _verifyCreateMeme(MemeCreationParams calldata params) internal view {
         if (memeSymbolExist[params.symbol]) revert MemeSymbolExist();
-        if (params.cap < MEMECEPTION_MIN_ETHCAP || params.cap > MEMECEPTION_MAX_ETHCAP) {
-            revert InvalidMemeceptionCap();
-        }
         if (
-            params.startAt < uint64(block.timestamp) + MEMECEPTION_MIN_START_AT
-                || params.startAt > uint64(block.timestamp) + MEMECEPTION_MAX_START_AT
+            params.startAt < uint40(block.timestamp) + MEMECEPTION_MIN_START_AT
+                || params.startAt > uint40(block.timestamp) + MEMECEPTION_MAX_START_AT
         ) revert InvalidMemeceptionDate();
         if (params.swapFeeBps > CREATOR_MAX_FEE_BPS) revert MemeSwapFeeTooHigh();
         if (params.vestingAllocBps > CREATOR_MAX_VESTED_ALLOC_BPS) revert VestingAllocTooHigh();
     }
 
-    /// @inheritdoc ITruglyLaunchpad
-    function depositMemeception(address memeToken, bytes calldata sig) external payable {
-        _verifyDeposit(memeToken, sig);
-        uint80 msgValueUint80 = msg.value.toUint80();
-        Memeception storage memeception = memeceptions[memeToken];
+    function bidMemeception(address memeToken) external payable {
+        Memeception calldata memeception = memeceptions[memeToken];
+        _verifyBid(memeception);
 
-        uint80 amount = memeception.balance + msgValueUint80 <= memeception.cap
-            ? msgValueUint80
-            : memeception.cap - memeception.balance;
+        int256 timeSinceStartPerTimeUnit =
+            wadDiv(int256(block.timestamp - memeception.startAt), int256(AUCTION_TIME_UNIT));
+        uint256 curPrice = getVRGDAPrice(timeSinceStartPerTimeUnit, memeception.auctionTokenSold);
+        uint256 auctionTokenAmount = msg.value * curPrice;
 
-        if (memeception.balance + amount == memeception.cap) {
-            /// Cap is reached - Adding liquidity to Uni V3 Pool
-            uint256 tokenPoolSupply = MEMERC20(memeToken).balanceOf(address(this)) - TOKEN_MEMECEPTION_SUPPLY;
-            _addLiquidityToUniV3Pool(memeToken, memeception.cap, tokenPoolSupply);
+        if (memeception.auctionTokenSold + auctionTokenAmount >= TOKEN_MEMECEPTION_SUPPLY) {
+            auctionTokenAmount = TOKEN_MEMECEPTION_SUPPLY - memeception.auctionTokenSold;
 
-            /// Refund as the Cap has been reached
-            if (msgValueUint80 > amount) {
-                (bool success,) = msg.sender.call{value: uint256(msgValueUint80 - amount)}("");
-                if (!success) revert("Refund failed");
-            }
-
-            emit MemeLiquidityAdded(memeToken, memeception.cap, tokenPoolSupply);
+            memeceptions[memeToken].auctionFinalPrice = curPrice.safeCastTo64();
+            /// Adding liquidity to Uni V3 Pool
+            _addLiquidityToUniV3Pool(
+                memeToken,
+                TOKEN_MEMECEPTION_SUPPLY.mulDiv(1e18, curPrice),
+                MEMERC20(memeToken).balanceOf(address(this)) - TOKEN_MEMECEPTION_SUPPLY * 10 ** TOKEN_DECIMALS
+            );
         }
 
-        memeception.balance += amount;
-        balanceOG[memeToken][msg.sender] = uint256(amount);
-        emit MemeceptionDeposit(memeToken, msg.sender, amount);
+        memeceptions[memeToken].auctionTokenSold += auctionTokenAmount.safeCastTo48();
+
+        bidsOG[memeToken][msg.sender] =
+            Bid({amountETH: msg.value.safeCastTo80(), amountMemeToken: auctionTokenAmount.safeCastTo48()});
+
+        emit MemeceptionBid(memeToken, msg.sender, msg.value, auctionTokenAmount);
     }
+
+    // /// @inheritdoc ITruglyLaunchpad
+    // function depositMemeception(address memeToken) external payable {
+    //     uint80 msgValueUint80 = msg.value.toUint80();
+    //     Memeception storage memeception = memeceptions[memeToken];
+
+    //     uint80 amount = memeception.balance + msgValueUint80 <= memeception.cap
+    //         ? msgValueUint80
+    //         : memeception.cap - memeception.balance;
+
+    //     if (memeception.balance + amount == memeception.cap) {
+    //         /// Cap is reached - Adding liquidity to Uni V3 Pool
+    //         uint256 tokenPoolSupply = MEMERC20(memeToken).balanceOf(address(this)) - TOKEN_MEMECEPTION_SUPPLY;
+    //         _addLiquidityToUniV3Pool(memeToken, memeception.cap, tokenPoolSupply);
+
+    //         /// Refund as the Cap has been reached
+    //         if (msgValueUint80 > amount) {
+    //             (bool success,) = msg.sender.call{value: uint256(msgValueUint80 - amount)}("");
+    //             if (!success) revert("Refund failed");
+    //         }
+
+    //         emit MemeLiquidityAdded(memeToken, memeception.cap, tokenPoolSupply);
+    //     }
+
+    //     memeception.balance += amount;
+    //     bidsOG[memeToken][msg.sender] = uint256(amount);
+    //     emit MemeceptionBid(memeToken, msg.sender, amount);
+    // }
 
     /// @dev Add liquidity to the UniV3 Pool and initialize the pool
     /// @param memeToken Address of the MEMERC20
@@ -262,40 +277,30 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
     /// @dev Check a MEMERC20's UniV3 Pool is initialized with liquidity
     /// @param memeToken Address of the MEMERC20
     /// @return bool True if the pool is initialized with liquidity
-    function _isLaunched(address memeToken) private view returns (bool) {
-        return (memeceptions[memeToken].cap > 0 && memeceptions[memeToken].balance >= memeceptions[memeToken].cap);
+    function _poolLaunched(Memeception calldata memeception) private view returns (bool) {
+        return memeception.auctionFinalPrice > 0;
     }
 
     /// @dev Verify the validity of the deposit in a Memeception
     /// @param memeToken Address of the MEMERC20
-    /// @param sig Signature to authorize the deposit
     /// Revert if any parameters are invalid
-    function _verifyDeposit(address memeToken, bytes calldata sig) internal view virtual {
+    function _verifyBid(Memeception calldata memeception) internal view virtual {
         if (msg.value == 0) revert ZeroAmount();
-        if (_isLaunched(memeToken)) revert MemeLaunched();
-        if (
-            block.timestamp < memeceptions[memeToken].startAt
-                || block.timestamp > memeceptions[memeToken].startAt + MEMECEPTION_DEADLINE
-        ) {
-            revert InvalidMemeceptionDate();
-        }
-        if (balanceOG[memeToken][msg.sender] > 0) revert DuplicateOG();
-        if (
-            !SignatureChecker.isValidSignatureNow(
-                memeSigner, keccak256(abi.encode(memeToken, msg.sender, msg.value, block.chainid)), sig
-            )
-        ) revert InvalidMemeceptionSig();
+        if (msg.value > AUCTION_MAX_BID) revert BidAmountTooHigh();
+        if (_poolLaunched(memeception)) revert MemeLaunched();
+        if (block.timestamp < memeception.startAt || _auctionEnded(memeception)) revert InvalidMemeceptionDate();
+
+        if (bidsOG[memeToken][msg.sender].amountETH > 0) revert DuplicateOG();
     }
 
     /// @inheritdoc ITruglyLaunchpad
     function exitMemeception(address memeToken) external {
-        if (_isLaunched(memeToken)) revert MemeLaunched();
-        if (block.timestamp < memeceptions[memeToken].startAt + MEMECEPTION_DEADLINE) {
-            revert InvalidMemeceptionDate();
-        }
+        Memeception calldata memeception = memeceptions[memeToken];
+        if (_poolLaunched(memeception)) revert MemeLaunched();
+        if (!_auctionEnded(memeception)) revert InvalidMemeceptionDate();
 
-        uint256 exitAmount = balanceOG[memeToken][msg.sender];
-        balanceOG[memeToken][msg.sender] = 0;
+        uint256 exitAmount = bidsOG[memeToken][msg.sender].amountETH;
+        bidsOG[memeToken][msg.sender] = Bid({amountETH: 0, amountMemeToken: 0});
         msg.sender.safeTransferETH(exitAmount);
 
         emit MemeceptionExit(memeToken, msg.sender, exitAmount);
@@ -303,21 +308,21 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
 
     /// @inheritdoc ITruglyLaunchpad
     function claimMemeception(address memeToken) external {
-        if (!_isLaunched(memeToken)) revert MemeNotLaunched();
+        Memeception calldata memeception = memeceptions[memeToken];
+        if (!_poolLaunched(memeception)) revert MemeNotLaunched();
 
-        uint256 ogPct = balanceOG[memeToken][msg.sender].mulDiv(1e18, uint256(memeceptions[memeToken].cap));
-        uint256 claimableMeme = TOKEN_MEMECEPTION_SUPPLY.mulDiv(ogPct, 1e18);
+        Bid memory bid = bidsOG[memeToken][msg.sender];
+        if (bid.amountETH == 0 || bid.amountMemeToken == 0) revert ZeroAmount();
+
+        uint256 refund = bid.amountETH - bid.amountMemeToken.mulDiv(1e18, memeception.auctionFinalPrice);
 
         MEMERC20 meme = MEMERC20(memeToken);
 
-        if (claimableMeme > meme.balanceOf(address(this))) {
-            claimableMeme = meme.balanceOf(address(this));
-        }
-
-        balanceOG[memeToken][msg.sender] = 0;
+        bidsOG[memeToken][msg.sender] = Bid({amountETH: 0, amountMemeToken: 0});
         meme.safeTransfer(msg.sender, claimableMeme);
+        if (refund > 0) msg.sender.safeTransferETH(refund);
 
-        emit MemeClaimed(memeToken, msg.sender, claimableMeme);
+        emit MemeClaimed(memeToken, msg.sender, claimableMeme, refund);
     }
 
     // function collectProtocolFees(Currency currency) external onlyOwner {
@@ -354,10 +359,8 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
     //     poolManager.take(currency, recipient, amount);
     // }
 
-    /// @inheritdoc ITruglyLaunchpad
-    function setMemeSigner(address _memeSigner) external onlyOwner {
-        emit MemeSignerUpdated(memeSigner, _memeSigner);
-        memeSigner = _memeSigner;
+    function _auctionEnded(Memeception calldata memeception) internal returns (bool) {
+        return block.timestamp >= memeception.startAt + AUCTION_DURATION || _poolLaunched(memeception);
     }
 
     /// @inheritdoc ITruglyLaunchpad
@@ -367,7 +370,7 @@ contract TruglyLaunchpad is ITruglyLaunchpad, Constant, Owned {
 
     /// @inheritdoc ITruglyLaunchpad
     function getBalanceOG(address memeToken, address og) external view returns (uint256) {
-        return balanceOG[memeToken][og];
+        return bidsOG[memeToken][og];
     }
 
     /// @dev Get the order of the tokens in the UniV3 Pool by comparing their addresses
