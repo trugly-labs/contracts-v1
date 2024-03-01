@@ -18,6 +18,7 @@ runs = 100000
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
 goerli = "https://goerli.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
+sepolia = "https://sepolia.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
 
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
