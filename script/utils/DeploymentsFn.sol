@@ -8,7 +8,7 @@ import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterIm
 import {SepoliaParameters} from "../parameters/Sepolia.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
-import {TruglyLaunchpad} from "../../src/TruglyLaunchpad.sol";
+import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 
 contract DeploymentsFn is SepoliaParameters {
     function deployUniversalRouter() public returns (TruglyUniversalRouter router) {
@@ -46,9 +46,9 @@ contract DeploymentsFn is SepoliaParameters {
         console2.log("TruglyVesting Deployed:", address(vesting));
     }
 
-    function deployLaunchpad(address vesting) public returns (TruglyLaunchpad launchpad) {
-        console2.log("Deploying TruglyLaunchpad..");
-        launchpad = new TruglyLaunchpad(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting);
-        console2.log("TruglyLaunchpad Deployed:", address(launchpad));
+    function deployMemeception(address vesting) public returns (TruglyMemeception memeception) {
+        console2.log("Deploying TruglyMemeception..");
+        memeception = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting);
+        console2.log("TruglyMemeception Deployed:", address(memeception));
     }
 }

@@ -2,27 +2,26 @@
 pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
-import {ITruglyLaunchpad} from "../../src/interfaces/ITruglyLaunchpad.sol";
-import {LaunchpadBaseTest} from "../../src/test/LaunchpadBaseTest.sol";
+import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
+import {MemeceptionBaseTest} from "../../src/test/MemeceptionBaseTest.sol";
 import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
 import {MEMERC20} from "../../src/types/MEMERC20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {DeploymentAddresses} from "../../src/test/DeploymentAddresses.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 
-contract Deployers is Test, Constant, DeploymentAddresses {
+contract Deployers is Test, DeploymentAddresses {
     // Global variables
-    LaunchpadBaseTest launchpadBaseTest;
+    MemeceptionBaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
     MEMERC20 memeToken;
     TruglyVesting vesting;
 
     // Parameters
-    ITruglyLaunchpad.MemeCreationParams public createMemeParams = ITruglyLaunchpad.MemeCreationParams({
+    ITruglyMemeception.MemeceptionCreationParams public createMemeParams = ITruglyMemeception.MemeceptionCreationParams({
         name: "MEME Coin",
         symbol: "MEME",
-        startAt: uint64(block.timestamp + 3 days),
-        cap: 100 ether,
+        startAt: uint40(block.timestamp + 3 days),
         swapFeeBps: 100,
         vestingAllocBps: 500
     });
@@ -31,7 +30,7 @@ contract Deployers is Test, Constant, DeploymentAddresses {
         string memory rpc = vm.rpcUrl("mainnet");
         vm.createSelectFork(rpc, 19287957);
         deployVesting();
-        deployLaunchpad();
+        deployMemeception();
         deployUniversalRouter();
     }
 
@@ -39,20 +38,20 @@ contract Deployers is Test, Constant, DeploymentAddresses {
         vesting = new TruglyVesting();
     }
 
-    function deployLaunchpad() public virtual {
-        launchpadBaseTest = new LaunchpadBaseTest(address(vesting));
-        vesting.setLaunchpad(address(launchpadBaseTest.launchpad()), true);
+    function deployMemeception() public virtual {
+        memeceptionBaseTest = new MemeceptionBaseTest(address(vesting));
+        vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
     }
 
     function initCreateMeme() public virtual {
-        createMemeParams.startAt = uint64(block.timestamp) + 3 days;
-        (address meme,) = launchpadBaseTest.createMeme(createMemeParams);
+        createMemeParams.startAt = uint40(block.timestamp) + 3 days;
+        (address meme,) = memeceptionBaseTest.createMeme(createMemeParams);
         memeToken = MEMERC20(meme);
     }
 
-    function initDepositMemeception(uint256 amount) public virtual {
+    function initBid(uint256 amount) public virtual {
         vm.warp(block.timestamp + 4 days);
-        launchpadBaseTest.depositMemeception{value: amount}(address(memeToken));
+        memeceptionBaseTest.bid{value: amount}(address(memeToken));
     }
 
     function deployUniversalRouter() public virtual {

@@ -51,8 +51,8 @@ interface ITruglyVesting {
     /// @return The amount of tokens that are vested
     function vestedAmount(address token, uint64 timestamp) external view returns (uint256);
 
-    /// @dev Authorize or unauthorize a launchpad
-    /// @param launchpad The launchpad to authorize or unauthorize
-    /// @param isLaunchpad Whether to authorize or unauthorize the launchpad
-    function setLaunchpad(address launchpad, bool isLaunchpad) external;
+    /// @dev Authorize or unauthorize a memeception contract
+    /// @param memeceptionContract The memeception contract to authorize or unauthorize
+    /// @param isAuthorized Whether the memeception contract is authorized or not
+    function setMemeception(address memeceptionContract, bool isAuthorized) external;
 }

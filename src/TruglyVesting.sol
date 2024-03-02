@@ -27,15 +27,15 @@ contract TruglyVesting is ITruglyVesting, Owned {
     );
     /// @dev Emitted when `amount` of `token` tokens are released to `creator`
     event MEMERC20Released(address indexed token, address indexed creator, uint256 amount);
-    /// @dev Emitted when `launchpad` is authorized or unauthorized
-    event LaunchadAuthorized(address indexed launchpad, bool isAuthorized);
+    /// @dev Emitted when `memeceptionContract` is authorized or unauthorized
+    event MemeceptionAuthorized(address indexed memeception, bool isAuthorized);
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       ERRORS                      */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
-    /// @dev Error when the caller is not a launchpad
-    error NotLaunchpad();
+    /// @dev Error when the caller is not a memeception
+    error NotMemeception();
     /// @dev Error when the vesting of `token` is already started
     error VestingAlreadyStarted();
     /// @dev Error when the `totalAllocation` is zero
@@ -56,8 +56,8 @@ contract TruglyVesting is ITruglyVesting, Owned {
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /// @dev Mapping of token to its vesting information
     mapping(address => VestingInfo) private _vestingInfo;
-    /// @dev Mapping of launchpad to its authorization status
-    mapping(address => bool) private _launchpads;
+    /// @dev Mapping of memeception to its authorization status
+    mapping(address => bool) private _memeceptionContracts;
 
     constructor() payable Owned(msg.sender) {}
 
@@ -70,7 +70,7 @@ contract TruglyVesting is ITruglyVesting, Owned {
         uint64 duration,
         uint64 cliff
     ) external {
-        if (!_launchpads[msg.sender]) revert NotLaunchpad();
+        if (!_memeceptionContracts[msg.sender]) revert NotMemeception();
         if (_vestingInfo[token].start != 0) revert VestingAlreadyStarted();
         if (totalAllocation == 0) revert VestingAmountCannotBeZero();
         if (duration == 0) revert VestingDurationCannotBeZero();
@@ -124,7 +124,9 @@ contract TruglyVesting is ITruglyVesting, Owned {
         }
     }
 
-    function setLaunchpad(address launchpad, bool isLaunchpad) public onlyOwner {
-        _launchpads[launchpad] = isLaunchpad;
+    /// @inheritdoc ITruglyVesting
+    function setMemeception(address memeceptionContract, bool isAuthorized) external onlyOwner {
+        _memeceptionContracts[memeceptionContract] = isAuthorized;
+        emit MemeceptionAuthorized(memeceptionContract, isAuthorized);
     }
 }

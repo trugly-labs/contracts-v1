@@ -5,7 +5,7 @@ import {Deployers} from "./utils/Deployers.sol";
 
 contract CreateMemeTest is Deployers {
     function test_createMeme_success() public {
-        createMemeParams.startAt = uint64(block.timestamp) + 3 days;
-        launchpadBaseTest.createMeme(createMemeParams);
+        createMemeParams.startAt = uint40(block.timestamp) + 3 days;
+        memeceptionBaseTest.createMeme(createMemeParams);
     }
 }
