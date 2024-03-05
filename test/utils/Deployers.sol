@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
+
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
 import {MemeceptionBaseTest} from "../../src/test/MemeceptionBaseTest.sol";
 import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
@@ -9,8 +10,11 @@ import {MEMERC20} from "../../src/types/MEMERC20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {DeploymentAddresses} from "../../src/test/DeploymentAddresses.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
+import {MemeAddressMiner} from "./MemeAddressMiner.sol";
 
-contract Deployers is Test, DeploymentAddresses {
+import {TestHelpers} from "./TestHelpers.sol";
+
+contract Deployers is Test, TestHelpers, DeploymentAddresses {
     // Global variables
     MemeceptionBaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
@@ -23,7 +27,8 @@ contract Deployers is Test, DeploymentAddresses {
         symbol: "MEME",
         startAt: uint40(block.timestamp + 3 days),
         swapFeeBps: 100,
-        vestingAllocBps: 500
+        vestingAllocBps: 500,
+        salt: ""
     });
 
     function setUp() public virtual {
@@ -44,8 +49,20 @@ contract Deployers is Test, DeploymentAddresses {
     }
 
     function initCreateMeme() public virtual {
-        createMemeParams.startAt = uint40(block.timestamp) + 3 days;
-        (address meme,) = memeceptionBaseTest.createMeme(createMemeParams);
+        address meme = createMeme(createMemeParams.symbol);
+        memeToken = MEMERC20(meme);
+    }
+
+    function createMeme(string memory symbol) public virtual returns (address meme) {
+        uint40 startAt = uint40(block.timestamp + 3 days);
+        (, bytes32 salt) = MemeAddressMiner.find(
+            address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol
+        );
+        createMemeParams.startAt = startAt;
+        createMemeParams.symbol = symbol;
+        createMemeParams.salt = salt;
+
+        (meme,) = memeceptionBaseTest.createMeme(createMemeParams);
         memeToken = MEMERC20(meme);
     }
 
