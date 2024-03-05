@@ -35,12 +35,12 @@ library Constant {
     uint64 internal constant VESTING_DURATION = 4 * 365 days;
     /// @dev Vesting cliff
     uint64 internal constant VESTING_CLIFF = 365 days;
-    // @dev Auction starting price (500 ETH)
-    uint256 internal constant AUCTION_STARTING_PRICE = 0.000000011e18;
+    // @dev Auction starting price (500 ETH) - scaled by 1e18
+    uint256 internal constant AUCTION_STARTING_PRICE = 1e8;
     /// @dev Auction time unit per actions
     uint256 internal constant AUCTION_PRICE_DECAY_PERIOD = 5 minutes;
     /// @dev Auction duration
-    uint64 internal constant AUCTION_DURATION = 2 hours;
+    uint40 internal constant AUCTION_DURATION = 2 hours;
     /// @dev Auction duration
     uint256 internal constant AUCTION_MAX_BID = 10 ether;
 }

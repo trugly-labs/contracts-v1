@@ -2,27 +2,29 @@
 pragma solidity ^0.8.23;
 
 import {console2} from "forge-std/Test.sol";
+
 import {wadDiv} from "@solmate/utils/SignedWadMath.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
 import {SafeCastLib} from "@solmate/utils/SafeCastLib.sol";
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
+import {Auction} from "./libraries/Auction.sol";
 import {Constant} from "./libraries/Constant.sol";
 import {MEMERC20Constant} from "./libraries/MEMERC20Constant.sol";
-import {FullMath} from "./libraries/external/FullMath.sol";
 import {INonfungiblePositionManager} from "./interfaces/external/INonfungiblePositionManager.sol";
 import {ITruglyMemeception} from "./interfaces/ITruglyMemeception.sol";
 import {IUniswapV3Factory} from "./interfaces/external/IUniswapV3Factory.sol";
 import {IUniswapV3Pool} from "./interfaces/external/IUniswapV3Pool.sol";
 import {ITruglyVesting} from "./interfaces/ITruglyVesting.sol";
 import {MEMERC20} from "./types/MEMERC20.sol";
-import {SqrtPriceX96} from "./libraries/external/SqrtPriceX96.sol";
+import {SqrtPriceX96} from "./libraries/SqrtPriceX96.sol";
 
 /// @title The interface for the Trugly Launchpad
 /// @notice Launchpad is in charge of creating MEMERC20 and their Memeception
 contract TruglyMemeception is ITruglyMemeception, Owned {
-    using FullMath for uint256;
+    using FixedPointMathLib for uint256;
     using SafeCastLib for uint256;
     using SafeTransferLib for WETH;
     using SafeTransferLib for MEMERC20;
@@ -37,6 +39,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         string indexed symbol,
         address indexed memeToken,
         address indexed creator,
+        address pool,
         uint40 startAt,
         uint16 creatorSwapFeeBps,
         uint16 vestingAllocBps
@@ -61,6 +64,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       ERRORS                      */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
+
+    /// @dev Invalid Meme Address (has to be < WETH9)
+    error InvalidMemeAddress();
 
     /// @dev Thrown when the swap fee is too high
     error MemeSwapFeeTooHigh();
@@ -136,7 +142,10 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @inheritdoc ITruglyMemeception
     function createMeme(MemeceptionCreationParams calldata params) external returns (address, address) {
         _verifyCreateMeme(params);
-        MEMERC20 memeToken = new MEMERC20(params.name, params.symbol);
+        MEMERC20 memeToken = new MEMERC20{salt: params.salt}(params.name, params.symbol);
+        console2.log("WETH9: ", address(WETH9));
+        console2.log("memeToken: ", address(memeToken));
+        if (address(memeToken) >= address(WETH9)) revert InvalidMemeAddress();
         (address token0, address token1) = _getTokenOrder(address(memeToken));
 
         address pool = v3Factory.createPool(token0, token1, Constant.UNI_LP_SWAPFEE);
@@ -146,15 +155,15 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
             startAt: params.startAt,
             pool: pool,
             creator: msg.sender,
-            auctionFinalPrice: 0,
+            auctionFinalPriceScaled: 0,
             swapFeeBps: params.swapFeeBps
         });
 
         memeSymbolExist[params.symbol] = true;
 
         if (params.vestingAllocBps > 0) {
-            uint256 vestingAlloc = MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(params.vestingAllocBps, 1e4);
-            memeToken.safeApprove(address(vesting), vestingAlloc);
+            uint256 vestingAlloc = MEMERC20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(params.vestingAllocBps, 1e4);
+            memeToken.safeTransfer(address(vesting), vestingAlloc);
             vesting.startVesting(
                 address(memeToken),
                 msg.sender,
@@ -164,9 +173,19 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
                 Constant.VESTING_CLIFF
             );
         }
+        uint256 burnAllocBps = Constant.CREATOR_MAX_VESTED_ALLOC_BPS - params.vestingAllocBps;
+        if (burnAllocBps > 0) {
+            memeToken.safeTransfer(address(0), MEMERC20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(burnAllocBps, 1e4));
+        }
 
         emit MemeCreated(
-            params.symbol, address(memeToken), msg.sender, params.startAt, params.swapFeeBps, params.vestingAllocBps
+            params.symbol,
+            address(memeToken),
+            msg.sender,
+            pool,
+            params.startAt,
+            params.swapFeeBps,
+            params.vestingAllocBps
         );
         return (address(memeToken), pool);
     }
@@ -189,20 +208,18 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         Memeception memory memeception = memeceptions[memeToken];
         _verifyBid(memeception, memeToken);
 
-        uint256 curPrice = _getAuctionPrice(memeception);
-        console2.log("curPrice", curPrice);
-        uint256 auctionTokenAmount = msg.value * curPrice;
-        console2.log("auctionTokenSold", auctionTokenAmount);
+        uint256 curPriceScaled = _getAuctionPriceScaled(memeception);
+        uint256 auctionTokenAmount = msg.value.rawDivWad(curPriceScaled);
 
         if (memeception.auctionTokenSold + auctionTokenAmount >= Constant.TOKEN_MEMECEPTION_SUPPLY) {
-            auctionTokenAmount = Constant.TOKEN_MEMECEPTION_SUPPLY - memeception.auctionTokenSold;
+            auctionTokenAmount = Constant.TOKEN_MEMECEPTION_SUPPLY.rawSub(memeception.auctionTokenSold);
 
-            memeceptions[memeToken].auctionFinalPrice = curPrice.safeCastTo64();
+            memeceptions[memeToken].auctionFinalPriceScaled = curPriceScaled.safeCastTo64();
             /// Adding liquidity to Uni V3 Pool
             _addLiquidityToUniV3Pool(
                 memeToken,
-                Constant.TOKEN_MEMECEPTION_SUPPLY * curPrice,
-                MEMERC20(memeToken).balanceOf(address(this)) - Constant.TOKEN_MEMECEPTION_SUPPLY
+                Constant.TOKEN_MEMECEPTION_SUPPLY.rawMulWad(curPriceScaled),
+                MEMERC20(memeToken).balanceOf(address(this)).rawSub(Constant.TOKEN_MEMECEPTION_SUPPLY)
             );
         }
 
@@ -223,7 +240,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         uint256 amount0 = token0 == address(WETH9) ? amountETH : amountMeme;
         uint256 amount1 = token0 == address(WETH9) ? amountMeme : amountETH;
 
-        uint160 sqrtPriceX96 = SqrtPriceX96.calcSqrtPriceX96(amount0, amount1);
+        uint160 sqrtPriceX96 = SqrtPriceX96.sqrtPriceX96(memeceptions[memeToken].startAt);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
 
         WETH9.deposit{value: amountETH}();
@@ -254,7 +271,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @param memeception Memeception
     /// @return bool True if the pool is initialized with liquidity
     function _poolLaunched(Memeception memory memeception) private pure returns (bool) {
-        return memeception.auctionFinalPrice > 0;
+        return memeception.auctionFinalPriceScaled > 0;
     }
 
     /// @notice Verify the validity of a bid
@@ -290,7 +307,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         Bid memory bidOG = bidsOG[memeToken][msg.sender];
         if (bidOG.amountETH == 0 || bidOG.amountMeme == 0) revert ZeroAmount();
 
-        uint256 refund = bidOG.amountETH - uint256(bidOG.amountMeme).mulDiv(1e18, memeception.auctionFinalPrice);
+        // Unchecked as Dutch Auction has a decaying price over time - this cannot < 0
+        uint256 refund =
+            uint256(bidOG.amountETH).rawSub(uint256(bidOG.amountMeme).rawMulWad(memeception.auctionFinalPriceScaled));
         uint256 claimableMeme = bidOG.amountMeme;
 
         MEMERC20 meme = MEMERC20(memeToken);
@@ -337,7 +356,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     // }
 
     function _auctionEnded(Memeception memory memeception) internal view returns (bool) {
-        return block.timestamp >= memeception.startAt + Constant.AUCTION_DURATION || _poolLaunched(memeception);
+        return uint40(block.timestamp) >= memeception.startAt + Constant.AUCTION_DURATION || _poolLaunched(memeception);
     }
 
     /// @inheritdoc ITruglyMemeception
@@ -351,19 +370,18 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     }
 
     /// @inheritdoc ITruglyMemeception
-    function getAuctionPrice(address memeToken) public view returns (uint256) {
+    function getAuctionPriceScaled(address memeToken) public view returns (uint256) {
         Memeception memory memeception = memeceptions[memeToken];
-        return _getAuctionPrice(memeception);
+        return _getAuctionPriceScaled(memeception);
     }
 
     /// @dev Get the current auction price for a given Memeception
     /// @notice Using y = 0.5 / x with (y price, x timeElapsedPerPeriod)
     /// @param memeception Memeception
-    /// @return currentPrice uint256 Current auction price
-    function _getAuctionPrice(Memeception memory memeception) internal view returns (uint256 currentPrice) {
-        if (_auctionEnded(memeception)) return memeception.auctionFinalPrice;
-        uint256 timeElapsedPerPeriod = (block.timestamp - memeception.startAt) / Constant.AUCTION_PRICE_DECAY_PERIOD;
-        return Constant.AUCTION_STARTING_PRICE / (timeElapsedPerPeriod * 2);
+    /// @return currentPrice uint256 Current auction price (Scaled by 1e18)
+    function _getAuctionPriceScaled(Memeception memory memeception) internal view returns (uint256) {
+        if (_auctionEnded(memeception)) return memeception.auctionFinalPriceScaled;
+        return Auction.price(memeception.startAt);
     }
 
     /// @dev Get the order of the tokens in the UniV3 Pool by comparing their addresses

@@ -10,8 +10,8 @@ interface ITruglyMemeception is IERC721Receiver {
     struct Memeception {
         /// @dev Address of the UniV3 Pool
         address pool;
-        /// @dev Auction final price (0 is not finished or auction ended without selling all tokens)
-        uint64 auctionFinalPrice;
+        /// @dev Auction final price (0 is not finished or auction ended without selling all tokens) scaled by 18
+        uint64 auctionFinalPriceScaled;
         /// @dev Swap Fee of the UniV3 Pool (in bps)
         uint16 swapFeeBps;
         /// @dev Address of the creator of the Memeception
@@ -41,6 +41,8 @@ interface ITruglyMemeception is IERC721Receiver {
         uint16 swapFeeBps;
         /// @dev Amount of the MEMERC20 allocated to the team and vested (in bps)
         uint16 vestingAllocBps;
+        /// @dev Salt to create the MEMERC20 with an address lower than WETH9
+        bytes32 salt;
     }
 
     /// @dev Create a MemeRC20, its UniV3 Pool and setup the Memeception
@@ -76,6 +78,6 @@ interface ITruglyMemeception is IERC721Receiver {
 
     /// @dev Get the current Auction price for a given MemeRC20's memeception
     /// @param memeToken Address of the MemeRC20
-    /// @return price Current Auction price
-    function getAuctionPrice(address memeToken) external view returns (uint256 price);
+    /// @return priceScaled Current Auction price (scaled by 1e25)
+    function getAuctionPriceScaled(address memeToken) external view returns (uint256 priceScaled);
 }

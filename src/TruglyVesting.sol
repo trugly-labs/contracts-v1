@@ -50,6 +50,8 @@ contract TruglyVesting is ITruglyVesting, Owned {
     error VestingStartInPast();
     /// @dev Error when the `cliff` is greater than `duration`
     error VestingCliffCannotBeGreaterThanDuration();
+    /// @dev Error when the contract does not have enough balance
+    error InsufficientBalance();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -78,8 +80,7 @@ contract TruglyVesting is ITruglyVesting, Owned {
         if (creator == address(0)) revert VestingCreatorCannotBeAddressZero();
         if (token == address(0)) revert VestingTokenCannotBeAddressZero();
         if (cliff > duration) revert VestingCliffCannotBeGreaterThanDuration();
-
-        ERC20(token).safeTransferFrom(msg.sender, address(this), totalAllocation);
+        if (ERC20(token).balanceOf(address(this)) != totalAllocation) revert InsufficientBalance();
 
         _vestingInfo[token] = VestingInfo({
             totalAllocation: totalAllocation,

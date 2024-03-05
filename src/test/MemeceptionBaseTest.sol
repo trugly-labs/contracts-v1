@@ -2,7 +2,9 @@
 pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
+import {PoolLiquidity} from "./PoolLiquidity.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEMERC20} from "../types/MEMERC20.sol";
 import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
@@ -10,11 +12,10 @@ import {TruglyMemeception} from "../TruglyMemeception.sol";
 import {DeploymentAddresses} from "./DeploymentAddresses.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {MEMERC20Constant} from "../libraries/MEMERC20Constant.sol";
-import {FullMath} from "../libraries/external/FullMath.sol";
+import {TestHelpers} from "../../test/utils/TestHelpers.sol";
 
-contract MemeceptionBaseTest is Test, DeploymentAddresses {
-    using FullMath for uint256;
-
+contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
+    using FixedPointMathLib for uint256;
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -54,20 +55,26 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
         /// Assert Token Creation
         MEMERC20 memeToken = MEMERC20(memeTokenAddr);
         uint256 vestingAllocSupply = MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(params.vestingAllocBps, 1e4);
+        assertTrue(address(memeToken) < address(WETH9), "memeTokenAddr < WETH9");
         assertEq(memeToken.name(), params.name, "memeName");
         assertEq(memeToken.decimals(), MEMERC20Constant.TOKEN_DECIMALS, "memeDecimals");
         assertEq(memeToken.symbol(), params.symbol, "memeSymbol");
         assertEq(memeToken.totalSupply(), MEMERC20Constant.TOKEN_TOTAL_SUPPLY, "memeSupply");
         assertEq(
             memeToken.balanceOf(address(memeceptionContract)),
-            MEMERC20Constant.TOKEN_TOTAL_SUPPLY - vestingAllocSupply,
+            MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(9500, 1e4),
             "memeSupplyMinted"
+        );
+        assertEq(
+            memeToken.balanceOf(address(0)),
+            MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(500, 1e4) - vestingAllocSupply,
+            "memeSupplyBurned"
         );
 
         /// Assert Memeception Creation
         ITruglyMemeception.Memeception memory memeception = memeceptionContract.getMemeception(memeTokenAddr);
         assertEq(memeception.auctionTokenSold, 0, "memeception.auctionTokenSold");
-        assertEq(memeception.auctionFinalPrice, 0, "memeception.auctionFinalPrice");
+        assertEq(memeception.auctionFinalPriceScaled, 0, "memeception.auctionFinalPrice");
         assertEq(memeception.creator, address(this), "memeception.creator");
         assertEq(memeception.startAt, params.startAt, "memeception.startAt");
         assertEq(memeception.swapFeeBps, params.swapFeeBps, "memeception.swapFeeBps");
@@ -90,8 +97,8 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
         Balances memory beforeBal = getBalances(memeToken);
         uint256 remainingAuctionToken =
             Constant.TOKEN_MEMECEPTION_SUPPLY - memeceptionContract.getMemeception(memeToken).auctionTokenSold;
-        uint256 curPrice = memeceptionContract.getAuctionPrice(memeToken);
-        uint256 bidTokenAmount = msg.value * curPrice;
+        uint256 curPriceScaled = memeceptionContract.getAuctionPriceScaled(memeToken);
+        uint256 bidTokenAmount = msg.value * 1e18 / curPriceScaled;
 
         memeceptionContract.bid{value: msg.value}(memeToken);
 
@@ -100,25 +107,29 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
         if (bidTokenAmount >= remainingAuctionToken) {
             /// Cap is reached
             assertEq(afterBal.userETH, beforeBal.userETH - msg.value, "userETH Balance (Cap reached)");
-            assertEq(
+            assertApproxEq(
                 afterBal.memeceptionContractETH,
-                beforeBal.memeceptionContractETH - Constant.TOKEN_MEMECEPTION_SUPPLY.mulDiv(1e18, curPrice),
+                beforeBal.memeceptionContractETH + msg.value - Constant.TOKEN_MEMECEPTION_SUPPLY.mulWad(curPriceScaled),
+                0.0000000001e18,
                 "memeceptionContractETH Balance (Cap reached)"
             );
-            assertEqTol(
+            assertApproxEq(
                 afterBal.poolWETH,
-                Constant.TOKEN_MEMECEPTION_SUPPLY.mulDiv(1e18, curPrice),
+                PoolLiquidity.getETHLiquidity(memeceptionContract.getMemeception(memeToken).startAt),
+                0.0000000001e18,
                 "poolWETH Balance (Cap reached)"
             );
             assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap reached)");
-            assertEqTol(
+            assertApproxEq(
                 afterBal.memeceptionContractMeme,
                 Constant.TOKEN_MEMECEPTION_SUPPLY,
+                0.0000000001e18,
                 "LaunchpadMeme Balance (Cap reached)"
             );
-            assertEqTol(
+            assertApproxEq(
                 afterBal.poolMeme,
-                MEMERC20Constant.TOKEN_TOTAL_SUPPLY - Constant.TOKEN_MEMECEPTION_SUPPLY - beforeBal.vestingMeme,
+                MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(9500, 1e4) - Constant.TOKEN_MEMECEPTION_SUPPLY,
+                0.0000000001e18,
                 "PoolMemeBalance (Cap reached)"
             );
             assertEq(afterBal.vestingMeme, beforeBal.vestingMeme, "VestingMemeBalance (Cap reached)");
@@ -129,7 +140,7 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
             assertEq(
                 afterBal.auctionMeme, Constant.TOKEN_MEMECEPTION_SUPPLY, "memeception.auctionTokenSold(Cap reached)"
             );
-            assertEq(afterBal.auctionFinalPrice, curPrice, "memeception.auctionFinalPrice (Cap reached)");
+            assertEq(afterBal.auctionFinalPrice, curPriceScaled, "memeception.auctionFinalPrice (Cap reached)");
         } else {
             /// Cap is not reached
             assertEq(afterBal.userETH, beforeBal.userETH - msg.value, "userETH Balance (Cap not reached)");
@@ -142,7 +153,7 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
             assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap not reached)");
             assertEq(
                 afterBal.memeceptionContractMeme,
-                MEMERC20Constant.TOKEN_TOTAL_SUPPLY - beforeBal.vestingMeme,
+                MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(9500, 1e4),
                 "LaunchpadMeme Balance (Cap not reached)"
             );
             assertEq(afterBal.poolMeme, 0, "PoolMemeBalance (Cap not reached)");
@@ -226,7 +237,7 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
             poolMeme: MEMERC20(memeToken).balanceOf(memeceptionContract.getMemeception(memeToken).pool),
             vestingMeme: MEMERC20(memeToken).balanceOf(address(memeceptionContract.vesting())),
             auctionMeme: memeceptionContract.getMemeception(memeToken).auctionTokenSold,
-            auctionFinalPrice: memeceptionContract.getMemeception(memeToken).auctionFinalPrice,
+            auctionFinalPrice: memeceptionContract.getMemeception(memeToken).auctionFinalPriceScaled,
             bidAmountETH: memeceptionContract.getBid(memeToken, address(this)).amountETH,
             bidAmountMeme: memeceptionContract.getBid(memeToken, address(this)).amountMeme
         });
@@ -234,8 +245,4 @@ contract MemeceptionBaseTest is Test, DeploymentAddresses {
 
     /// @notice receive native tokens
     receive() external payable {}
-
-    function assertEqTol(uint256 a, uint256 b, string memory reason) public {
-        assertEq(a <= b + TOLERANCE && a + TOLERANCE >= b, true, reason);
-    }
 }
