@@ -5,5 +5,5 @@ solmate/utils/=lib/solmate/src/utils/
 @uniswap/v3-core/=lib/v3-core/
 @trugly-labs/universal-router-fork/=lib/universal-router-fork/contracts/
 @uniswap/=lib/universal-router-fork/node_modules/@uniswap/
-@transmissions11/=lib/VRGDAs/src/
 @openzeppelin/=lib/openzeppelin-contracts/contracts/
+@solady/=lib/solady/src/
