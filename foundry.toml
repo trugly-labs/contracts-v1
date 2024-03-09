@@ -27,6 +27,7 @@ base_sepolia = "https://base-sepolia.g.alchemy.com/v2/5-tw1GzhhNZUgFX_i4t01KShAG
 goerli={key="${ETHERSCAN_GOERLI_API_KEY}"}
 base={key="${ETHERSCAN_BASE_API_KEY}"}
 base_sepolia={key="${ETHERSCAN_BASE_SEPOLIA_API_KEY}"}
+sepolia={key="${ETHERSCAN_GOERLI_API_KEY}"}
 
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

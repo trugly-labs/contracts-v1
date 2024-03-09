@@ -5,12 +5,12 @@ import "forge-std/Script.sol";
 import {console2} from "forge-std/Test.sol";
 
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
-import {GoerliParameters} from "../parameters/Goerli.sol";
+import {BaseSepoliaParameters} from "../parameters/BaseSepolia.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 
-contract DeploymentsFn is GoerliParameters {
+contract DeploymentsFn is BaseSepoliaParameters {
     function deployUniversalRouter() public returns (TruglyUniversalRouter router) {
         console2.log("Deploying TruglyUniversalRouter..");
         RouterParameters memory params = RouterParameters({

@@ -11,7 +11,7 @@ contract SepoliaParameters {
     address public constant V2_FACTORY = 0xB7f907f7A9eBC822a80BD25E224be42Ce0A698A0;
     address public constant V3_FACTORY = 0x0227628f3F023bb0B980b67D528571c95c6DaC1c;
     address public constant V3_POSITION_MANAGER = 0x1238536071E1c677A632429e3655c799b22cDA52;
-    address public constant UNSUPPORTED_PROTOCOL = 0x5302086A3a25d473aAbBd0356eFf8Dd811a4d89B;
+    address public constant UNSUPPORTED_PROTOCOL = address(0);
     bytes32 public constant ROUTER_PAIR_INIT_CODE_HASH =
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
