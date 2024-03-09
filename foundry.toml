@@ -7,6 +7,7 @@ ffi = true
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
 gas_reports = ["TruglyLaunchpad", "TruglyLaunchpadTest", "TruglyUniversalRouterBaseTest", "TruglyUniversalRouter"]
 # cancun = true
+via_ir = true
 
 [profile.default.fuzz]
 runs = 1000
@@ -19,6 +20,13 @@ runs = 100000
 mainnet = "https://mainnet.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
 goerli = "https://goerli.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
 sepolia = "https://sepolia.infura.io/v3/25261c99a69c4f80b8f39982b9924b0b"
+base = "https://base-mainnet.g.alchemy.com/v2/FwtDAATvJYeNdKxh92perbfuUEnt2WKr"
+base_sepolia = "https://base-sepolia.g.alchemy.com/v2/5-tw1GzhhNZUgFX_i4t01KShAGa4dSlJ"
+
+[etherscan]
+goerli={key="${ETHERSCAN_GOERLI_API_KEY}"}
+base={key="${ETHERSCAN_BASE_API_KEY}"}
+base_sepolia={key="${ETHERSCAN_BASE_SEPOLIA_API_KEY}"}
 
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

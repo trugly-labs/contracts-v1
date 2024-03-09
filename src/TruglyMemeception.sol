@@ -146,9 +146,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         console2.log("WETH9: ", address(WETH9));
         console2.log("memeToken: ", address(memeToken));
         if (address(memeToken) >= address(WETH9)) revert InvalidMemeAddress();
-        (address token0, address token1) = _getTokenOrder(address(memeToken));
 
-        address pool = v3Factory.createPool(token0, token1, Constant.UNI_LP_SWAPFEE);
+        address pool = v3Factory.createPool(address(memeToken), address(WETH9), Constant.UNI_LP_SWAPFEE);
 
         memeceptions[address(memeToken)] = Memeception({
             auctionTokenSold: 0,

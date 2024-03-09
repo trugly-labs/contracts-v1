@@ -5,12 +5,12 @@ import "forge-std/Script.sol";
 import {console2} from "forge-std/Test.sol";
 
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
-import {SepoliaParameters} from "../parameters/Sepolia.sol";
+import {GoerliParameters} from "../parameters/Goerli.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 
-contract DeploymentsFn is SepoliaParameters {
+contract DeploymentsFn is GoerliParameters {
     function deployUniversalRouter() public returns (TruglyUniversalRouter router) {
         console2.log("Deploying TruglyUniversalRouter..");
         RouterParameters memory params = RouterParameters({
@@ -49,6 +49,7 @@ contract DeploymentsFn is SepoliaParameters {
     function deployMemeception(address vesting) public returns (TruglyMemeception memeception) {
         console2.log("Deploying TruglyMemeception..");
         memeception = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting);
+        TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }
 }
