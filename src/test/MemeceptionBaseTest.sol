@@ -205,7 +205,7 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
         memeceptionContract.claim(memeToken);
         Balances memory afterBal = getBalances(memeToken);
 
-        uint256 refund = beforeBal.auctionFinalPrice * beforeBal.bidAmountMeme;
+        uint256 refund = beforeBal.bidAmountETH - beforeBal.auctionFinalPrice.rawMulWad(beforeBal.bidAmountMeme);
 
         /// Assert Memeception Claim Balances
         assertEq(afterBal.userETH, beforeBal.userETH + refund, "userETH Balance");

@@ -36,9 +36,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
 
     /// @dev Emitted when a memeceptions is created
     event MemeCreated(
-        string indexed symbol,
         address indexed memeToken,
         address indexed creator,
+        string symbol,
         address pool,
         uint40 startAt,
         uint16 creatorSwapFeeBps,
@@ -124,7 +124,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     mapping(address => mapping(address => Bid)) bidsOG;
 
     /// @dev Mapping to determine if a token symbol already exists
-    mapping(string => bool) private memeSymbolExist;
+    mapping(bytes32 => bool) private memeSymbolExist;
 
     constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _vesting) Owned(msg.sender) {
         if (
@@ -158,7 +158,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
             swapFeeBps: params.swapFeeBps
         });
 
-        memeSymbolExist[params.symbol] = true;
+        memeSymbolExist[keccak256(abi.encodePacked(params.symbol))] = true;
 
         if (params.vestingAllocBps > 0) {
             uint256 vestingAlloc = MEMERC20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(params.vestingAllocBps, 1e4);
@@ -178,9 +178,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         }
 
         emit MemeCreated(
-            params.symbol,
             address(memeToken),
             msg.sender,
+            params.symbol,
             pool,
             params.startAt,
             params.swapFeeBps,
@@ -193,7 +193,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @param params List of parameters for the creation of a memeception
     /// Revert if any parameters are invalid
     function _verifyCreateMeme(MemeceptionCreationParams calldata params) internal view {
-        if (memeSymbolExist[params.symbol]) revert MemeSymbolExist();
+        if (memeSymbolExist[keccak256(abi.encodePacked(params.symbol))]) revert MemeSymbolExist();
         if (
             params.startAt < uint40(block.timestamp) + Constant.MEMECEPTION_MIN_START_AT
                 || params.startAt > uint40(block.timestamp) + Constant.MEMECEPTION_MAX_START_AT

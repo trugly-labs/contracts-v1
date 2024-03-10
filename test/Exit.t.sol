@@ -7,19 +7,17 @@ contract ExitTest is Deployers {
     /// @dev Emitted when an OG exits the memeceptions
     event MemeceptionExit(address indexed memeToken, address indexed og, uint256 amount);
 
-    uint256 internal constant bidAmount = 50 ether;
-
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initBid(bidAmount);
+        initBid(MAX_BID_AMOUNT);
 
-        vm.warp(block.timestamp + 7 days);
+        vm.warp(createMemeParams.startAt + 4 days);
     }
 
     function test_exit_success() public {
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionExit(address(memeToken), address(memeceptionBaseTest), bidAmount);
+        emit MemeceptionExit(address(memeToken), address(memeceptionBaseTest), MAX_BID_AMOUNT);
 
         memeceptionBaseTest.exit(address(memeToken));
     }

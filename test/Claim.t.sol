@@ -8,17 +8,18 @@ contract ClaimTest is Deployers {
     /// @dev Emitted when an OG claims their allocated Meme tokens
     event MemeClaimed(address indexed memeToken, address indexed claimer, uint256 amountMeme, uint256 refundETH);
 
-    uint256 internal constant bidAmount = 100 ether;
-
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initBid(bidAmount);
+        initFullBid(MAX_BID_AMOUNT);
     }
 
     function test_claim_success() public {
+        uint256 expectedRefund = 8.065 ether;
         vm.expectEmit(true, true, false, true);
-        emit MemeClaimed(address(memeToken), address(memeceptionBaseTest), Constant.TOKEN_MEMECEPTION_SUPPLY, 0);
+        emit MemeClaimed(
+            address(memeToken), address(memeceptionBaseTest), 891705069124423963133640552996, expectedRefund
+        );
 
         memeceptionBaseTest.claim(address(memeToken));
     }

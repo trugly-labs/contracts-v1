@@ -17,8 +17,6 @@ contract BidTest is Deployers, AuctionTestData {
     /// @dev Emitted when liquidity has been added to the UniV3 Pool
     event MemeLiquidityAdded(address indexed memeToken, uint256 amount0, uint256 amount1);
 
-    uint256 public constant MAX_BID_AMOUNT = 10 ether;
-
     function setUp() public override {
         super.setUp();
         initCreateMeme();

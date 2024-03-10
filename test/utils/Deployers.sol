@@ -21,6 +21,8 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
     MEMERC20 memeToken;
     TruglyVesting vesting;
 
+    uint256 public constant MAX_BID_AMOUNT = 10 ether;
+
     // Parameters
     ITruglyMemeception.MemeceptionCreationParams public createMemeParams = ITruglyMemeception.MemeceptionCreationParams({
         name: "MEME Coin",
@@ -67,8 +69,17 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
     }
 
     function initBid(uint256 amount) public virtual {
-        vm.warp(block.timestamp + 4 days);
+        vm.warp(createMemeParams.startAt);
         memeceptionBaseTest.bid{value: amount}(address(memeToken));
+    }
+
+    function initFullBid(uint256 lastBidAmount) public virtual {
+        vm.warp(createMemeParams.startAt + 115 minutes);
+
+        hoax(makeAddr("alice"), MAX_BID_AMOUNT);
+        memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(address(memeToken));
+
+        memeceptionBaseTest.bid{value: lastBidAmount}(address(memeToken));
     }
 
     function deployUniversalRouter() public virtual {
