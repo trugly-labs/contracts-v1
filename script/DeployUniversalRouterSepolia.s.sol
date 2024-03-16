@@ -8,8 +8,8 @@ contract DeployUniversalRouterSepolia is Script, DeploymentsFn {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
-
-        deployUniversalRouter();
+        address treasury = deployTreasury();
+        deployUniversalRouter(treasury);
         vm.stopBroadcast();
     }
 }

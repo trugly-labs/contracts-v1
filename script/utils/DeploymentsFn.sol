@@ -11,7 +11,7 @@ import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 
 contract DeploymentsFn is MumbaiParameters {
-    function deployUniversalRouter() public returns (TruglyUniversalRouter router) {
+    function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
         console2.log("Deploying TruglyUniversalRouter..");
         RouterParameters memory params = RouterParameters({
             permit2: PERMIT2,
@@ -36,7 +36,7 @@ contract DeploymentsFn is MumbaiParameters {
             poolInitCodeHash: POOL_INIT_CODE_HASH
         });
 
-        router = new TruglyUniversalRouter(params, TREASURY);
+        router = new TruglyUniversalRouter(params, treasury);
         console2.log("Universal Router Deployed:", address(router));
     }
 
@@ -46,9 +46,13 @@ contract DeploymentsFn is MumbaiParameters {
         console2.log("TruglyVesting Deployed:", address(vesting));
     }
 
-    function deployMemeception(address vesting) public returns (TruglyMemeception memeception) {
+    function deployTreasury() public pure returns (address) {
+        return address(1);
+    }
+
+    function deployMemeception(address vesting, address treasury) public returns (TruglyMemeception memeception) {
         console2.log("Deploying TruglyMemeception..");
-        memeception = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting);
+        memeception = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting, treasury);
         TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }

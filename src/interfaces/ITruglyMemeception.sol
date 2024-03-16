@@ -8,6 +8,8 @@ import {IERC721Receiver} from "./external/IERC721Receiver.sol";
 interface ITruglyMemeception is IERC721Receiver {
     /// @dev Struct containing information about the Memeception and the UniV3 Pool
     struct Memeception {
+        /// @dev LP Token ID
+        uint256 tokenId;
         /// @dev Address of the UniV3 Pool
         address pool;
         /// @dev Auction final price (0 is not finished or auction ended without selling all tokens) scaled by 18

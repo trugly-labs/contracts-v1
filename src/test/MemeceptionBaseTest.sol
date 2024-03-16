@@ -36,8 +36,9 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
 
     TruglyMemeception public memeceptionContract;
 
-    constructor(address _vesting) {
-        memeceptionContract = new TruglyMemeception(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _vesting);
+    constructor(address _vesting, address _treasury) {
+        memeceptionContract =
+            new TruglyMemeception(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _vesting, _treasury);
 
         assertEq(address(memeceptionContract.v3Factory()), UNISWAP_V3_FACTORY);
         assertEq(address(memeceptionContract.v3PositionManager()), UNISWAP_V3_POSITION_MANAGER);

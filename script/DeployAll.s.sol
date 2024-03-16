@@ -11,8 +11,9 @@ contract DeployAll is Script, DeploymentsFn {
         uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
         TruglyVesting vesting = deployVesting();
-        deployMemeception(address(vesting));
-        deployUniversalRouter();
+        address treasury = deployTreasury();
+        deployMemeception(address(vesting), treasury);
+        deployUniversalRouter(treasury);
         vm.stopBroadcast();
     }
 }

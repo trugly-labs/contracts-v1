@@ -2,8 +2,6 @@
 pragma solidity ^0.8.23;
 
 contract MumbaiParameters {
-    // Trugly
-    address public constant TREASURY = 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD;
     // General
     address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     /// This really is WMATIC

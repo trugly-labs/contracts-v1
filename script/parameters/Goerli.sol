@@ -2,8 +2,6 @@
 pragma solidity ^0.8.23;
 
 contract GoerliParameters {
-    // Trugly
-    address public constant TREASURY = 0x0804a74CB85d6bE474a4498fCe76481822AdFFa4;
     // General
     address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address public constant WETH9 = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6;

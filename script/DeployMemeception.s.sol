@@ -10,7 +10,8 @@ contract DeployMemeception is Script, DeploymentsFn {
         uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
         TruglyVesting vesting = deployVesting();
-        deployMemeception(address(vesting));
+        address treasury = deployTreasury();
+        deployMemeception(address(vesting), treasury);
         vm.stopBroadcast();
     }
 }

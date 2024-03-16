@@ -54,6 +54,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev Emitted when an OG exits the memeceptions
     event MemeceptionExit(address indexed memeToken, address indexed og, uint256 refundETH);
 
+    /// @dev Emited when the treasury is updated
+    event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+
     //     event CollectProtocolFees(address indexed token, address recipient, uint256 amount);
 
     //     event CollectLPFees(address indexed token, address recipient, uint256 amount);
@@ -123,10 +126,14 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev Mapping to determine if a token symbol already exists
     mapping(bytes32 => bool) private memeSymbolExist;
 
-    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _vesting) Owned(msg.sender) {
+    address internal treasury;
+
+    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _vesting, address _treasury)
+        Owned(msg.sender)
+    {
         if (
             _v3Factory == address(0) || _v3PositionManager == address(0) || _WETH9 == address(0)
-                || _vesting == address(0)
+                || _vesting == address(0) || _treasury == address(0)
         ) {
             revert ZeroAddress();
         }
@@ -134,6 +141,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         v3PositionManager = INonfungiblePositionManager(_v3PositionManager);
         WETH9 = WETH(payable(_WETH9));
         vesting = ITruglyVesting(_vesting);
+        treasury = _treasury;
+
+        emit TreasuryUpdated(address(0), _treasury);
     }
 
     /// @inheritdoc ITruglyMemeception
@@ -145,6 +155,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
 
         memeceptions[address(memeToken)] = Memeception({
+            tokenId: 0,
             auctionTokenSold: 0,
             startAt: params.startAt,
             pool: pool,
@@ -252,7 +263,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
             deadline: block.timestamp + 30 minutes
         });
 
-        v3PositionManager.mint(params);
+        (uint256 tokenId,,,) = v3PositionManager.mint(params);
+        memeceptions[memeToken].tokenId = tokenId;
 
         emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETH);
     }
@@ -311,39 +323,15 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         emit MemeceptionClaimed(memeToken, msg.sender, claimableMeme, refund);
     }
 
-    // function collectProtocolFees(Currency currency) external onlyOwner {
-    //     uint256 amount = abi.decode(
-    //         poolManager.lock(address(this), abi.encodeCall(this.lockCollectProtocolFees, (jug, currency))), (uint256)
-    //     );
-
-    //     emit CollectProtocolFees(Currency.unwrap(currency), jug, amount);
-    // }
-
-    // function collectLPFees(PoolKey[] calldata poolKeys) external onlyOwner {
-    //     IPoolManager.ModifyLiquidityParams memory modifyLiqParams =
-    //         IPoolManager.ModifyLiquidityParams({tickLower: TICK_LOWER, tickUpper: TICK_UPPER, liquidityDelta: 0});
-
-    //     for (uint256 i = 0; i < poolKeys.length; i++) {
-    //         PoolKey memory poolKey = poolKeys[i];
-    //         BalanceDelta delta = abi.decode(
-    //             poolManager.lock(
-    //                 address(this), abi.encodeCall(this.lockModifyLiquidity, (poolKey, modifyLiqParams, jug))
-    //             ),
-    //             (BalanceDelta)
-    //         );
-    //         emit CollectLPFees(Currency.unwrap(poolKey.currency0), jug, uint256(int256(delta.amount0())));
-    //         emit CollectLPFees(Currency.unwrap(poolKey.currency1), jug, uint256(int256(delta.amount1())));
-    //     }
-    // }
-
-    // function lockCollectProtocolFees(address recipient, Currency currency) external returns (uint256 amount) {
-    //     if (msg.sender != address(this)) revert OnlyOink();
-
-    //     amount = poolManager.balanceOf(address(this), currency.toId());
-    //     poolManager.burn(address(this), currency.toId(), amount);
-
-    //     poolManager.take(currency, recipient, amount);
-    // }
+    function collectFees(address memeToken) external onlyOwner {
+        INonfungiblePositionManager.CollectParams memory collectParams = INonfungiblePositionManager.CollectParams({
+            tokenId: memeceptions[memeToken].tokenId,
+            recipient: treasury,
+            amount0Max: type(uint128).max,
+            amount1Max: type(uint128).max
+        });
+        v3PositionManager.collect(collectParams);
+    }
 
     function _auctionEnded(Memeception memory memeception) internal view virtual returns (bool) {
         return uint40(block.timestamp) >= memeception.startAt + Constant.AUCTION_DURATION || _poolLaunched(memeception);
@@ -380,5 +368,14 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev receive ERC721 tokens for Univ3 LP Positions
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return this.onERC721Received.selector;
+    }
+
+    /// @notice Only the owner can call this function
+    /// @dev Update the treasury address
+    /// @param _newTreasury The new treasury address
+    function setTreasury(address _newTreasury) external onlyOwner {
+        if (_newTreasury == address(0)) revert ZeroAddress();
+        emit TreasuryUpdated(treasury, _newTreasury);
+        treasury = _newTreasury;
     }
 }

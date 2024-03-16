@@ -20,6 +20,7 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
     RouterBaseTest routerBaseTest;
     MEMERC20 memeToken;
     TruglyVesting vesting;
+    address treasury = address(1);
 
     uint256 public constant MAX_BID_AMOUNT = 10 ether;
 
@@ -46,7 +47,7 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
     }
 
     function deployMemeception() public virtual {
-        memeceptionBaseTest = new MemeceptionBaseTest(address(vesting));
+        memeceptionBaseTest = new MemeceptionBaseTest(address(vesting), treasury);
         vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
     }
 
