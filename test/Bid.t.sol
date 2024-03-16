@@ -14,9 +14,6 @@ contract BidTest is Deployers, AuctionTestData {
     /// @dev Emitted when a OG participates in the memeceptions
     event MemeceptionBid(address indexed memeToken, address indexed og, uint256 amountETH, uint256 amountMeme);
 
-    /// @dev Emitted when liquidity has been added to the UniV3 Pool
-    event MemeLiquidityAdded(address indexed memeToken, uint256 amount0, uint256 amount1);
-
     function setUp() public override {
         super.setUp();
         initCreateMeme();
@@ -56,7 +53,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_all_auction_success() public {
-        for (uint256 i = 23; i <= 23; i++) {
+        for (uint256 i = 0; i <= 23; i++) {
             console2.log("i", i);
             address memeToken = createMeme(LibString.toString(i));
             uint256 timeNow = memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt

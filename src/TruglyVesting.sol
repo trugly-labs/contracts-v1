@@ -20,6 +20,7 @@ contract TruglyVesting is ITruglyVesting, Owned {
     event MEMERC20VestingStarted(
         address indexed token,
         address indexed creator,
+        string symbol,
         uint256 totalAllocation,
         uint64 start,
         uint64 duration,
@@ -91,7 +92,7 @@ contract TruglyVesting is ITruglyVesting, Owned {
             creator: creator
         });
 
-        emit MEMERC20VestingStarted(token, creator, totalAllocation, start, duration, cliff);
+        emit MEMERC20VestingStarted(token, creator, ERC20(token).symbol(), totalAllocation, start, duration, cliff);
     }
 
     /// @inheritdoc ITruglyVesting

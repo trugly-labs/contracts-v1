@@ -1,9 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import {console2} from "forge-std/Test.sol";
-
-import {wadDiv} from "@solmate/utils/SignedWadMath.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
@@ -49,13 +46,13 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     event MemeceptionBid(address indexed memeToken, address indexed og, uint256 amountETH, uint256 amountMeme);
 
     /// @dev Emitted when liquidity has been added to the UniV3 Pool
-    event MemeLiquidityAdded(address indexed memeToken, uint256 amount0, uint256 amount1);
+    event MemeLiquidityAdded(address indexed memeToken, address pool, uint256 amountMeme, uint256 amountETH);
 
     /// @dev Emitted when an OG claims their allocated Meme tokens
-    event MemeClaimed(address indexed memeToken, address indexed claimer, uint256 amountMeme, uint256 refundETH);
+    event MemeceptionClaimed(address indexed memeToken, address indexed og, uint256 amountMeme, uint256 refundETH);
 
     /// @dev Emitted when an OG exits the memeceptions
-    event MemeceptionExit(address indexed memeToken, address indexed og, uint256 amount);
+    event MemeceptionExit(address indexed memeToken, address indexed og, uint256 refundETH);
 
     //     event CollectProtocolFees(address indexed token, address recipient, uint256 amount);
 
@@ -118,7 +115,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     WETH public immutable WETH9;
 
     /// @dev Mapping of memeToken => memeceptions
-    mapping(address => Memeception) private memeceptions;
+    mapping(address => Memeception) internal memeceptions;
 
     /// @dev Amount bid by OGs
     mapping(address => mapping(address => Bid)) bidsOG;
@@ -143,11 +140,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     function createMeme(MemeceptionCreationParams calldata params) external returns (address, address) {
         _verifyCreateMeme(params);
         MEMERC20 memeToken = new MEMERC20{salt: params.salt}(params.name, params.symbol);
-        console2.log("WETH9: ", address(WETH9));
-        console2.log("memeToken: ", address(memeToken));
-        if (address(memeToken) >= address(WETH9)) revert InvalidMemeAddress();
+        if (address(memeToken) <= address(WETH9)) revert InvalidMemeAddress();
 
-        address pool = v3Factory.createPool(address(memeToken), address(WETH9), Constant.UNI_LP_SWAPFEE);
+        address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
 
         memeceptions[address(memeToken)] = Memeception({
             auctionTokenSold: 0,
@@ -192,7 +187,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev Verify the validity of the parameters for the creation of a memeception
     /// @param params List of parameters for the creation of a memeception
     /// Revert if any parameters are invalid
-    function _verifyCreateMeme(MemeceptionCreationParams calldata params) internal view {
+    function _verifyCreateMeme(MemeceptionCreationParams calldata params) internal view virtual {
         if (memeSymbolExist[keccak256(abi.encodePacked(params.symbol))]) revert MemeSymbolExist();
         if (
             params.startAt < uint40(block.timestamp) + Constant.MEMECEPTION_MIN_START_AT
@@ -234,12 +229,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @param memeToken Address of the MEMERC20
     /// @param amountETH Amount of ETH to add to the pool
     /// @param amountMeme Amount of MEMERC20 to add to the pool
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal {
-        (address token0, address token1) = _getTokenOrder(address(memeToken));
-        uint256 amount0 = token0 == address(WETH9) ? amountETH : amountMeme;
-        uint256 amount1 = token0 == address(WETH9) ? amountMeme : amountETH;
-
-        uint160 sqrtPriceX96 = SqrtPriceX96.sqrtPriceX96(memeceptions[memeToken].startAt);
+    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal virtual {
+        // uint160 sqrtPriceX96 = SqrtPriceX96.sqrtPriceX96(memeceptions[memeToken].startAt);
+        uint160 sqrtPriceX96 = SqrtPriceX96.calcSqrtPriceX96(amountETH, amountMeme);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
 
         WETH9.deposit{value: amountETH}();
@@ -247,23 +239,22 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         MEMERC20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
-            token0: token0,
-            token1: token1,
+            token0: address(WETH9),
+            token1: memeToken,
             fee: Constant.UNI_LP_SWAPFEE,
             tickLower: Constant.TICK_LOWER,
             tickUpper: Constant.TICK_UPPER,
-            amount0Desired: amount0,
-            amount1Desired: amount1,
-            /// TODO: Provide a better value
-            amount0Min: 0,
-            amount1Min: 0,
+            amount0Desired: amountETH,
+            amount1Desired: amountMeme,
+            amount0Min: amountETH.mulDiv(99, 100),
+            amount1Min: amountMeme.mulDiv(99, 100),
             recipient: address(this),
             deadline: block.timestamp + 30 minutes
         });
 
         v3PositionManager.mint(params);
 
-        emit MemeLiquidityAdded(memeToken, amount0, amount1);
+        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETH);
     }
 
     /// @dev Check a MEMERC20's UniV3 Pool is initialized with liquidity
@@ -317,7 +308,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         meme.safeTransfer(msg.sender, claimableMeme);
         if (refund > 0) msg.sender.safeTransferETH(refund);
 
-        emit MemeClaimed(memeToken, msg.sender, claimableMeme, refund);
+        emit MemeceptionClaimed(memeToken, msg.sender, claimableMeme, refund);
     }
 
     // function collectProtocolFees(Currency currency) external onlyOwner {
@@ -354,7 +345,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     //     poolManager.take(currency, recipient, amount);
     // }
 
-    function _auctionEnded(Memeception memory memeception) internal view returns (bool) {
+    function _auctionEnded(Memeception memory memeception) internal view virtual returns (bool) {
         return uint40(block.timestamp) >= memeception.startAt + Constant.AUCTION_DURATION || _poolLaunched(memeception);
     }
 
@@ -378,23 +369,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @notice Using y = 0.5 / x with (y price, x timeElapsedPerPeriod)
     /// @param memeception Memeception
     /// @return currentPrice uint256 Current auction price (Scaled by 1e18)
-    function _getAuctionPriceScaled(Memeception memory memeception) internal view returns (uint256) {
+    function _getAuctionPriceScaled(Memeception memory memeception) internal view virtual returns (uint256) {
         if (_auctionEnded(memeception)) return memeception.auctionFinalPriceScaled;
         return Auction.price(memeception.startAt);
-    }
-
-    /// @dev Get the order of the tokens in the UniV3 Pool by comparing their addresses
-    /// @param memeToken Address of the MEMERC20
-    /// @return token0 Address of the first token
-    /// @return token1 Address of the second token
-    function _getTokenOrder(address memeToken) internal view returns (address token0, address token1) {
-        if (address(WETH9) < address(memeToken)) {
-            token0 = address(WETH9);
-            token1 = address(memeToken);
-        } else {
-            token0 = address(memeToken);
-            token1 = address(WETH9);
-        }
     }
 
     /// @notice receive native tokens

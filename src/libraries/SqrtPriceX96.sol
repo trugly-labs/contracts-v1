@@ -64,21 +64,21 @@ library SqrtPriceX96 {
         revert AuctionOutOfRange();
     }
 
-    // function calcSqrtPriceX96(uint256 supplyA, uint256 supplyB) internal pure returns (uint160) {
-    //     console2.log("supplyA: ", supplyA);
-    //     console2.log("supplyB: ", supplyB);
-    //     // Calculate the price ratio (supplyB / supplyA)
-    //     uint256 priceRatio = FixedPointMathLib.mulDiv(supplyB, 1e32, supplyA);
-    //     console2.log("priceRatio: ", priceRatio);
+    function calcSqrtPriceX96(uint256 supplyA, uint256 supplyB) internal pure returns (uint160) {
+        // console2.log("supplyA: ", supplyA);
+        // console2.log("supplyB: ", supplyB);
+        // Calculate the price ratio (supplyB / supplyA)
+        uint256 priceRatio = FixedPointMathLib.rawDiv(supplyB, supplyA);
+        // console2.log("priceRatio: ", priceRatio);
 
-    //     // Calculate the square root of the price ratio
-    //     uint256 sqrtRatio = FixedPointMathLib.sqrt(priceRatio);
-    //     console2.log("sqrtRatio: ", sqrtRatio);
-    //     console2.log("sqrtPriceX96", FixedPointMathLib.fullMulDiv(sqrtRatio, 2 ** 96, FixedPointMathLib.sqrt(1e32)));
+        // Calculate the square root of the price ratio
+        uint256 sqrtRatio = FixedPointMathLib.sqrt(priceRatio);
+        // console2.log("sqrtRatio: ", sqrtRatio);
+        // console2.log("sqrtPriceX96", FixedPointMathLib.fullMulDiv(sqrtRatio, 2 ** 96, FixedPointMathLib.sqrt(1e32)));
 
-    //     // Convert to Q64.96 format
-    //     return uint160(FixedPointMathLib.fullMulDiv(sqrtRatio, 2 ** 96, FixedPointMathLib.sqrt(1e32)));
-    // }
+        // Convert to Q64.96 format
+        return uint160(FixedPointMathLib.rawMul(sqrtRatio, 2 ** 96));
+    }
 }
 // supplyA:  4000000000000000000000000000000
 // supplyB:  11956521500000000000

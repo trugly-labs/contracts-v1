@@ -18,7 +18,7 @@ library MemeAddressMiner {
         uint256 salt;
         for (salt; salt < MAX_LOOP; salt++) {
             memeAddress = computeAddress(deployer, salt, creationCodeWithArgs);
-            if (memeAddress < _WETH9) {
+            if (memeAddress > _WETH9) {
                 console2.log("find Miner address: ", memeAddress);
                 return (memeAddress, bytes32(salt));
             }

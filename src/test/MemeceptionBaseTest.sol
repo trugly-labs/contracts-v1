@@ -36,8 +36,6 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
 
     TruglyMemeception public memeceptionContract;
 
-    uint256 constant TOLERANCE = 1 gwei;
-
     constructor(address _vesting) {
         memeceptionContract = new TruglyMemeception(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _vesting);
 
@@ -55,7 +53,7 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
         /// Assert Token Creation
         MEMERC20 memeToken = MEMERC20(memeTokenAddr);
         uint256 vestingAllocSupply = MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(params.vestingAllocBps, 1e4);
-        assertTrue(address(memeToken) < address(WETH9), "memeTokenAddr < WETH9");
+        assertTrue(address(memeToken) > address(WETH9), "memeTokenAddr > WETH9");
         assertEq(memeToken.name(), params.name, "memeName");
         assertEq(memeToken.decimals(), MEMERC20Constant.TOKEN_DECIMALS, "memeDecimals");
         assertEq(memeToken.symbol(), params.symbol, "memeSymbol");

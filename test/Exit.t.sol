@@ -5,7 +5,7 @@ import {Deployers} from "./utils/Deployers.sol";
 
 contract ExitTest is Deployers {
     /// @dev Emitted when an OG exits the memeceptions
-    event MemeceptionExit(address indexed memeToken, address indexed og, uint256 amount);
+    event MemeceptionExit(address indexed memeToken, address indexed og, uint256 refundETH);
 
     function setUp() public override {
         super.setUp();
