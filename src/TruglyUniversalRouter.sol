@@ -22,10 +22,6 @@ contract TruglyUniversalRouter is UniversalRouter, Owned {
     /// @dev Emited when the treasury is updated
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
 
-    /// @dev Emited when a swap is executed
-    event MemeSwap(
-        address indexed tokenIn, address indexed tokenOut, address indexed creator, int256 delta0, int256 delta1
-    );
     event SwapFee(address indexed token, address indexed creator, uint256 creatorFee, uint256 protocolFee);
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -51,12 +47,7 @@ contract TruglyUniversalRouter is UniversalRouter, Owned {
     /// @notice Override UniversalRouter.Payments.payPortion
     /// @dev Add the treasury fee + creator fee
     function payPortion(address token, address recipient, uint256 bips) internal override {
-        if (bips > MAX_BIPS) revert InvalidBips();
-        if (recipient == treasury) {
-            super.payPortion(token, recipient, bips);
-            return;
-        }
-        if (bips < BIPS_TREASURY) revert InvalidBips();
+        if (bips < BIPS_TREASURY || bips > MAX_BIPS) revert InvalidBips();
         uint256 bipsCreator = bips - BIPS_TREASURY;
 
         if (token == address(0)) {
@@ -64,14 +55,14 @@ contract TruglyUniversalRouter is UniversalRouter, Owned {
             uint256 amountTreasury = (balance * BIPS_TREASURY) / FEE_BIPS_BASE;
             uint256 amountCreator = (balance * bipsCreator) / FEE_BIPS_BASE;
             treasury.safeTransferETH(amountTreasury);
-            recipient.safeTransferETH(amountCreator);
+            if (amountCreator > 0) recipient.safeTransferETH(amountCreator);
             emit SwapFee(token, recipient, amountCreator, amountTreasury);
         } else {
             uint256 balance = ERC20(token).balanceOf(address(this));
             uint256 amountTreasury = (balance * BIPS_TREASURY) / FEE_BIPS_BASE;
             uint256 amountCreator = (balance * bipsCreator) / FEE_BIPS_BASE;
             ERC20(token).safeTransfer(treasury, amountTreasury);
-            ERC20(token).safeTransfer(recipient, amountCreator);
+            if (amountCreator > 0) ERC20(token).safeTransfer(recipient, amountCreator);
             emit SwapFee(token, recipient, amountCreator, amountTreasury);
         }
     }
