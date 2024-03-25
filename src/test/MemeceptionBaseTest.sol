@@ -61,12 +61,12 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
         assertEq(memeToken.totalSupply(), MEMERC20Constant.TOKEN_TOTAL_SUPPLY, "memeSupply");
         assertEq(
             memeToken.balanceOf(address(memeceptionContract)),
-            MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(9500, 1e4),
+            MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
             "memeSupplyMinted"
         );
         assertEq(
             memeToken.balanceOf(address(0)),
-            MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(500, 1e4) - vestingAllocSupply,
+            MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4) - vestingAllocSupply,
             "memeSupplyBurned"
         );
 
@@ -127,7 +127,8 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
             );
             assertApproxEq(
                 afterBal.poolMeme,
-                MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(9500, 1e4) - Constant.TOKEN_MEMECEPTION_SUPPLY,
+                MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4)
+                    - Constant.TOKEN_MEMECEPTION_SUPPLY,
                 0.0000000001e18,
                 "PoolMemeBalance (Cap reached)"
             );
@@ -152,7 +153,7 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
             assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap not reached)");
             assertEq(
                 afterBal.memeceptionContractMeme,
-                MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(9500, 1e4),
+                MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
                 "LaunchpadMeme Balance (Cap not reached)"
             );
             assertEq(afterBal.poolMeme, 0, "PoolMemeBalance (Cap not reached)");
@@ -186,12 +187,7 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
         );
         assertEq(afterBal.poolWETH, 0, "poolWETH Balance");
         assertEq(afterBal.userMeme, 0, "userMeme Balance");
-        assertEq(
-            afterBal.memeceptionContractMeme,
-            MEMERC20Constant.TOKEN_TOTAL_SUPPLY
-                - memeceptionContract.vesting().getVestingInfo(memeToken).totalAllocation,
-            "LaunchpadMeme Balance"
-        );
+        assertEq(afterBal.memeceptionContractMeme, beforeBal.memeceptionContractMeme, "LaunchpadMeme Balance");
         assertEq(afterBal.poolMeme, 0, "PoolMemeBalance");
         assertEq(afterBal.auctionMeme, beforeBal.auctionMeme, "memeception.auctionTokenSold");
         assertEq(afterBal.auctionFinalPrice, 0, "memeception.auctionFinalPrice");

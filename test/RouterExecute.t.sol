@@ -5,7 +5,7 @@ import {Deployers} from "./utils/Deployers.sol";
 import {RouterBaseTest} from "../src/test/RouterBaseTest.sol";
 
 contract TruglyUniversalRouterExecuteTest is Deployers {
-    /// @notice Test the execute function for a V3 Swap In with noCreator fees
+    /// @notice Test the execute function for a V3 Swap In with creator fees
     /// @dev From this TX: https://etherscan.io/tx/0xb1c329f334219c82a025ecc05a9ad46298b074f8cefdea6c9e1cf8ed1e1254b2
     function test_execute_creator_success() public {
         bytes memory commands = hex"0b000604";
@@ -37,6 +37,8 @@ contract TruglyUniversalRouterExecuteTest is Deployers {
         routerBaseTest.execute{value: amount}(commands, inputs, deadline, expectedBalances);
     }
 
+    /// @notice Test the execute function for a V3 Swap In with noCreator fees
+    /// @dev From this TX: https://etherscan.io/tx/0xb1c329f334219c82a025ecc05a9ad46298b074f8cefdea6c9e1cf8ed1e1254b2
     function test_execute_noCreator_success() public {
         bytes memory commands = hex"0b000604";
         bytes[] memory inputs = new bytes[](4);
@@ -57,9 +59,9 @@ contract TruglyUniversalRouterExecuteTest is Deployers {
             token1: 0xb9f599ce614Feb2e1BBe58F180F370D05b39344E,
             creator: 0x17CC6042605381c158D2adab487434Bde79Aa61C,
             userDelta0: -1.5 ether,
-            userDelta1: 10222674670720999505308675398,
+            userDelta1: 10222674670720999505308675399,
             treasuryDelta0: 0,
-            treasuryDelta1: 103259340108292924296047226,
+            treasuryDelta1: 103259340108292924296047225,
             creatorDelta0: 0,
             creatorDelta1: 0
         });

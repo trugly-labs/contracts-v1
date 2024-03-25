@@ -29,7 +29,7 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
         name: "MEME Coin",
         symbol: "MEME",
         startAt: uint40(block.timestamp + 3 days),
-        swapFeeBps: 100,
+        swapFeeBps: 80,
         vestingAllocBps: 500,
         salt: ""
     });
@@ -76,9 +76,6 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
 
     function initFullBid(uint256 lastBidAmount) public virtual {
         vm.warp(createMemeParams.startAt + 115 minutes);
-
-        hoax(makeAddr("alice"), MAX_BID_AMOUNT);
-        memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
         memeceptionBaseTest.bid{value: lastBidAmount}(address(memeToken));
     }

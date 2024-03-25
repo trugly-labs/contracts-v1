@@ -6,8 +6,8 @@ library Constant {
     /*                       CONSTANTS                   */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
-    /// @dev Supply dedicated for the memeceptions (55%)
-    uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 5_500_000_000_000 ether;
+    /// @dev Supply dedicated for the memeceptions (50%)
+    uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_444_444_444 ether;
 
     /// @dev Memeception minimum start at (now + 1 day)
     uint64 internal constant MEMECEPTION_MIN_START_AT = 1 days;
@@ -16,10 +16,10 @@ library Constant {
     uint64 internal constant MEMECEPTION_MAX_START_AT = 30 days;
 
     /// @dev Maximum creator swap fee (in bps)
-    uint16 internal constant CREATOR_MAX_FEE_BPS = 100;
+    uint16 internal constant CREATOR_MAX_FEE_BPS = 80;
 
-    /// @dev Maximum creator vesting allocation(in bps)
-    uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 500;
+    /// @dev Maximum creator vesting allocation (in bps)
+    uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 1000;
 
     /// @dev UniswapV3 Pool's fee (3%)
     uint24 internal constant UNI_LP_SWAPFEE = 3000;

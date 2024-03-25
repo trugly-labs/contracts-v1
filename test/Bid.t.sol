@@ -23,33 +23,30 @@ contract BidTest is Deployers, AuctionTestData {
         vm.warp(createMemeParams.startAt + 1 seconds);
         uint256 amount = 1 ether;
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, 1e28);
+        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, 1976284584980237154150197);
 
         memeceptionBaseTest.bid{value: amount}(address(memeToken));
     }
 
     function test_bid_capReached_success() public {
         vm.warp(createMemeParams.startAt + 115 minutes);
-        hoax(makeAddr("alice"), MAX_BID_AMOUNT);
-        memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
-        uint256 amount = 1.9535 ether;
+        uint256 amount = 9.999999999 ether;
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, 891705069124423963133640552996);
+        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, Constant.TOKEN_MEMECEPTION_SUPPLY);
 
         memeceptionBaseTest.bid{value: amount}(address(memeToken));
     }
 
     function test_bid_capReached_over_success() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + 110 minutes);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
         memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
-        uint256 amount = MAX_BID_AMOUNT;
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, 891705069124423963133640552996);
+        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), MAX_BID_AMOUNT, 4.44444444e26);
 
-        memeceptionBaseTest.bid{value: amount}(address(memeToken));
+        memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
     }
 
     function test_bid_all_auction_success() public {
@@ -84,7 +81,8 @@ contract BidTest is Deployers, AuctionTestData {
             );
 
             assertApproxEqLow(
-                MEMERC20Constant.TOKEN_TOTAL_SUPPLY * 9500 / 10000 - Constant.TOKEN_MEMECEPTION_SUPPLY,
+                MEMERC20Constant.TOKEN_TOTAL_SUPPLY * (10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS) / 10000
+                    - Constant.TOKEN_MEMECEPTION_SUPPLY,
                 ERC20(memeToken).balanceOf(memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).pool),
                 0.00000001e18,
                 "Liquidity Added must be equal to auction balance (MEMERC20)"

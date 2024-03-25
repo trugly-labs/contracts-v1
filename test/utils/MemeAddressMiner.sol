@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
-import {console2} from "forge-std/Test.sol";
 import {MEMERC20} from "../../src/types/MEMERC20.sol";
 
 library MemeAddressMiner {
@@ -19,7 +18,6 @@ library MemeAddressMiner {
         for (salt; salt < MAX_LOOP; salt++) {
             memeAddress = computeAddress(deployer, salt, creationCodeWithArgs);
             if (memeAddress > _WETH9) {
-                console2.log("find Miner address: ", memeAddress);
                 return (memeAddress, bytes32(salt));
             }
         }

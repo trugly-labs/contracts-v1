@@ -12,7 +12,7 @@ contract ExitTest is Deployers {
         initCreateMeme();
         initBid(MAX_BID_AMOUNT);
 
-        vm.warp(createMemeParams.startAt + 4 days);
+        vm.warp(createMemeParams.startAt + 1 days);
     }
 
     function test_exit_success() public {

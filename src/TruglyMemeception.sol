@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
+import {console2} from "forge-std/Test.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
@@ -241,8 +242,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @param amountETH Amount of ETH to add to the pool
     /// @param amountMeme Amount of MEMERC20 to add to the pool
     function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal virtual {
-        // uint160 sqrtPriceX96 = SqrtPriceX96.sqrtPriceX96(memeceptions[memeToken].startAt);
-        uint160 sqrtPriceX96 = SqrtPriceX96.calcSqrtPriceX96(amountETH, amountMeme);
+        uint160 sqrtPriceX96 = SqrtPriceX96.sqrtPriceX96(memeceptions[memeToken].startAt);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
 
         WETH9.deposit{value: amountETH}();
