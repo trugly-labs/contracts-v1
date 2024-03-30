@@ -5,12 +5,12 @@ import "forge-std/Script.sol";
 import {console2} from "forge-std/Test.sol";
 
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
-import {MumbaiParameters} from "../parameters/Mumbai.sol";
+import {BaseParameters} from "../parameters/Base.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 
-contract DeploymentsFn is MumbaiParameters {
+contract DeploymentsFn is BaseParameters {
     function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
         console2.log("Deploying TruglyUniversalRouter..");
         RouterParameters memory params = RouterParameters({

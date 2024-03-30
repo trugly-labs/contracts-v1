@@ -6,34 +6,15 @@ import {RouterBaseTest} from "../src/test/RouterBaseTest.sol";
 
 contract TruglyUniversalRouterExecuteTest is Deployers {
     /// @notice Test the execute function for a V3 Swap In with creator fees
-    /// @dev From this TX: https://basescan.org/tx/0xf16efe096938b6f38c8bbb4f34a9650d9f186a2f281b72d149c5235ada8dce5b
+    /// @dev From this TX: https://basescan.org/tx/0x76967c6c9f233537748b1869fbcd42af3f21a214c0c789c2cc321efaec4b3f97
     function test_execute_creator_success() public {
-        bytes memory commands = hex"0b000604";
-        bytes[] memory inputs = new bytes[](4);
-        inputs[0] =
-            hex"00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000060ea6ef2800";
-        inputs[1] =
-            hex"00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000060ea6ef28000000000000000000000000000000000000000000009f146bedda4cca154b7f7200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b4200000000000000000000000000000000000006000bb85dc3675d79c7d6291ac51ceda9f9a85aee0a060b000000000000000000000000000000000000000000";
-        inputs[2] =
-            hex"0000000000000000000000005dc3675d79c7d6291ac51ceda9f9a85aee0a060b0000000000000000000000000d37fc458b1c02649ed99c7238cd91ea797f34fd0000000000000000000000000000000000000000000000000000000000000064";
-        inputs[3] =
-            hex"0000000000000000000000005dc3675d79c7d6291ac51ceda9f9a85aee0a060b00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000009f146bedda4cca154b7f72";
-        uint256 deadline = 1711771053;
-
-        uint256 amount = 0.00000666 ether;
-
-        RouterBaseTest.ExpectedBalances memory expectedBalances = RouterBaseTest.ExpectedBalances({
-            token0: address(0),
-            token1: 0x5Dc3675d79C7D6291aC51CeDa9F9a85Aee0a060B,
-            creator: 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD,
-            userDelta0: -int256(amount),
-            userDelta1: 155_308_419.055866588131878862 ether,
-            treasuryDelta0: 0,
-            treasuryDelta1: 313_754.381931043612387634 ether,
-            creatorDelta0: 0,
-            creatorDelta1: 1_255_017.527724174449550536 ether
-        });
-
+        (
+            bytes memory commands,
+            bytes[] memory inputs,
+            uint256 deadline,
+            uint256 amount,
+            RouterBaseTest.ExpectedBalances memory expectedBalances
+        ) = initSwapParams();
         routerBaseTest.execute{value: amount}(commands, inputs, deadline, expectedBalances);
     }
 

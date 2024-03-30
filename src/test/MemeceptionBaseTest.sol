@@ -297,6 +297,10 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         memeceptionContract.setTreasury(treasury);
     }
 
+    function collectFees(address memeToken) external {
+        memeceptionContract.collectFees(memeToken);
+    }
+
     /// @notice receive native tokens
     receive() external payable {}
 }
