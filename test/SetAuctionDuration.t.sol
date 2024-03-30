@@ -14,7 +14,7 @@ contract SetAuctionDuration is Deployers {
     function test_setAuctionDuration_success() public {
         vm.expectEmit(true, true, false, true);
         emit AuctionDurationUpdated(Constant.MIN_AUCTION_DURATION, Constant.MIN_AUCTION_DURATION + 1);
-        memeception.setAuctionDuration(Constant.MIN_AUCTION_DURATION + 1);
+        memeceptionBaseTest.setAuctionDuration(Constant.MIN_AUCTION_DURATION + 1);
     }
 
     function test_setAuctionDuration_fail_not_owner() public {
@@ -25,16 +25,16 @@ contract SetAuctionDuration is Deployers {
 
     function test_setAuctionDuration_fail_zero() public {
         vm.expectRevert(InvalidAuctionDuration.selector);
-        memeception.setAuctionDuration(0);
+        memeceptionBaseTest.setAuctionDuration(0);
     }
 
     function test_setAuctionDuration_fail_below_min() public {
         vm.expectRevert(InvalidAuctionDuration.selector);
-        memeception.setAuctionDuration(Constant.MIN_AUCTION_DURATION - 1);
+        memeceptionBaseTest.setAuctionDuration(Constant.MIN_AUCTION_DURATION - 1);
     }
 
     function test_setAuctionDuration_fail_above_max() public {
         vm.expectRevert(InvalidAuctionDuration.selector);
-        memeception.setAuctionDuration(Constant.MAX_AUCTION_DURATION + 1);
+        memeceptionBaseTest.setAuctionDuration(Constant.MAX_AUCTION_DURATION + 1);
     }
 }

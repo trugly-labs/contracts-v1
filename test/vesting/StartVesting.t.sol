@@ -41,7 +41,7 @@ contract StartVestingTest is Deployers {
 
         emit MEMERC20VestingStarted(
             address(mockMemeToken),
-            address(this),
+            address(3),
             "MEME",
             VESTING_ALLOCATION,
             uint64(block.timestamp),
@@ -156,7 +156,7 @@ contract StartVestingTest is Deployers {
             VESTING_ALLOCATION,
             uint64(block.timestamp),
             Constant.VESTING_CLIFF,
-            Constant.VESTING_CLIFF - 1
+            Constant.VESTING_CLIFF + 1
         );
     }
 

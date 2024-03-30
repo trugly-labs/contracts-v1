@@ -120,7 +120,9 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + Constant.VESTING_CLIFF - 1)),
+            memeceptionContract.vesting().vestedAmount(
+                address(memeToken), uint64(params.startAt + Constant.VESTING_CLIFF - 1)
+            ),
             0,
             "Vesting.vestedAmount"
         );
@@ -249,7 +251,7 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         memeceptionContract.claim(memeToken);
         Balances memory afterBal = getBalances(memeToken);
 
-        uint256 refund = beforeBal.bidAmountETH - beforeBal.auctionFinalPrice.rawMulWad(beforeBal.bidAmountMeme);
+        uint256 refund = beforeBal.bidAmountETH - beforeBal.auctionFinalPrice.mulWadUp(beforeBal.bidAmountMeme);
 
         /// Assert Memeception Claim Balances
         assertEq(afterBal.userETH, beforeBal.userETH + refund, "userETH Balance");
@@ -289,6 +291,10 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
 
     function setAuctionDuration(uint256 duration) external {
         memeceptionContract.setAuctionDuration(duration);
+    }
+
+    function setTreasury(address treasury) external {
+        memeceptionContract.setTreasury(treasury);
     }
 
     /// @notice receive native tokens

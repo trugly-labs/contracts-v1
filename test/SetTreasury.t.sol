@@ -12,7 +12,7 @@ contract SetTreasury is Deployers {
     function test_setTreasury_success() public {
         vm.expectEmit(true, true, false, true);
         emit TreasuryUpdated(treasury, makeAddr("alice"));
-        memeception.setTreasury(makeAddr("alice"));
+        memeceptionBaseTest.setTreasury(makeAddr("alice"));
     }
 
     function test_setTreasury_fail_not_owner() public {
@@ -23,6 +23,6 @@ contract SetTreasury is Deployers {
 
     function test_setTreasury_fail_address_zero() public {
         vm.expectRevert(ZeroAddress.selector);
-        memeception.setTreasury(address(0));
+        memeceptionBaseTest.setTreasury(address(0));
     }
 }

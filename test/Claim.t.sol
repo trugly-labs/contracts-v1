@@ -20,15 +20,18 @@ contract ClaimTest is Deployers, AuctionTestData {
     }
 
     function test_claim_success_with_refund() public {
+        uint256 ALICE_BID = 5 ether;
         vm.warp(createMemeParams.startAt + 115 minutes);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
-        memeception.bid{value: 5 ether}(address(memeToken));
+        memeception.bid{value: ALICE_BID}(address(memeToken));
 
         initFullBid(MAX_BID_AMOUNT);
         (uint256 ethAuctionBal,) = getAuctionData(createMemeParams.startAt);
-        uint256 expectedRefund = MAX_BID_AMOUNT - ethAuctionBal;
+        uint256 expectedRefund = MAX_BID_AMOUNT - ethAuctionBal + ALICE_BID - 1;
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionClaimed(address(memeToken), address(memeceptionBaseTest), 2.22222222177778e27, expectedRefund);
+        emit MemeceptionClaimed(
+            address(memeToken), address(memeceptionBaseTest), 2222222221777777777777777778, expectedRefund
+        );
 
         memeceptionBaseTest.claim(address(memeToken));
     }
@@ -36,9 +39,11 @@ contract ClaimTest is Deployers, AuctionTestData {
     function test_claim_success_no_refund() public {
         vm.warp(createMemeParams.startAt + 115 minutes);
         uint256 amount = PoolLiquidity.getETHLiquidity(createMemeParams.startAt);
+        memeceptionBaseTest.bid{value: amount}(address(memeToken));
+
         vm.expectEmit(true, true, false, true);
         emit MemeceptionClaimed(address(memeToken), address(memeceptionBaseTest), Constant.TOKEN_MEMECEPTION_SUPPLY, 0);
-        memeceptionBaseTest.bid{value: amount}(address(memeToken));
+        memeceptionBaseTest.claim(address(memeToken));
     }
 
     function test_claim_success_two_users() public {
@@ -50,16 +55,18 @@ contract ClaimTest is Deployers, AuctionTestData {
 
         initFullBid(MAX_BID_AMOUNT);
         (uint256 ethAuctionBal,) = getAuctionData(createMemeParams.startAt);
-        uint256 expectedRefund = MAX_BID_AMOUNT - ethAuctionBal + ALICE_BID;
+        uint256 expectedRefund = MAX_BID_AMOUNT - ethAuctionBal + ALICE_BID - 1;
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionClaimed(address(memeToken), address(memeceptionBaseTest), 2.22222222177778e27, expectedRefund);
+        emit MemeceptionClaimed(
+            address(memeToken), address(memeceptionBaseTest), 2222222221777777777777777778, expectedRefund
+        );
 
         memeceptionBaseTest.claim(address(memeToken));
 
-        hoax(alice);
-        emit MemeceptionClaimed(address(memeToken), alice, 2.22222222222222e27, 0);
+        hoax(alice, MAX_BID_AMOUNT);
+        emit MemeceptionClaimed(address(memeToken), alice, 2222222222222222222222222222, 0);
         memeception.claim(address(memeToken));
-        assertEq(memeToken.balanceOf(alice), 2.22222222222222e27);
+        assertEq(memeToken.balanceOf(alice), 2222222222222222222222222222);
     }
 
     function test_claim_success_different_price() public {
@@ -72,15 +79,15 @@ contract ClaimTest is Deployers, AuctionTestData {
         initFullBid(MAX_BID_AMOUNT);
         vm.expectEmit(true, true, false, true);
         emit MemeceptionClaimed(
-            address(memeToken), address(memeceptionBaseTest), 4.4246815981502e27, 4.44664041620562e16
+            address(memeToken), address(memeceptionBaseTest), 4424681598150197628458498024, 44466404162055335
         );
 
         memeceptionBaseTest.claim(address(memeToken));
 
-        hoax(alice);
-        emit MemeceptionClaimed(address(memeToken), alice, 1.97628458498024e25, 9.95553359683795e18);
+        hoax(alice, MAX_BID_AMOUNT);
+        emit MemeceptionClaimed(address(memeToken), alice, 19762845849802371541501976, 9955533596837944664);
         memeception.claim(address(memeToken));
-        assertEq(memeToken.balanceOf(alice), 1.97628458498024e25);
+        assertEq(memeToken.balanceOf(alice), 19762845849802371541501976);
     }
 
     function test_claim_fail_meme_not_launched() public {

@@ -38,7 +38,7 @@ contract Deployers is Test, TestHelpers, BaseParameters {
 
     function setUp() public virtual {
         string memory rpc = vm.rpcUrl("base");
-        vm.createSelectFork(rpc, 12480706);
+        vm.createSelectFork(rpc, 12490712);
         deployVesting();
         deployMemeception();
         deployUniversalRouter();
@@ -63,7 +63,11 @@ contract Deployers is Test, TestHelpers, BaseParameters {
     function createMeme(string memory symbol) public virtual returns (address meme) {
         uint40 startAt = uint40(block.timestamp + 3 days);
         (, bytes32 salt) = MemeAddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol
+            address(memeceptionBaseTest.memeceptionContract()),
+            WETH9,
+            createMemeParams.name,
+            symbol,
+            address(memeceptionBaseTest)
         );
         createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;

@@ -6,6 +6,7 @@ import {Deployers} from "./utils/Deployers.sol";
 contract ExitTest is Deployers {
     error InvalidMemeceptionDate();
     error MemeLaunched();
+    error InvalidMemeAddress();
 
     /// @dev Emitted when an OG exits the memeceptions
     event MemeceptionExit(address indexed memeToken, address indexed og, uint256 refundETH);
@@ -26,12 +27,12 @@ contract ExitTest is Deployers {
 
     function test_exit_success_two_users() public {
         startHoax(makeAddr("alice"), MAX_BID_AMOUNT - 1);
-        memeception.bid{value: MAX_BID_AMOUNT}(address(memeToken));
+        memeception.bid{value: MAX_BID_AMOUNT - 1}(address(memeToken));
 
         vm.warp(createMemeParams.startAt + 3 hours);
 
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionExit(address(memeToken), address(memeceptionBaseTest), MAX_BID_AMOUNT - 1);
+        emit MemeceptionExit(address(memeToken), address(makeAddr("alice")), MAX_BID_AMOUNT - 1);
         memeception.exit(address(memeToken));
 
         vm.stopPrank();
@@ -43,24 +44,28 @@ contract ExitTest is Deployers {
     }
 
     function test_exit_success_no_bid() public {
+        vm.warp(createMemeParams.startAt + 1 days);
         emit MemeceptionExit(address(memeToken), address(memeceptionBaseTest), 0);
         memeceptionBaseTest.exit(address(memeToken));
     }
 
     function test_exit_fail_memeception_not_ended() public {
-        vm.warp(createMemeParams.startAt + 3 hours);
+        vm.warp(createMemeParams.startAt + 119 minutes);
         vm.expectRevert(InvalidMemeceptionDate.selector);
         memeceptionBaseTest.exit(address(memeToken));
     }
 
     function test_exit_fail_meme_launched() public {
-        initFullBid(MAX_BID_AMOUNT);
+        vm.warp(createMemeParams.startAt + 115 minutes);
+        hoax(makeAddr("alice"), MAX_BID_AMOUNT);
+        memeception.bid{value: MAX_BID_AMOUNT}(address(memeToken));
+
         vm.expectRevert(MemeLaunched.selector);
         memeceptionBaseTest.exit(address(memeToken));
     }
 
     function test_exit_fail_invalid_meme_address() public {
-        vm.expectRevert(MemeLaunched.selector);
-        memeceptionBaseTest.exit(address(1));
+        vm.expectRevert(InvalidMemeAddress.selector);
+        memeception.exit(address(1));
     }
 }

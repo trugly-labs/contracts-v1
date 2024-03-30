@@ -6,13 +6,14 @@ import {MEMERC20} from "../../src/types/MEMERC20.sol";
 library MemeAddressMiner {
     uint256 public constant MAX_LOOP = 200;
 
-    function find(address deployer, address _WETH9, string memory _name, string memory _symbol)
+    function find(address deployer, address _WETH9, string memory _name, string memory _symbol, address _creator)
         external
         pure
         returns (address, bytes32)
     {
         address memeAddress;
-        bytes memory creationCodeWithArgs = abi.encodePacked(type(MEMERC20).creationCode, abi.encode(_name, _symbol));
+        bytes memory creationCodeWithArgs =
+            abi.encodePacked(type(MEMERC20).creationCode, abi.encode(_name, _symbol, _creator));
 
         uint256 salt;
         for (salt; salt < MAX_LOOP; salt++) {

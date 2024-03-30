@@ -302,6 +302,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @inheritdoc ITruglyMemeception
     function exit(address memeToken) external {
         Memeception memory memeception = memeceptions[memeToken];
+        if (memeception.startAt == 0) revert InvalidMemeAddress();
         if (_poolLaunched(memeception)) revert MemeLaunched();
         if (!_auctionEnded(memeception)) revert InvalidMemeceptionDate();
 
@@ -322,7 +323,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
 
         // Unchecked as Dutch Auction has a decaying price over time - this cannot < 0
         uint256 refund =
-            uint256(bidOG.amountETH).rawSub(uint256(bidOG.amountMeme).rawMulWad(memeception.auctionFinalPriceScaled));
+            uint256(bidOG.amountETH).rawSub(uint256(bidOG.amountMeme).mulWadUp(memeception.auctionFinalPriceScaled));
         uint256 claimableMeme = bidOG.amountMeme;
 
         MEMERC20 meme = MEMERC20(memeToken);

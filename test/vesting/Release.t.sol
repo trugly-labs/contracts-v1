@@ -11,13 +11,14 @@ contract ReleaseTest is Deployers {
     MEMERC20 mockMemeToken;
     uint256 VESTING_ALLOCATION = 1000;
     address CREATOR = address(3);
-    uint64 VESTING_START = uint64(block.timestamp - 1 days);
+    uint64 VESTING_START;
 
     function setUp() public override {
         super.setUp();
         vesting.setMemeception(address(this), true);
         mockMemeToken = new MEMERC20("MEME", "MEME", address(this));
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
+        VESTING_START = uint64(block.timestamp + 3 days);
         vesting.startVesting(
             address(mockMemeToken),
             address(3),

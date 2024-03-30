@@ -19,7 +19,11 @@ contract CreateMemeTest is Deployers {
 
         uint40 startAt = uint40(block.timestamp + 3 days);
         (, bytes32 salt) = MemeAddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol
+            address(memeceptionBaseTest.memeceptionContract()),
+            WETH9,
+            createMemeParams.name,
+            symbol,
+            address(memeceptionBaseTest)
         );
         createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
