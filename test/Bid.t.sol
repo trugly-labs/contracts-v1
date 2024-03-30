@@ -8,19 +8,26 @@ import {Deployers} from "./utils/Deployers.sol";
 import {Constant} from "../src/libraries/Constant.sol";
 import {MEMERC20Constant} from "../src/libraries/MEMERC20Constant.sol";
 import {AuctionTestData} from "./utils/AuctionTestData.sol";
+import {TruglyMemeception} from "../src/TruglyMemeception.sol";
 import {LibString} from "@solady/utils/LibString.sol";
 
 contract BidTest is Deployers, AuctionTestData {
-    /// @dev Emitted when a OG participates in the memeceptions
+    error MemeLaunched();
+    error DuplicateOG();
+    error ZeroAmount();
+    error BidAmountTooHigh();
+    error MemeceptionEnded();
+    error MemeceptionNotStarted();
+
     event MemeceptionBid(address indexed memeToken, address indexed og, uint256 amountETH, uint256 amountMeme);
 
     function setUp() public override {
         super.setUp();
         initCreateMeme();
+        vm.warp(createMemeParams.startAt + 1 seconds);
     }
 
     function test_bid_success() public {
-        vm.warp(createMemeParams.startAt + 1 seconds);
         uint256 amount = 1 ether;
         vm.expectEmit(true, true, false, true);
         emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, 1976284584980237154150197);
@@ -50,7 +57,8 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_all_auction_success() public {
-        for (uint256 i = 0; i <= 23; i++) {
+        memeceptionBaseTest.setAuctionDuration(Constant.MAX_AUCTION_DURATION);
+        for (uint256 i = 0; i <= 35; i++) {
             console2.log("i", i);
             address memeToken = createMeme(LibString.toString(i));
             uint256 timeNow = memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt
@@ -88,5 +96,47 @@ contract BidTest is Deployers, AuctionTestData {
                 "Liquidity Added must be equal to auction balance (MEMERC20)"
             );
         }
+    }
+
+    function test_bid_fail_zero_amount() public {
+        vm.expectRevert(ZeroAmount.selector);
+        memeceptionBaseTest.bid{value: 0}(address(memeToken));
+    }
+
+    function test_bid_fail_max_bid() public {
+        vm.expectRevert(BidAmountTooHigh.selector);
+        memeceptionBaseTest.bid{value: MAX_BID_AMOUNT + 1}(address(memeToken));
+    }
+
+    function test_bid_fail_memeception_not_started() public {
+        vm.warp(createMemeParams.startAt - 1 seconds);
+        vm.expectRevert(MemeceptionNotStarted.selector);
+        memeception.bid{value: 1 ether}(address(memeToken));
+    }
+
+    function test_bid_fail_memeception_ended() public {
+        vm.warp(createMemeParams.startAt + 120 minutes);
+        vm.expectRevert(MemeceptionEnded.selector);
+        memeception.bid{value: 1 ether}(address(memeToken));
+    }
+
+    function test_bid_fail_duplicate_og() public {
+        memeceptionBaseTest.bid{value: 1 ether}(address(memeToken));
+        vm.expectRevert(DuplicateOG.selector);
+        memeceptionBaseTest.bid{value: 1 ether}(address(memeToken));
+    }
+
+    function test_bid_fail_meme_launched() public {
+        vm.warp(createMemeParams.startAt + 115 minutes);
+        hoax(makeAddr("alice"), MAX_BID_AMOUNT);
+        memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
+
+        vm.expectRevert(MemeLaunched.selector);
+        memeceptionBaseTest.bid{value: 1 ether}(address(memeToken));
+    }
+
+    function test_bid_fail_unknown_meme() public {
+        vm.expectRevert();
+        memeceptionBaseTest.bid{value: 1 ether}(address(1));
     }
 }

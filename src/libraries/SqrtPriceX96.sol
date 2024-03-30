@@ -33,22 +33,49 @@ library SqrtPriceX96 {
     uint160 private constant SQRT_PRICE_21 = 1.344009007269693266194936117742324e33;
     uint160 private constant SQRT_PRICE_22 = 1.417276456914365682368813729285808e33;
     uint160 private constant SQRT_PRICE_23 = 1.493940559327630397832851686065551e33;
+    uint160 private constant SQRT_PRICE_24 = 1.57669936427387949526019089948247e33;
+    uint160 private constant SQRT_PRICE_25 = 1.66565590888416773239749174532807e33;
+    uint160 private constant SQRT_PRICE_26 = 1.76062583365031861318986556302222e33;
+    uint160 private constant SQRT_PRICE_27 = 1.8609751593349162631242332096384e33;
+    uint160 private constant SQRT_PRICE_28 = 1.96540882188949032818435859689197e33;
+    uint160 private constant SQRT_PRICE_29 = 2.0717228035196628260459834247092e33;
+    uint160 private constant SQRT_PRICE_30 = 2.18690505124291044800996032480766e33;
+    uint160 private constant SQRT_PRICE_31 = 2.31132305030739515210613901046113e33;
+    uint160 private constant SQRT_PRICE_32 = 2.44503417745840435635508912864654e33;
+    uint160 private constant SQRT_PRICE_33 = 2.5875809522433224700453035772294e33;
+    uint160 private constant SQRT_PRICE_34 = 2.73770832051606666489469598972311e33;
+    uint160 private constant SQRT_PRICE_35 = 2.89300345324985299295434785749435e33;
 
     function sqrtPriceX96(uint256 startAt) internal view returns (uint160) {
         uint256 step = (block.timestamp.rawSub(startAt)).rawDiv(Constant.AUCTION_PRICE_DECAY_PERIOD);
         if (step >= 12) {
-            if (step == 23) return SQRT_PRICE_23;
-            if (step == 22) return SQRT_PRICE_22;
-            if (step == 21) return SQRT_PRICE_21;
-            if (step == 20) return SQRT_PRICE_20;
-            if (step == 19) return SQRT_PRICE_19;
-            if (step == 18) return SQRT_PRICE_18;
-            if (step == 17) return SQRT_PRICE_17;
-            if (step == 16) return SQRT_PRICE_16;
-            if (step == 15) return SQRT_PRICE_15;
-            if (step == 14) return SQRT_PRICE_14;
-            if (step == 13) return SQRT_PRICE_13;
-            if (step == 12) return SQRT_PRICE_12;
+            if (step <= 23) {
+                if (step == 23) return SQRT_PRICE_23;
+                if (step == 22) return SQRT_PRICE_22;
+                if (step == 21) return SQRT_PRICE_21;
+                if (step == 20) return SQRT_PRICE_20;
+                if (step == 19) return SQRT_PRICE_19;
+                if (step == 18) return SQRT_PRICE_18;
+                if (step == 17) return SQRT_PRICE_17;
+                if (step == 16) return SQRT_PRICE_16;
+                if (step == 15) return SQRT_PRICE_15;
+                if (step == 14) return SQRT_PRICE_14;
+                if (step == 13) return SQRT_PRICE_13;
+                if (step == 12) return SQRT_PRICE_12;
+            } else {
+                if (step == 35) return SQRT_PRICE_35;
+                if (step == 34) return SQRT_PRICE_34;
+                if (step == 33) return SQRT_PRICE_33;
+                if (step == 32) return SQRT_PRICE_32;
+                if (step == 31) return SQRT_PRICE_31;
+                if (step == 30) return SQRT_PRICE_30;
+                if (step == 29) return SQRT_PRICE_29;
+                if (step == 28) return SQRT_PRICE_28;
+                if (step == 27) return SQRT_PRICE_27;
+                if (step == 26) return SQRT_PRICE_26;
+                if (step == 25) return SQRT_PRICE_25;
+                if (step == 24) return SQRT_PRICE_24;
+            }
         } else {
             if (step == 11) return SQRT_PRICE_11;
             if (step == 10) return SQRT_PRICE_10;
@@ -68,29 +95,9 @@ library SqrtPriceX96 {
     }
 
     function calcSqrtPriceX96(uint256 supplyA, uint256 supplyB) internal pure returns (uint160) {
-        // console2.log("supplyA: ", supplyA);
-        // console2.log("supplyB: ", supplyB);
-        // Calculate the price ratio (supplyB / supplyA)
         uint256 priceRatio = FixedPointMathLib.rawDiv(supplyB, supplyA);
-        // console2.log("priceRatio: ", priceRatio);
-
-        // Calculate the square root of the price ratio
         uint256 sqrtRatio = FixedPointMathLib.sqrt(priceRatio);
-        // console2.log("sqrtRatio: ", sqrtRatio);
-        // console2.log("sqrtPriceX96", FixedPointMathLib.fullMulDiv(sqrtRatio, 2 ** 96, FixedPointMathLib.sqrt(1e32)));
-
         // Convert to Q64.96 format
         return uint160(FixedPointMathLib.rawMul(sqrtRatio, 2 ** 96));
     }
 }
-// supplyA:  4000000000000000000000000000000
-// supplyB:  11956521500000000000
-// priceRatio:  2989130
-// sqrtRatio:  1728
-// sqrtPriceX96 136906264824648775361643
-// poolWETH Balance (Cap reached)
-// Error: a ~= b not satisfied [uint]
-//   Expected: 11956521500000000000
-//     Actual: 11943935999999624311
-//  Max Delta: 100000000
-//      Delta: 12585500000375689

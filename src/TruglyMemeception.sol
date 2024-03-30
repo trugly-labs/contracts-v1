@@ -1,7 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.23;
 
-import {console2} from "forge-std/Test.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
@@ -58,15 +57,14 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev Emited when the treasury is updated
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
 
-    //     event CollectProtocolFees(address indexed token, address recipient, uint256 amount);
-
-    //     event CollectLPFees(address indexed token, address recipient, uint256 amount);
+    /// @dev Emited when the auction duration is updated
+    event AuctionDurationUpdated(uint256 oldDuration, uint256 newDuration);
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       ERRORS                      */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
-    /// @dev Invalid Meme Address (has to be < WETH9)
+    /// @dev Invalid Meme Address (has to be > WETH9)
     error InvalidMemeAddress();
 
     /// @dev Thrown when the swap fee is too high
@@ -84,8 +82,14 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev Thrown when the memeceptions ended and the Meme pool is launched
     error MemeLaunched();
 
-    /// @dev Thrown when the Meme pool is not launche
+    /// @dev Thrown when the Meme pool is not launched
     error MemeNotLaunched();
+
+    /// @dev Thrown when the Memeception has ended
+    error MemeceptionEnded();
+
+    /// @dev Thrown when the Memeception has not started
+    error MemeceptionNotStarted();
 
     /// @dev Thrown when address is address(0)
     error ZeroAddress();
@@ -98,6 +102,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
 
     /// @dev Thrown when the amount is too high
     error BidAmountTooHigh();
+
+    /// @dev Thrown when the auction duration is out of range
+    error InvalidAuctionDuration();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -129,6 +136,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
 
     address internal treasury;
 
+    uint256 internal auctionDuration;
+
     constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _vesting, address _treasury)
         Owned(msg.sender)
     {
@@ -143,6 +152,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         WETH9 = WETH(payable(_WETH9));
         vesting = ITruglyVesting(_vesting);
         treasury = _treasury;
+        auctionDuration = Constant.MIN_AUCTION_DURATION;
 
         emit TreasuryUpdated(address(0), _treasury);
     }
@@ -150,7 +160,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @inheritdoc ITruglyMemeception
     function createMeme(MemeceptionCreationParams calldata params) external returns (address, address) {
         _verifyCreateMeme(params);
-        MEMERC20 memeToken = new MEMERC20{salt: params.salt}(params.name, params.symbol);
+        MEMERC20 memeToken = new MEMERC20{salt: params.salt}(params.name, params.symbol, msg.sender);
         if (address(memeToken) <= address(WETH9)) revert InvalidMemeAddress();
 
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
@@ -283,7 +293,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         if (msg.value == 0) revert ZeroAmount();
         if (msg.value > Constant.AUCTION_MAX_BID) revert BidAmountTooHigh();
         if (_poolLaunched(memeception)) revert MemeLaunched();
-        if (block.timestamp < memeception.startAt || _auctionEnded(memeception)) revert InvalidMemeceptionDate();
+        if (block.timestamp < memeception.startAt) revert MemeceptionNotStarted();
+        if (_auctionEnded(memeception)) revert MemeceptionEnded();
 
         if (bidsOG[memeToken][msg.sender].amountETH > 0) revert DuplicateOG();
     }
@@ -334,7 +345,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     }
 
     function _auctionEnded(Memeception memory memeception) internal view virtual returns (bool) {
-        return uint40(block.timestamp) >= memeception.startAt + Constant.AUCTION_DURATION || _poolLaunched(memeception);
+        return uint40(block.timestamp) >= memeception.startAt + auctionDuration || _poolLaunched(memeception);
     }
 
     /// @inheritdoc ITruglyMemeception
@@ -359,7 +370,11 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @return currentPrice uint256 Current auction price (Scaled by 1e18)
     function _getAuctionPriceScaled(Memeception memory memeception) internal view virtual returns (uint256) {
         if (_auctionEnded(memeception)) return memeception.auctionFinalPriceScaled;
-        return Auction.price(memeception.startAt);
+
+        uint256 step = (block.timestamp.rawSub(memeception.startAt)).rawDiv(Constant.AUCTION_PRICE_DECAY_PERIOD);
+
+        if (step >= auctionDuration.rawDiv(Constant.AUCTION_PRICE_DECAY_PERIOD)) revert Auction.AuctionOutOfRange();
+        return Auction.price(step);
     }
 
     /// @notice receive native tokens
@@ -377,5 +392,16 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         if (_newTreasury == address(0)) revert ZeroAddress();
         emit TreasuryUpdated(treasury, _newTreasury);
         treasury = _newTreasury;
+    }
+
+    /// @notice Only the owner can call this function
+    /// @dev Update the auction duration
+    /// @param duration The new dureation
+    function setAuctionDuration(uint256 duration) external onlyOwner {
+        if (duration < Constant.MIN_AUCTION_DURATION || duration > Constant.MAX_AUCTION_DURATION) {
+            revert InvalidAuctionDuration();
+        }
+        emit AuctionDurationUpdated(auctionDuration, duration);
+        auctionDuration = duration;
     }
 }

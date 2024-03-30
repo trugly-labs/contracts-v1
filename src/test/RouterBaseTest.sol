@@ -6,10 +6,10 @@ import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterIm
 import {Test, console2} from "forge-std/Test.sol";
 import {MEMERC20} from "../types/MEMERC20.sol";
 import {TruglyUniversalRouter} from "../TruglyUniversalRouter.sol";
-import {DeploymentAddresses} from "./DeploymentAddresses.sol";
+import {BaseParameters} from "../../script/parameters/Base.sol";
 
-contract RouterBaseTest is Test, DeploymentAddresses {
-    TruglyUniversalRouter router;
+contract RouterBaseTest is Test, BaseParameters {
+    TruglyUniversalRouter public router;
     address public treasury = 0x0804a74CB85d6bE474a4498fCe76481822AdFFa4;
 
     struct ExpectedBalances {
@@ -36,7 +36,7 @@ contract RouterBaseTest is Test, DeploymentAddresses {
     constructor() {
         address unsupported = 0x76D631990d505E4e5b432EEDB852A60897824D68;
         RouterParameters memory params = RouterParameters({
-            permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
+            permit2: PERMIT2,
             weth9: WETH9,
             seaportV1_5: unsupported,
             seaportV1_4: unsupported,
@@ -49,13 +49,13 @@ contract RouterBaseTest is Test, DeploymentAddresses {
             nft20Zap: unsupported,
             cryptopunks: unsupported,
             looksRareV2: unsupported,
-            routerRewardsDistributor: 0xea37093ce161f090e443f304e1bF3a8f14D7bb40,
+            routerRewardsDistributor: unsupported,
             looksRareRewardsDistributor: unsupported,
             looksRareToken: unsupported,
-            v2Factory: 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f,
-            v3Factory: 0x1F98431c8aD98523631AE4a59f267346ea31F984,
-            pairInitCodeHash: 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f,
-            poolInitCodeHash: 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54
+            v2Factory: V2_FACTORY,
+            v3Factory: V3_FACTORY,
+            pairInitCodeHash: ROUTER_PAIR_INIT_CODE_HASH,
+            poolInitCodeHash: POOL_INIT_CODE_HASH
         });
 
         router = new TruglyUniversalRouter(params, treasury);

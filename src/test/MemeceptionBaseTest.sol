@@ -9,12 +9,12 @@ import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEMERC20} from "../types/MEMERC20.sol";
 import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
 import {TruglyMemeception} from "../TruglyMemeception.sol";
-import {DeploymentAddresses} from "./DeploymentAddresses.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {MEMERC20Constant} from "../libraries/MEMERC20Constant.sol";
 import {TestHelpers} from "../../test/utils/TestHelpers.sol";
+import {BaseParameters} from "../../script/parameters/Base.sol";
 
-contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
+contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
     using FixedPointMathLib for uint256;
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -37,11 +37,10 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
     TruglyMemeception public memeceptionContract;
 
     constructor(address _vesting, address _treasury) {
-        memeceptionContract =
-            new TruglyMemeception(UNISWAP_V3_FACTORY, UNISWAP_V3_POSITION_MANAGER, WETH9, _vesting, _treasury);
+        memeceptionContract = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, _vesting, _treasury);
 
-        assertEq(address(memeceptionContract.v3Factory()), UNISWAP_V3_FACTORY);
-        assertEq(address(memeceptionContract.v3PositionManager()), UNISWAP_V3_POSITION_MANAGER);
+        assertEq(address(memeceptionContract.v3Factory()), V3_FACTORY);
+        assertEq(address(memeceptionContract.v3PositionManager()), V3_POSITION_MANAGER);
         assertEq(address(memeceptionContract.WETH9()), WETH9);
     }
 
@@ -59,6 +58,7 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
         assertEq(memeToken.decimals(), MEMERC20Constant.TOKEN_DECIMALS, "memeDecimals");
         assertEq(memeToken.symbol(), params.symbol, "memeSymbol");
         assertEq(memeToken.totalSupply(), MEMERC20Constant.TOKEN_TOTAL_SUPPLY, "memeSupply");
+        assertEq(memeToken.creator(), address(this), "creator");
         assertEq(
             memeToken.balanceOf(address(memeceptionContract)),
             MEMERC20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
@@ -90,6 +90,55 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
 
         /// Assert Vesting Contract
         assertEq(memeToken.balanceOf(address(memeceptionContract.vesting())), vestingAllocSupply, "vestingAllocSupply");
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).totalAllocation,
+            vestingAllocSupply,
+            "Vesting.totalAllocation"
+        );
+        assertEq(memeceptionContract.vesting().getVestingInfo(address(memeToken)).released, 0, "Vesting.released");
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).start, params.startAt, "Vesting.start"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).duration,
+            Constant.VESTING_DURATION,
+            "Vesting.duration"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).cliff,
+            Constant.VESTING_CLIFF,
+            "Vesting.cliff"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).creator, address(this), "Vesting.creator"
+        );
+
+        assertEq(memeceptionContract.vesting().releasable(address(memeToken)), 0, "Vesting.releasable");
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp)),
+            0,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + Constant.VESTING_CLIFF - 1)),
+            0,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days)),
+            vestingAllocSupply / 4,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days * 2)),
+            vestingAllocSupply / 2,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days * 4)),
+            vestingAllocSupply,
+            "Vesting.vestedAmount"
+        );
     }
 
     function bid(address memeToken) external payable {
@@ -236,6 +285,10 @@ contract MemeceptionBaseTest is Test, TestHelpers, DeploymentAddresses {
             bidAmountETH: memeceptionContract.getBid(memeToken, address(this)).amountETH,
             bidAmountMeme: memeceptionContract.getBid(memeToken, address(this)).amountMeme
         });
+    }
+
+    function setAuctionDuration(uint256 duration) external {
+        memeceptionContract.setAuctionDuration(duration);
     }
 
     /// @notice receive native tokens

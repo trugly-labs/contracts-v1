@@ -9,6 +9,7 @@ fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
 gas_reports = ["TruglyLaunchpad", "TruglyLaunchpadTest", "TruglyUniversalRouterBaseTest", "TruglyUniversalRouter"]
 # cancun = true
 via_ir = true
+runs = 1000
 
 [profile.default.fuzz]
 runs = 1000

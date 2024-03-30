@@ -40,7 +40,9 @@ library Constant {
     /// @dev Auction time unit per actions
     uint256 internal constant AUCTION_PRICE_DECAY_PERIOD = 5 minutes;
     /// @dev Auction duration
-    uint40 internal constant AUCTION_DURATION = 2 hours;
+    uint40 internal constant MAX_AUCTION_DURATION = 3 hours;
+
+    uint40 internal constant MIN_AUCTION_DURATION = 2 hours;
     /// @dev Auction duration
     uint256 internal constant AUCTION_MAX_BID = 10 ether;
 }

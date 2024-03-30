@@ -3,24 +3,26 @@ pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 
+import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
 import {MemeceptionBaseTest} from "../../src/test/MemeceptionBaseTest.sol";
 import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
 import {MEMERC20} from "../../src/types/MEMERC20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
-import {DeploymentAddresses} from "../../src/test/DeploymentAddresses.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {MemeAddressMiner} from "./MemeAddressMiner.sol";
+import {BaseParameters} from "../../script/parameters/Base.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 
-contract Deployers is Test, TestHelpers, DeploymentAddresses {
+contract Deployers is Test, TestHelpers, BaseParameters {
     // Global variables
     MemeceptionBaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
     MEMERC20 memeToken;
     TruglyVesting vesting;
     address treasury = address(1);
+    TruglyMemeception memeception;
 
     uint256 public constant MAX_BID_AMOUNT = 10 ether;
 
@@ -35,11 +37,13 @@ contract Deployers is Test, TestHelpers, DeploymentAddresses {
     });
 
     function setUp() public virtual {
-        string memory rpc = vm.rpcUrl("mainnet");
-        vm.createSelectFork(rpc, 19287957);
+        string memory rpc = vm.rpcUrl("base");
+        vm.createSelectFork(rpc, 12480706);
         deployVesting();
         deployMemeception();
         deployUniversalRouter();
+
+        memeception = memeceptionBaseTest.memeceptionContract();
     }
 
     function deployVesting() public virtual {

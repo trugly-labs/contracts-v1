@@ -5,7 +5,12 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {MEMERC20Constant} from "../libraries/MEMERC20Constant.sol";
 
 contract MEMERC20 is ERC20 {
-    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol, MEMERC20Constant.TOKEN_DECIMALS) {
+    address public creator;
+
+    constructor(string memory _name, string memory _symbol, address _creator)
+        ERC20(_name, _symbol, MEMERC20Constant.TOKEN_DECIMALS)
+    {
         _mint(msg.sender, MEMERC20Constant.TOKEN_TOTAL_SUPPLY);
+        creator = _creator;
     }
 }
