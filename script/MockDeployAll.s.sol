@@ -13,6 +13,7 @@ contract MockDeployAll is Script, MockDeploymentsFn {
         TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
         deployMemeception(address(vesting), treasury);
+        // deployMemeception(0xa8951e7a48B9e2E09e99585944411aD4A2D4Ce9d, treasury);
         deployUniversalRouter(treasury);
         vm.stopBroadcast();
     }

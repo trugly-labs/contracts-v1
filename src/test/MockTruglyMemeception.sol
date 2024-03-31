@@ -26,7 +26,7 @@ contract MockTruglyMemeception is TruglyMemeception {
 
     function _getAuctionPriceScaled(Memeception memory memeception) internal view override returns (uint256) {
         uint256 price = super._getAuctionPriceScaled(memeception);
-        return price / 1e2;
+        return price / 1e7;
     }
 
     function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal override {
