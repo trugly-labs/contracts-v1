@@ -13,4 +13,6 @@ contract BaseSepoliaParameters {
     bytes32 public constant ROUTER_PAIR_INIT_CODE_HASH =
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
+    address public constant TREASURY = 0x8Cfc6Aaa6AD7f765699aCeA366a134AF644093e3;
 }

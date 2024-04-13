@@ -47,7 +47,7 @@ contract DeploymentsFn is BaseParameters {
     }
 
     function deployTreasury() public pure returns (address) {
-        return address(1);
+        return TREASURY;
     }
 
     function deployMemeception(address vesting, address treasury) public returns (TruglyMemeception memeception) {

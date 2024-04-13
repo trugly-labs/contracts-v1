@@ -13,4 +13,6 @@ contract MumbaiParameters {
     address public constant UNSUPPORTED_PROTOCOL = address(0);
     bytes32 public constant ROUTER_PAIR_INIT_CODE_HASH = bytes32(0);
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+
+    address public constant TREASURY = 0x8Cfc6Aaa6AD7f765699aCeA366a134AF644093e3;
 }
