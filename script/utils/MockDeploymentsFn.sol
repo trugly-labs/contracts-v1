@@ -47,6 +47,8 @@ contract MockDeploymentsFn is BaseParameters {
     }
 
     function deployTreasury() public pure returns (address) {
+        console2.log("Deploying Treasury..");
+        console2.log("Treasury Deployed:", TREASURY);
         return TREASURY;
     }
 
