@@ -89,28 +89,36 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         }
 
         /// Assert Vesting Contract
-        assertEq(memeToken.balanceOf(address(memeceptionContract.vesting())), vestingAllocSupply, "vestingAllocSupply");
+        assertEq(
+            memeToken.balanceOf(address(memeceptionContract.vesting())),
+            params.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
+            "vestingAllocSupply"
+        );
         assertEq(
             memeceptionContract.vesting().getVestingInfo(address(memeToken)).totalAllocation,
-            vestingAllocSupply,
+            params.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
             "Vesting.totalAllocation"
         );
         assertEq(memeceptionContract.vesting().getVestingInfo(address(memeToken)).released, 0, "Vesting.released");
         assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).start, params.startAt, "Vesting.start"
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).start,
+            params.vestingAllocBps == 0 ? 0 : params.startAt,
+            "Vesting.start"
         );
         assertEq(
             memeceptionContract.vesting().getVestingInfo(address(memeToken)).duration,
-            Constant.VESTING_DURATION,
+            params.vestingAllocBps == 0 ? 0 : Constant.VESTING_DURATION,
             "Vesting.duration"
         );
         assertEq(
             memeceptionContract.vesting().getVestingInfo(address(memeToken)).cliff,
-            Constant.VESTING_CLIFF,
+            params.vestingAllocBps == 0 ? 0 : Constant.VESTING_CLIFF,
             "Vesting.cliff"
         );
         assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).creator, address(this), "Vesting.creator"
+            memeceptionContract.vesting().getVestingInfo(address(memeToken)).creator,
+            params.vestingAllocBps == 0 ? address(0) : address(this),
+            "Vesting.creator"
         );
 
         assertEq(memeceptionContract.vesting().releasable(address(memeToken)), 0, "Vesting.releasable");

@@ -81,7 +81,7 @@ contract CreateMemeTest is Deployers {
     }
 
     function test_createMeme_fail_salt() public {
-        createMemeParams.salt = "0x8";
+        createMemeParams.salt = "0xd";
         vm.expectRevert(InvalidMemeAddress.selector);
         memeceptionBaseTest.createMeme(createMemeParams);
     }

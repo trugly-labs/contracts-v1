@@ -52,7 +52,7 @@ contract RouterBaseTest is Test, BaseParameters {
             routerRewardsDistributor: unsupported,
             looksRareRewardsDistributor: unsupported,
             looksRareToken: unsupported,
-            v2Factory: V2_FACTORY,
+            v2Factory: unsupported,
             v3Factory: V3_FACTORY,
             pairInitCodeHash: ROUTER_PAIR_INIT_CODE_HASH,
             poolInitCodeHash: POOL_INIT_CODE_HASH
