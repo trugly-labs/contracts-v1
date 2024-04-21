@@ -135,17 +135,17 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days)),
-            vestingAllocSupply / 4,
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 91.25 days)),
+            vestingAllocSupply / 8,
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days * 2)),
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days)),
             vestingAllocSupply / 2,
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days * 4)),
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days * 2)),
             vestingAllocSupply,
             "Vesting.vestedAmount"
         );

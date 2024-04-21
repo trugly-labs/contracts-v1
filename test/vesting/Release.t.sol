@@ -47,16 +47,31 @@ contract ReleaseTest is Deployers {
     function test_release_success_cliff() public {
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
         vm.warp(VESTING_START + Constant.VESTING_CLIFF);
-        assertEq(vesting.releasable(address(mockMemeToken)), VESTING_ALLOCATION / 4);
+        assertEq(vesting.releasable(address(mockMemeToken)), VESTING_ALLOCATION / 8);
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
-        emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 4);
+        emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 8);
         vesting.release(address(mockMemeToken));
 
-        assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 4);
+        assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 8);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
-        assertEq(vesting.getVestingInfo(address(mockMemeToken)).released, VESTING_ALLOCATION / 4);
-        assertEq(vesting.vestedAmount(address(mockMemeToken), uint64(block.timestamp)), VESTING_ALLOCATION / 4);
+        assertEq(vesting.getVestingInfo(address(mockMemeToken)).released, VESTING_ALLOCATION / 8);
+        assertEq(vesting.vestedAmount(address(mockMemeToken), uint64(block.timestamp)), VESTING_ALLOCATION / 8);
+    }
+
+    function test_release_success_half_duration() public {
+        assertEq(vesting.releasable(address(mockMemeToken)), 0);
+        vm.warp(VESTING_START + Constant.VESTING_DURATION / 2);
+        assertEq(vesting.releasable(address(mockMemeToken)), VESTING_ALLOCATION / 2);
+        vm.expectEmit(true, true, false, true);
+        uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
+        emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 2);
+        vesting.release(address(mockMemeToken));
+
+        assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 2);
+        assertEq(vesting.releasable(address(mockMemeToken)), 0);
+        assertEq(vesting.getVestingInfo(address(mockMemeToken)).released, VESTING_ALLOCATION / 2);
+        assertEq(vesting.vestedAmount(address(mockMemeToken), uint64(block.timestamp)), VESTING_ALLOCATION / 2);
     }
 
     function test_release_success_fully_vested() public {
