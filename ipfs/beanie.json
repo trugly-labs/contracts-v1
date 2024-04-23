@@ -1,0 +1,15 @@
+{
+  "name": "Trugly MOL(s)",
+  "description": "Trugly's Meme Opinion Leader(s)",
+  "image": "ipfs://QmSppQ5GiAe5t1idtZAgxc7QqxZuQE4qToz6EGn2yP4CaC",
+  "attributes": [
+    {
+      "trait_type": "Name",
+      "value": "Beanie"
+    },
+    {
+      "trait_type": "MOL #",
+      "value": "3"
+    }
+  ]
+}
