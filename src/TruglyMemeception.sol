@@ -106,6 +106,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @dev Thrown when the auction duration is out of range
     error InvalidAuctionDuration();
 
+    /// @dev Thrown when the auction duration is out of range
+    error ClaimCooldownPeriod();
+
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -152,7 +155,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
         WETH9 = WETH(payable(_WETH9));
         vesting = ITruglyVesting(_vesting);
         treasury = _treasury;
-        auctionDuration = Constant.MIN_AUCTION_DURATION;
+        auctionDuration = Constant.MAX_AUCTION_DURATION;
 
         emit TreasuryUpdated(address(0), _treasury);
     }
@@ -172,7 +175,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
             pool: pool,
             creator: msg.sender,
             auctionFinalPriceScaled: 0,
-            swapFeeBps: params.swapFeeBps
+            swapFeeBps: params.swapFeeBps,
+            auctionEndedAt: 0
         });
 
         memeSymbolExist[keccak256(abi.encodePacked(params.symbol))] = true;
@@ -237,6 +241,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
                 Constant.TOKEN_MEMECEPTION_SUPPLY.rawMulWad(curPriceScaled),
                 MEMERC20(memeToken).balanceOf(address(this)).rawSub(Constant.TOKEN_MEMECEPTION_SUPPLY)
             );
+
+            memeceptions[memeToken].auctionEndedAt = block.timestamp;
         }
 
         memeceptions[memeToken].auctionTokenSold += auctionTokenAmount.safeCastTo112();
@@ -317,6 +323,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     function claim(address memeToken) external {
         Memeception memory memeception = memeceptions[memeToken];
         if (!_poolLaunched(memeception)) revert MemeNotLaunched();
+        if (memeception.auctionEndedAt + Constant.AUCTION_CLAIM_COOLDOWN > block.timestamp) {
+            revert ClaimCooldownPeriod();
+        }
 
         Bid memory bidOG = bidsOG[memeToken][msg.sender];
         if (bidOG.amountETH == 0 || bidOG.amountMeme == 0) revert ZeroAmount();

@@ -13,7 +13,7 @@ contract SetAuctionDuration is Deployers {
 
     function test_setAuctionDuration_success() public {
         vm.expectEmit(true, true, false, true);
-        emit AuctionDurationUpdated(Constant.MIN_AUCTION_DURATION, Constant.MIN_AUCTION_DURATION + 1);
+        emit AuctionDurationUpdated(Constant.MAX_AUCTION_DURATION, Constant.MIN_AUCTION_DURATION + 1);
         memeceptionBaseTest.setAuctionDuration(Constant.MIN_AUCTION_DURATION + 1);
     }
 

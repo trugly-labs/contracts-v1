@@ -36,7 +36,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_capReached_success() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MAX_AUCTION_DURATION - 1);
 
         uint256 amount = 9.999999999 ether;
         vm.expectEmit(true, true, false, true);
@@ -46,7 +46,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_capReached_over_success() public {
-        vm.warp(createMemeParams.startAt + 110 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MIN_AUCTION_DURATION - 3 minutes);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
         memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
@@ -57,7 +57,6 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_all_auction_success() public {
-        memeceptionBaseTest.setAuctionDuration(Constant.MAX_AUCTION_DURATION);
         for (uint256 i = 0; i <= 35; i++) {
             console2.log("i", i);
             address memeToken = createMeme(LibString.toString(i));
@@ -115,7 +114,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_fail_memeception_ended() public {
-        vm.warp(createMemeParams.startAt + 120 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MAX_AUCTION_DURATION);
         vm.expectRevert(MemeceptionEnded.selector);
         memeception.bid{value: 1 ether}(address(memeToken));
     }
@@ -127,7 +126,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_fail_meme_launched() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MAX_AUCTION_DURATION - 1);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
         memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
 

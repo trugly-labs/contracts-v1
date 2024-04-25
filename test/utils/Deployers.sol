@@ -88,7 +88,7 @@ contract Deployers is Test, TestHelpers, BaseParameters {
     }
 
     function initFullBid(uint256 lastBidAmount) public virtual {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MIN_AUCTION_DURATION - 1.5 minutes);
 
         memeceptionBaseTest.bid{value: lastBidAmount}(address(memeToken));
     }

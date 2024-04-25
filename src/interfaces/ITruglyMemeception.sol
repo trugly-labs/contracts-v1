@@ -22,6 +22,7 @@ interface ITruglyMemeception is IERC721Receiver {
         uint40 startAt;
         /// @dev Amount of token currently sold in the Memeception Auction
         uint112 auctionTokenSold;
+        uint256 auctionEndedAt;
     }
 
     struct Bid {

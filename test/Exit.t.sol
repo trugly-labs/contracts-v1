@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {Constant} from "../src/libraries/Constant.sol";
 import {Deployers} from "./utils/Deployers.sol";
 
 contract ExitTest is Deployers {
@@ -50,13 +51,13 @@ contract ExitTest is Deployers {
     }
 
     function test_exit_fail_memeception_not_ended() public {
-        vm.warp(createMemeParams.startAt + 119 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MAX_AUCTION_DURATION - 1);
         vm.expectRevert(InvalidMemeceptionDate.selector);
         memeceptionBaseTest.exit(address(memeToken));
     }
 
     function test_exit_fail_meme_launched() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + Constant.MAX_AUCTION_DURATION - 1);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
         memeception.bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
