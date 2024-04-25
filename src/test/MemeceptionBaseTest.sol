@@ -44,10 +44,11 @@ contract MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         assertEq(address(memeceptionContract.WETH9()), WETH9);
     }
 
-    function createMeme(ITruglyMemeception.MemeceptionCreationParams calldata params)
+    function createMeme(ITruglyMemeception.MemeceptionCreationParams memory params)
         external
         returns (address memeTokenAddr, address pool)
     {
+        params.creator = address(this);
         (memeTokenAddr, pool) = memeceptionContract.createMeme(params);
 
         /// Assert Token Creation

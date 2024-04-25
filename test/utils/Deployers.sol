@@ -36,7 +36,8 @@ contract Deployers is Test, TestHelpers, BaseParameters {
         startAt: uint40(block.timestamp + 3 days),
         swapFeeBps: 80,
         vestingAllocBps: 500,
-        salt: ""
+        salt: "",
+        creator: address(this)
     });
 
     function setUp() public virtual {

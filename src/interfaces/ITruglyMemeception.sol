@@ -46,6 +46,7 @@ interface ITruglyMemeception is IERC721Receiver {
         uint16 vestingAllocBps;
         /// @dev Salt to create the MEMERC20 with an address lower than WETH9
         bytes32 salt;
+        address creator;
     }
 
     /// @dev Create a MemeRC20, its UniV3 Pool and setup the Memeception

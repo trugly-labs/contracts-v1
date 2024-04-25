@@ -163,7 +163,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
     /// @inheritdoc ITruglyMemeception
     function createMeme(MemeceptionCreationParams calldata params) external returns (address, address) {
         _verifyCreateMeme(params);
-        MEMERC20 memeToken = new MEMERC20{salt: params.salt}(params.name, params.symbol, msg.sender);
+        MEMERC20 memeToken = new MEMERC20{salt: params.salt}(params.name, params.symbol, params.creator);
         if (address(memeToken) <= address(WETH9)) revert InvalidMemeAddress();
 
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
@@ -173,7 +173,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
             auctionTokenSold: 0,
             startAt: params.startAt,
             pool: pool,
-            creator: msg.sender,
+            creator: params.creator,
             auctionFinalPriceScaled: 0,
             swapFeeBps: params.swapFeeBps,
             auctionEndedAt: 0
@@ -186,7 +186,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
             memeToken.safeTransfer(address(vesting), vestingAlloc);
             vesting.startVesting(
                 address(memeToken),
-                msg.sender,
+                params.creator,
                 vestingAlloc,
                 params.startAt,
                 Constant.VESTING_DURATION,
@@ -200,7 +200,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned {
 
         emit MemeCreated(
             address(memeToken),
-            msg.sender,
+            params.creator,
             params.symbol,
             pool,
             params.startAt,
