@@ -186,14 +186,17 @@ contract MEME20 is ERC20 {
         _pTreasury = _treasury;
     }
 
-    function initializeFirst(
+    function initialize(
+        address _protocolAddr,
         address _protocolTreasury,
         uint256 _protocolFeesBps,
         uint256 _creatorFeesBps,
+        address _pool,
         address[] calldata _routers,
         address[] calldata _exemptsAddr
     ) public onlyProtocol {
         if (_initialized) revert AlreadyInitialized();
+        _initialized = true;
         feeBps = _creatorFeesBps;
 
         // Set Protocol
@@ -201,28 +204,22 @@ contract MEME20 is ERC20 {
         _pTreasury = _protocolTreasury;
 
         _exemptFees[_pTreasury] = true;
+        _exemptFees[_protocolAddr] = true;
 
         // Uniswap
         for (uint256 i = 0; i < _routers.length; i++) {
             _routersAndPools[_routers[i]] = true;
             emit PoolOrRouterAdded(_routers[i]);
         }
+        _routersAndPools[_pool] = true;
+        emit PoolOrRouterAdded(_pool);
 
         for (uint256 i = 0; i < _exemptsAddr.length; i++) {
             _exemptFees[_exemptsAddr[i]] = true;
             emit ExemptAdded(_exemptsAddr[i]);
         }
-    }
 
-    function initializeLast(address _protocolAddr, address _pool) public onlyProtocol {
-        if (_initialized) revert AlreadyInitialized();
-        _routersAndPools[_pool] = true;
-
-        _exemptFees[_protocolAddr] = true;
         // Transfer to Protocol
         setProtocolAddress(_protocolAddr);
-        _initialized = true;
-
-        emit PoolOrRouterAdded(_pool);
     }
 }

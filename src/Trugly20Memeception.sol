@@ -220,12 +220,12 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
         _verifyCreateMeme(params);
         MEME20 memeToken = new MEME20{salt: params.salt}(params.name, params.symbol, params.creator);
         if (address(memeToken) <= address(WETH9)) revert InvalidMemeAddress();
-        memeToken.initializeFirst(
-            treasury, MEME20Constant.PROTOCOL_FEE_BPS, params.swapFeeBps, SWAP_ROUTERS, EXEMPT_UNISWAP
-        );
 
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
-        memeToken.initializeLast(owner, pool);
+
+        memeToken.initialize(
+            owner, treasury, MEME20Constant.PROTOCOL_FEE_BPS, params.swapFeeBps, pool, SWAP_ROUTERS, EXEMPT_UNISWAP
+        );
 
         memeceptions[address(memeToken)] = Memeception({
             tokenId: 0,

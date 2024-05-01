@@ -24,7 +24,7 @@ contract DeployMEME20 is Script, BaseParameters {
         vm.startBroadcast(deployerPrivateKey);
         console2.log("Deploying MEME20 contract...");
         MEME20 meme20 = new MEME20("TestFoo", "FOOTEST", msg.sender);
-        meme20.initializeFirst(TREASURY, 20, 80, SWAP_ROUTERS, EXEMPT_UNISWAP);
+        meme20.initialize(msg.sender, TREASURY, 20, 80, address(10), SWAP_ROUTERS, EXEMPT_UNISWAP);
         console2.log("MEME20 deployed: ", address(meme20));
         vm.stopBroadcast();
     }
