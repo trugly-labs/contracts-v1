@@ -1,0 +1,28 @@
+/// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.23;
+
+import {DeployersME20} from "../utils/DeployersME20.sol";
+
+contract SetTreasury is DeployersME20 {
+    error ZeroAddress();
+    /// @dev Emited when the treasury is updated
+
+    event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+
+    function test_setTreasury_success() public {
+        vm.expectEmit(true, true, false, true);
+        emit TreasuryUpdated(treasury, makeAddr("alice"));
+        memeceptionBaseTest.setTreasury(makeAddr("alice"));
+    }
+
+    function test_setTreasury_fail_not_owner() public {
+        vm.expectRevert("UNAUTHORIZED");
+        hoax(makeAddr("alice"));
+        memeception.setTreasury(makeAddr("alice"));
+    }
+
+    function test_setTreasury_fail_address_zero() public {
+        vm.expectRevert(ZeroAddress.selector);
+        memeceptionBaseTest.setTreasury(address(0));
+    }
+}

@@ -55,7 +55,7 @@ contract DeploymentsFn is BaseParameters {
     function deployMemeception(address vesting, address treasury) public returns (TruglyMemeception memeception) {
         console2.log("Deploying TruglyMemeception..");
         memeception = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting, treasury);
-        TruglyVesting(vesting).setMemeception(address(memeception), true);
+        // TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }
 }

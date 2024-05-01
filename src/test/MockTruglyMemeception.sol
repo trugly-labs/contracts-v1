@@ -6,7 +6,6 @@ import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TruglyMemeception} from "../TruglyMemeception.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
-import {Auction} from "../libraries/Auction.sol";
 
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
