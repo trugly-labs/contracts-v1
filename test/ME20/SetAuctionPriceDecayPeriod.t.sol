@@ -11,16 +11,22 @@ contract SetAuctionPriceDecayPeriod is DeployersME20 {
     /// @dev Emited when the auction duration is updated
     event AuctionDurationUpdated(uint256 oldDuration, uint256 newDuration);
 
+    function setUp() public override {
+        super.setUp();
+    }
+
     function test_setAuctionPriceDecayPeriod_success() public {
         vm.expectEmit(true, true, false, true);
         emit AuctionDurationUpdated(memeception.auctionPriceDecayPeriod(), Constant.MIN_AUCTION_PRICE_DECAY_PERIOD);
-        memeceptionBaseTest.setAuctionPriceDecayPeriod(Constant.MIN_AUCTION_PRICE_DECAY_PERIOD);
+        hoax(memeceptionBaseTest.MULTISIG());
+        memeception.setAuctionPriceDecayPeriod(Constant.MIN_AUCTION_PRICE_DECAY_PERIOD);
     }
 
     function test_setAuctionPriceDecayPeriod_success_max() public {
         vm.expectEmit(true, true, false, true);
         emit AuctionDurationUpdated(memeception.auctionPriceDecayPeriod(), Constant.MAX_AUCTION_PRICE_DECAY_PERIOD);
-        memeceptionBaseTest.setAuctionPriceDecayPeriod(Constant.MAX_AUCTION_PRICE_DECAY_PERIOD);
+        hoax(memeceptionBaseTest.MULTISIG());
+        memeception.setAuctionPriceDecayPeriod(Constant.MAX_AUCTION_PRICE_DECAY_PERIOD);
     }
 
     function test_setAuctionPriceDecayPeriod_fail_not_owner() public {
@@ -30,17 +36,20 @@ contract SetAuctionPriceDecayPeriod is DeployersME20 {
     }
 
     function test_setAuctionPriceDecayPeriod_fail_zero() public {
+        hoax(memeceptionBaseTest.MULTISIG());
         vm.expectRevert(InvalidAuctionDuration.selector);
-        memeceptionBaseTest.setAuctionPriceDecayPeriod(0);
+        memeception.setAuctionPriceDecayPeriod(0);
     }
 
     function test_setAuctionPriceDecayPeriod_fail_below_min() public {
+        hoax(memeceptionBaseTest.MULTISIG());
         vm.expectRevert(InvalidAuctionDuration.selector);
-        memeceptionBaseTest.setAuctionPriceDecayPeriod(Constant.MIN_AUCTION_PRICE_DECAY_PERIOD - 1);
+        memeception.setAuctionPriceDecayPeriod(Constant.MIN_AUCTION_PRICE_DECAY_PERIOD - 1);
     }
 
     function test_setAuctionPriceDecayPeriod_fail_above_max() public {
+        hoax(memeceptionBaseTest.MULTISIG());
         vm.expectRevert(InvalidAuctionDuration.selector);
-        memeceptionBaseTest.setAuctionPriceDecayPeriod(Constant.MAX_AUCTION_PRICE_DECAY_PERIOD + 1);
+        memeception.setAuctionPriceDecayPeriod(Constant.MAX_AUCTION_PRICE_DECAY_PERIOD + 1);
     }
 }

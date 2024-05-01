@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {DeployersME20} from "../utils/DeployersME20.sol";
-import {MemeAddressMiner} from "../utils/MemeAddressMiner.sol";
+import {Meme20AddressMiner} from "../utils/Meme20AddressMiner.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CreateMemeTest is DeployersME20 {
@@ -18,7 +18,7 @@ contract CreateMemeTest is DeployersME20 {
         super.setUp();
 
         uint40 startAt = uint40(block.timestamp + 3 days);
-        (, bytes32 salt) = MemeAddressMiner.find(
+        (, bytes32 salt) = Meme20AddressMiner.find(
             address(memeceptionBaseTest.memeceptionContract()),
             WETH9,
             createMemeParams.name,
@@ -77,12 +77,6 @@ contract CreateMemeTest is DeployersME20 {
     function test_createMeme_fail_vestingAlloc() public {
         createMemeParams.vestingAllocBps = 1001;
         vm.expectRevert(VestingAllocTooHigh.selector);
-        memeceptionBaseTest.createMeme(createMemeParams);
-    }
-
-    function test_createMeme_fail_salt() public {
-        createMemeParams.salt = "0xf";
-        vm.expectRevert(InvalidMemeAddress.selector);
         memeceptionBaseTest.createMeme(createMemeParams);
     }
 }

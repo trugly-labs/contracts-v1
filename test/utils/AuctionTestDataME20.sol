@@ -5,7 +5,6 @@ import {console2} from "forge-std/Test.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
-import {PoolLiquidity} from "../../src/test/PoolLiquidity.sol";
 
 contract AuctionTestData {
     using FixedPointMathLib for uint256;

@@ -11,7 +11,8 @@ contract DeployMemeception is Script, DeploymentsFn {
         vm.startBroadcast(deployerPrivateKey);
         TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
-        deployMemeception(address(vesting), treasury);
+        address multisig = deployMultisig();
+        deployMemeception(address(vesting), treasury, multisig);
         vm.stopBroadcast();
     }
 }

@@ -13,7 +13,6 @@ import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {Meme20AddressMiner} from "./Meme20AddressMiner.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
-import {SqrtPriceX96} from "../../src/libraries/SqrtPriceX96.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 

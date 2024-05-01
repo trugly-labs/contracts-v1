@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {ERC1155} from "@solmate/tokens/ERC1155.sol";
-import {MEMERC20Constant} from "../libraries/MEMERC20Constant.sol";
+import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 
 contract MEME1155 is ERC1155 {
     error TransferMemecoinsInstead();

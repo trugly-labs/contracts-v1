@@ -1,11 +1,11 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {Deployers} from "../utils/Deployers.sol";
+import {DeployersME20} from "../utils/DeployersME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
-import {MEMERC20} from "../../src/types/MEMERC20.sol";
+import {MEME20} from "../../src/types/MEME20.sol";
 
-contract StartVestingTest is Deployers {
+contract StartVestingTest is DeployersME20 {
     error NotMemeception();
     error VestingAlreadyStarted();
     error VestingAmountCannotBeZero();
@@ -26,13 +26,13 @@ contract StartVestingTest is Deployers {
         uint64 cliff
     );
 
-    MEMERC20 mockMemeToken;
+    MEME20 mockMemeToken;
     uint256 VESTING_ALLOCATION = 1000;
 
     function setUp() public override {
         super.setUp();
         vesting.setMemeception(address(this), true);
-        mockMemeToken = new MEMERC20("MEME", "MEME", address(this));
+        mockMemeToken = new MEME20("MEME", "MEME", address(this));
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
     }
 
@@ -161,7 +161,7 @@ contract StartVestingTest is Deployers {
     }
 
     function test_startVesting_fail_insufficient_balance() public {
-        MEMERC20 mockMemeToken2 = new MEMERC20("MEME", "MEME", address(this));
+        MEME20 mockMemeToken2 = new MEME20("MEME", "MEME", address(this));
         mockMemeToken2.transfer(address(vesting), VESTING_ALLOCATION - 1);
         vm.expectRevert(InsufficientBalance.selector);
         vesting.startVesting(

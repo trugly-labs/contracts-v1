@@ -10,7 +10,6 @@ import {DeployersME20} from "../utils/DeployersME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {AuctionTestData} from "../utils/AuctionTestDataME20.sol";
-import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 
 contract BidTest is DeployersME20, AuctionTestData {
     error MemeLaunched();

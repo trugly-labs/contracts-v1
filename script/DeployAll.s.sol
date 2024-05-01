@@ -12,7 +12,8 @@ contract DeployAll is Script, DeploymentsFn {
         vm.startBroadcast(deployerPrivateKey);
         // TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
-        deployMemeception(0xD309DcF90f6A4eAd4D0fddD7760f33fAc511c71d, treasury);
+        address multisig = deployMultisig();
+        deployMemeception(0xD309DcF90f6A4eAd4D0fddD7760f33fAc511c71d, treasury, multisig);
         // deployUniversalRouter(treasury);
         vm.stopBroadcast();
     }

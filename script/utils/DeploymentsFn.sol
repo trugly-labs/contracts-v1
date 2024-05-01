@@ -8,7 +8,7 @@ import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterIm
 import {BaseParameters} from "../parameters/Base.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
-import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
+import {Trugly20Memeception} from "../../src/Trugly20Memeception.sol";
 
 contract DeploymentsFn is BaseParameters {
     function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
@@ -52,10 +52,18 @@ contract DeploymentsFn is BaseParameters {
         return TREASURY;
     }
 
-    function deployMemeception(address vesting, address treasury) public returns (TruglyMemeception memeception) {
-        console2.log("Deploying TruglyMemeception..");
-        memeception = new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting, treasury);
+    function deployMultisig() public pure returns (address) {
+        console2.log("Multisig:", ADMIN);
+        return ADMIN;
+    }
+
+    function deployMemeception(address vesting, address treasury, address multisig)
+        public
+        returns (Trugly20Memeception memeception)
+    {
+        console2.log("Deploying Trugly20Memeception..");
+        memeception = new Trugly20Memeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting, treasury, multisig);
         // TruglyVesting(vesting).setMemeception(address(memeception), true);
-        console2.log("TruglyMemeception Deployed:", address(memeception));
+        console2.log("Trugly20Memeception Deployed:", address(memeception));
     }
 }

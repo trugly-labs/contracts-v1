@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
 
 import {Test, console2} from "forge-std/Test.sol";
-import {MEMERC20} from "../types/MEMERC20.sol";
+import {MEME20} from "../types/MEME20.sol";
 import {TruglyUniversalRouter} from "../TruglyUniversalRouter.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 
@@ -116,7 +116,7 @@ contract RouterBaseTest is Test, BaseParameters {
 
     function _getBalance(address token, address account) internal view returns (uint256) {
         if (token == address(0)) return account.balance;
-        return MEMERC20(token).balanceOf(account);
+        return MEME20(token).balanceOf(account);
     }
 
     /// @notice receive native tokens

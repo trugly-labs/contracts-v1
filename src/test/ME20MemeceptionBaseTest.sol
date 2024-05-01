@@ -5,7 +5,6 @@ import {Test, console2} from "forge-std/Test.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {PoolLiquidity} from "./PoolLiquidity.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../types/MEME20.sol";
 import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";

@@ -1,14 +1,14 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {Deployers} from "../utils/Deployers.sol";
+import {DeployersME20} from "../utils/DeployersME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
-import {MEMERC20} from "../../src/types/MEMERC20.sol";
+import {MEME20} from "../../src/types/MEME20.sol";
 
-contract ReleaseTest is Deployers {
+contract ReleaseTest is DeployersME20 {
     event MEMERC20Released(address indexed token, address indexed creator, uint256 amount);
 
-    MEMERC20 mockMemeToken;
+    MEME20 mockMemeToken;
     uint256 VESTING_ALLOCATION = 1000;
     address CREATOR = address(3);
     uint64 VESTING_START;
@@ -16,7 +16,7 @@ contract ReleaseTest is Deployers {
     function setUp() public override {
         super.setUp();
         vesting.setMemeception(address(this), true);
-        mockMemeToken = new MEMERC20("MEME", "MEME", address(this));
+        mockMemeToken = new MEME20("MEME", "MEME", address(this));
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
         VESTING_START = uint64(block.timestamp + 3 days);
         vesting.startVesting(
