@@ -1,11 +1,11 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {Deployers} from "../utils/Deployers.sol";
+import {DeployersME20} from "../utils/DeployersME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
-import {MEMERC20} from "../../src/types/MEMERC20.sol";
+import {MEME20} from "../../src/types/MEME20.sol";
 
-contract SetMemeceptionTest is Deployers {
+contract SetMemeceptionTest is DeployersME20 {
     event MemeceptionAuthorized(address indexed memeception, bool isAuthorized);
 
     function test_setMemeception_success() public {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
-import {MEMERC20} from "../../src/types/MEMERC20.sol";
+import {MEME20} from "../../src/types/MEME20.sol";
 
-library MemeAddressMiner {
+library Meme20AddressMiner {
     uint256 public constant MAX_LOOP = 200;
 
     function find(address deployer, address _WETH9, string memory _name, string memory _symbol, address _creator)
@@ -13,7 +13,7 @@ library MemeAddressMiner {
     {
         address memeAddress;
         bytes memory creationCodeWithArgs =
-            abi.encodePacked(type(MEMERC20).creationCode, abi.encode(_name, _symbol, _creator));
+            abi.encodePacked(type(MEME20).creationCode, abi.encode(_name, _symbol, _creator));
 
         uint256 salt;
         for (salt; salt < MAX_LOOP; salt++) {

@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {DeployersMEME404} from "./utils/DeployersMEME404.sol";
+import {DeployersMEME404} from "../utils/DeployersMEME404.sol";
 
 contract MEME404Test is DeployersMEME404 {
     function test_transferUp() public {

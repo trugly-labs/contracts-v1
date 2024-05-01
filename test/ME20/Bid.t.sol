@@ -4,14 +4,14 @@ pragma solidity ^0.8.23;
 import {console2} from "forge-std/Test.sol";
 import {ERC20} from "@solady/tokens/ERC20.sol";
 
-import {Deployers} from "./utils/Deployers.sol";
-import {Constant} from "../src/libraries/Constant.sol";
-import {MEMERC20Constant} from "../src/libraries/MEMERC20Constant.sol";
-import {AuctionTestData} from "./utils/AuctionTestData.sol";
-import {TruglyMemeception} from "../src/TruglyMemeception.sol";
 import {LibString} from "@solady/utils/LibString.sol";
 
-contract BidTest is Deployers, AuctionTestData {
+import {DeployersME20} from "../utils/DeployersME20.sol";
+import {Constant} from "../../src/libraries/Constant.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
+import {AuctionTestData} from "../utils/AuctionTestDataME20.sol";
+
+contract BidTest is DeployersME20, AuctionTestData {
     error MemeLaunched();
     error DuplicateOG();
     error ZeroAmount();
@@ -36,7 +36,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_capReached_success() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
 
         uint256 amount = 9.999999999 ether;
         vm.expectEmit(true, true, false, true);
@@ -46,26 +46,31 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_capReached_over_success() public {
-        vm.warp(createMemeParams.startAt + 110 minutes);
+        vm.warp(createMemeParams.startAt + 1);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
         memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
         vm.expectEmit(true, true, false, true);
-        emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), MAX_BID_AMOUNT, 4.44444444e26);
+        emit MemeceptionBid(
+            address(memeToken), address(memeceptionBaseTest), MAX_BID_AMOUNT, 4424681598150197628458498024
+        );
 
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
         memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
     }
 
     function test_bid_all_auction_success() public {
-        memeceptionBaseTest.setAuctionDuration(Constant.MAX_AUCTION_DURATION);
-        for (uint256 i = 0; i <= 35; i++) {
+        uint256 maxSteps = memeception.auctionDuration() / memeception.auctionPriceDecayPeriod();
+        for (uint256 i = 0; i < maxSteps; i++) {
             console2.log("i", i);
             address memeToken = createMeme(LibString.toString(i));
             uint256 timeNow = memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt
-                + i * Constant.AUCTION_PRICE_DECAY_PERIOD;
+                + i * memeception.auctionPriceDecayPeriod();
             vm.warp(timeNow);
-            (uint256 ethAuctionBal, uint256 numberMaxBids) =
-                getAuctionData(memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt);
+            (uint256 ethAuctionBal, uint256 numberMaxBids) = getAuctionData(
+                memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt,
+                memeceptionBaseTest.memeceptionContract().auctionPriceDecayPeriod()
+            );
 
             // Loop to bid max-1 times
             while (numberMaxBids-- > 1) {
@@ -89,7 +94,7 @@ contract BidTest is Deployers, AuctionTestData {
             );
 
             assertApproxEqLow(
-                MEMERC20Constant.TOKEN_TOTAL_SUPPLY * (10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS) / 10000
+                MEME20Constant.TOKEN_TOTAL_SUPPLY * (10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS) / 10000
                     - Constant.TOKEN_MEMECEPTION_SUPPLY,
                 ERC20(memeToken).balanceOf(memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).pool),
                 0.00000001e18,
@@ -115,7 +120,7 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_fail_memeception_ended() public {
-        vm.warp(createMemeParams.startAt + 120 minutes);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration());
         vm.expectRevert(MemeceptionEnded.selector);
         memeception.bid{value: 1 ether}(address(memeToken));
     }
@@ -127,9 +132,9 @@ contract BidTest is Deployers, AuctionTestData {
     }
 
     function test_bid_fail_meme_launched() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
-        memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
+        memeception.bid{value: MAX_BID_AMOUNT}(address(memeToken));
 
         vm.expectRevert(MemeLaunched.selector);
         memeceptionBaseTest.bid{value: 1 ether}(address(memeToken));

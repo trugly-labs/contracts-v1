@@ -5,7 +5,7 @@ import {IERC721Receiver} from "./external/IERC721Receiver.sol";
 
 /// @title The interface for the Trugly Launchpad
 /// @notice Launchpad is in charge of creating MemeRC20 and their Memeception
-interface ITruglyMemeception is IERC721Receiver {
+interface ITrugly404Memeception is IERC721Receiver {
     /// @dev Struct containing information about the Memeception and the UniV3 Pool
     struct Memeception {
         /// @dev LP Token ID

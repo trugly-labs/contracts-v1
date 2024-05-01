@@ -1,9 +1,10 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {Deployers} from "./utils/Deployers.sol";
+import {DeployersME20} from "../utils/DeployersME20.sol";
+import {Constant} from "../../src/libraries/Constant.sol";
 
-contract ExitTest is Deployers {
+contract ExitTest is DeployersME20 {
     error InvalidMemeceptionDate();
     error MemeLaunched();
     error InvalidMemeAddress();
@@ -18,7 +19,7 @@ contract ExitTest is Deployers {
     }
 
     function test_exit_success() public {
-        vm.warp(createMemeParams.startAt + 1 days);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration());
         vm.expectEmit(true, true, false, true);
         emit MemeceptionExit(address(memeToken), address(memeceptionBaseTest), MAX_BID_AMOUNT);
 
@@ -29,7 +30,7 @@ contract ExitTest is Deployers {
         startHoax(makeAddr("alice"), MAX_BID_AMOUNT - 1);
         memeception.bid{value: MAX_BID_AMOUNT - 1}(address(memeToken));
 
-        vm.warp(createMemeParams.startAt + 3 hours);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration());
 
         vm.expectEmit(true, true, false, true);
         emit MemeceptionExit(address(memeToken), address(makeAddr("alice")), MAX_BID_AMOUNT - 1);
@@ -44,19 +45,19 @@ contract ExitTest is Deployers {
     }
 
     function test_exit_success_no_bid() public {
-        vm.warp(createMemeParams.startAt + 1 days);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration());
         emit MemeceptionExit(address(memeToken), address(memeceptionBaseTest), 0);
         memeceptionBaseTest.exit(address(memeToken));
     }
 
     function test_exit_fail_memeception_not_ended() public {
-        vm.warp(createMemeParams.startAt + 119 minutes);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
         vm.expectRevert(InvalidMemeceptionDate.selector);
         memeceptionBaseTest.exit(address(memeToken));
     }
 
     function test_exit_fail_meme_launched() public {
-        vm.warp(createMemeParams.startAt + 115 minutes);
+        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
         hoax(makeAddr("alice"), MAX_BID_AMOUNT);
         memeception.bid{value: MAX_BID_AMOUNT}(address(memeToken));
 

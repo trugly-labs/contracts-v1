@@ -1,9 +1,9 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {Deployers} from "./utils/Deployers.sol";
+import {DeployersME20} from "../utils/DeployersME20.sol";
 
-contract SetTreasury is Deployers {
+contract SetTreasury is DeployersME20 {
     error ZeroAddress();
     /// @dev Emited when the treasury is updated
 
@@ -12,7 +12,9 @@ contract SetTreasury is Deployers {
     function test_setTreasury_success() public {
         vm.expectEmit(true, true, false, true);
         emit TreasuryUpdated(treasury, makeAddr("alice"));
-        memeceptionBaseTest.setTreasury(makeAddr("alice"));
+
+        hoax(memeceptionBaseTest.MULTISIG());
+        memeception.setTreasury(makeAddr("alice"));
     }
 
     function test_setTreasury_fail_not_owner() public {
@@ -22,7 +24,8 @@ contract SetTreasury is Deployers {
     }
 
     function test_setTreasury_fail_address_zero() public {
+        hoax(memeceptionBaseTest.MULTISIG());
         vm.expectRevert(ZeroAddress.selector);
-        memeceptionBaseTest.setTreasury(address(0));
+        memeception.setTreasury(address(0));
     }
 }

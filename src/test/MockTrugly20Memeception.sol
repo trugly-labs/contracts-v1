@@ -3,23 +3,27 @@ pragma solidity ^0.8.23;
 
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {TruglyMemeception} from "../TruglyMemeception.sol";
+import {Trugly20Memeception} from "../Trugly20Memeception.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
-import {Auction} from "../libraries/Auction.sol";
 
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
-import {MEMERC20} from "../types/MEMERC20.sol";
+import {MEME20} from "../types/MEME20.sol";
 
-contract MockTruglyMemeception is TruglyMemeception {
+contract MockTrugly20Memeception is Trugly20Memeception {
     using FixedPointMathLib for uint256;
     using SafeTransferLib for WETH;
-    using SafeTransferLib for MEMERC20;
+    using SafeTransferLib for MEME20;
 
-    constructor(address _v3Factory, address _v3PositionManager, address _WETH9, address _vesting, address _treasury)
-        TruglyMemeception(_v3Factory, _v3PositionManager, _WETH9, _vesting, _treasury)
-    {}
+    constructor(
+        address _v3Factory,
+        address _v3PositionManager,
+        address _WETH9,
+        address _vesting,
+        address _treasury,
+        address _multisig
+    ) Trugly20Memeception(_v3Factory, _v3PositionManager, _WETH9, _vesting, _treasury, _multisig) {}
 
     /// Bypass verification
     function _verifyCreateMeme(MemeceptionCreationParams calldata params) internal view override {}
@@ -36,7 +40,7 @@ contract MockTruglyMemeception is TruglyMemeception {
 
         WETH9.deposit{value: amountETH}();
         WETH9.safeApprove(address(v3PositionManager), amountETH);
-        MEMERC20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
+        MEME20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
             token0: address(WETH9),

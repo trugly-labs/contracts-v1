@@ -10,7 +10,7 @@ library Constant {
     uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_444_444_444 ether;
 
     /// @dev Memeception minimum start at (now + 1 day)
-    uint64 internal constant MEMECEPTION_MIN_START_AT = 1 days;
+    uint64 internal constant MEMECEPTION_MIN_START_AT = 1 hours;
 
     /// @dev Memeception maximum start at (now + 30 day)
     uint64 internal constant MEMECEPTION_MAX_START_AT = 30 days;
@@ -36,14 +36,16 @@ library Constant {
     /// @dev Vesting cliff
     uint64 internal constant VESTING_CLIFF = 91.25 days;
 
-    // @dev Auction starting price (500 ETH) - scaled by 1e18
-    uint256 internal constant AUCTION_STARTING_PRICE = 1e8;
     /// @dev Auction time unit per actions
-    uint256 internal constant AUCTION_PRICE_DECAY_PERIOD = 5 minutes;
+    uint256 internal constant AUCTION_PRICE_DECAY_PERIOD = 1.5 minutes;
+    uint256 internal constant MAX_AUCTION_PRICE_DECAY_PERIOD = 5 minutes;
+    uint256 internal constant MIN_AUCTION_PRICE_DECAY_PERIOD = 1 minutes;
     /// @dev Auction duration
-    uint40 internal constant MAX_AUCTION_DURATION = 3 hours;
+    uint40 internal constant MAX_AUCTION_DURATION = 54 minutes;
 
-    uint40 internal constant MIN_AUCTION_DURATION = 2 hours;
+    uint40 internal constant MIN_AUCTION_DURATION = 36 minutes;
     /// @dev Auction duration
     uint256 internal constant AUCTION_MAX_BID = 10 ether;
+
+    uint256 internal constant AUCTION_CLAIM_COOLDOWN = 1 minutes;
 }
