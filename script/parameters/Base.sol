@@ -20,4 +20,7 @@ contract BaseParameters {
     address public constant TREASURY = 0x2f5417Dee5bF31fe270Bb9e7F48962dDDA77b755;
 
     address public constant ADMIN = 0xb2660C551AB31FAc6D01a75f628Af2d200FfD1F2;
+
+    // UNCX Uniswap V3 LP Lockers
+    address public constant UNCX_V3_LOCKERS = 0x231278eDd38B00B07fBd52120CEf685B9BaEBCC1;
 }

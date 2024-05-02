@@ -48,4 +48,6 @@ library Constant {
     uint256 internal constant AUCTION_MAX_BID = 10 ether;
 
     uint256 internal constant AUCTION_CLAIM_COOLDOWN = 1 minutes;
+
+    uint256 internal constant MAX_LOCKER_FEE = 0.1 ether;
 }

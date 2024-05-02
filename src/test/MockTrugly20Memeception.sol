@@ -1,4 +1,4 @@
-/// SPDX-License-Identifier: BUSL-1.1
+/// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
 import {WETH} from "@solmate/tokens/WETH.sol";
@@ -7,6 +7,7 @@ import {Trugly20Memeception} from "../Trugly20Memeception.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
+import {ILiquidityLocker} from "../interfaces/external/ILiquidityLocker.sol";
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../types/MEME20.sol";
@@ -16,60 +17,68 @@ contract MockTrugly20Memeception is Trugly20Memeception {
     using SafeTransferLib for WETH;
     using SafeTransferLib for MEME20;
 
+    uint256 public scaleDownFactor = 1e7;
+    bool public bypassLock = true;
+
+    address public testAdmin;
+
     constructor(
         address _v3Factory,
         address _v3PositionManager,
+        address _uncxLockers,
         address _WETH9,
         address _vesting,
         address _treasury,
         address _multisig
-    ) Trugly20Memeception(_v3Factory, _v3PositionManager, _WETH9, _vesting, _treasury, _multisig) {}
+    ) Trugly20Memeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig) {
+        testAdmin = msg.sender;
+    }
 
     /// Bypass verification
     function _verifyCreateMeme(MemeceptionCreationParams calldata params) internal view override {}
 
     function _getAuctionPriceScaled(Memeception memory memeception) internal view override returns (uint256) {
         uint256 price = super._getAuctionPriceScaled(memeception);
-        return price / 1e7;
+        return price / scaleDownFactor;
     }
 
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal override {
-        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETH, amountMeme);
-
-        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
-
-        WETH9.deposit{value: amountETH}();
-        WETH9.safeApprove(address(v3PositionManager), amountETH);
-        MEME20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
-
-        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
-            token0: address(WETH9),
-            token1: memeToken,
-            fee: Constant.UNI_LP_SWAPFEE,
-            tickLower: Constant.TICK_LOWER,
-            tickUpper: Constant.TICK_UPPER,
-            amount0Desired: amountETH,
-            amount1Desired: amountMeme,
-            amount0Min: amountETH.mulDiv(99, 100),
-            amount1Min: amountMeme.mulDiv(99, 100),
-            recipient: address(this),
-            deadline: block.timestamp + 30 minutes
-        });
-
-        (uint256 tokenId,,,) = v3PositionManager.mint(params);
-        memeceptions[memeToken].tokenId = tokenId;
-
-        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETH);
+    function setScaleDownFactor(uint256 _scaleDownFactor) external {
+        if (msg.sender != testAdmin) {
+            revert("Only test admin can call this function");
+        }
+        scaleDownFactor = _scaleDownFactor;
     }
 
-    function _calcSqrtPriceX96(uint256 supplyA, uint256 supplyB) internal pure returns (uint160) {
-        // Calculate the price ratio (supplyB / supplyA)
-        uint256 priceRatio = FixedPointMathLib.divWad(supplyB, supplyA);
+    function setBypassLock(bool _bypassLock) external {
+        if (msg.sender != testAdmin) {
+            revert("Only test admin can call this function");
+        }
+        bypassLock = _bypassLock;
+    }
 
-        // Calculate the square root of the price ratio
-        uint256 sqrtRatio = FixedPointMathLib.sqrt(priceRatio);
+    function byPass() external {
+        if (msg.sender != testAdmin) {
+            revert("Only test admin can call this function");
+        }
+        bypassLock = true;
+        scaleDownFactor = 1e7;
+    }
 
-        // Convert to Q64.96 format
-        return uint160(FixedPointMathLib.fullMulDiv(sqrtRatio, 2 ** 96, FixedPointMathLib.sqrt(1e18)));
+    function noBypass() external {
+        if (msg.sender != testAdmin) {
+            revert("Only test admin can call this function");
+        }
+        bypassLock = false;
+        scaleDownFactor = 1e4;
+    }
+
+    // /// @dev Lock the UniV3 liquidity in the UNCX Locker
+    // /// @param lpTokenId The UniV3 LP Token ID
+    // /// @return lockId The UNCX lock ID
+    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal override returns (uint256 lockId) {
+        if (bypassLock) {
+            return 42;
+        }
+        super._lockLiquidity(lpTokenId, lockFee);
     }
 }

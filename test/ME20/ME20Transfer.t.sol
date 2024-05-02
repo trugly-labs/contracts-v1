@@ -7,6 +7,8 @@ import {DeployersME20} from "../utils/DeployersME20.sol";
 
 contract MEME20Transfers is DeployersME20 {
     address ALICE;
+    uint256 initTreasuryBal;
+    uint256 initCreatorBal;
 
     function setUp() public override {
         super.setUp();
@@ -14,6 +16,8 @@ contract MEME20Transfers is DeployersME20 {
         initFullBid(10 ether);
 
         ALICE = makeAddr("Alice");
+        initTreasuryBal = memeToken.balanceOf(treasury);
+        initCreatorBal = memeToken.balanceOf(MEMECREATOR);
     }
 
     function test_transfer_exempt() public {
@@ -24,8 +28,8 @@ contract MEME20Transfers is DeployersME20 {
         hoax(ALICE, 10 ether);
         memeToken.transfer(BOB, 5 ether);
 
-        assertEq(memeToken.balanceOf(treasury), 0, "treasuryBalance");
-        assertEq(memeToken.balanceOf(address(memeceptionBaseTest)), 0, "creatorBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
         assertEq(memeToken.balanceOf(ALICE), 5 ether, "aliceBalance");
         assertEq(memeToken.balanceOf(BOB), 5 ether, "bobBalance");
     }
@@ -36,8 +40,8 @@ contract MEME20Transfers is DeployersME20 {
         hoax(memeceptionAddr, 10 ether);
         memeToken.transfer(ALICE, 10 ether);
         assertEq(memeToken.balanceOf(memeceptionAddr), initialBalance - 10 ether, "memeceptionBalance");
-        assertEq(memeToken.balanceOf(treasury), 0, "treasuryBalance");
-        assertEq(memeToken.balanceOf(address(memeceptionBaseTest)), 0, "creatorBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
         assertEq(memeToken.balanceOf(ALICE), 10 ether, "aliceBalance");
     }
 
@@ -51,8 +55,8 @@ contract MEME20Transfers is DeployersME20 {
         MEME20(memeToken).approve(address(this), 10 ether);
         memeToken.transferFrom(ALICE, BOB, 5 ether);
 
-        assertEq(memeToken.balanceOf(treasury), 0, "treasuryBalance");
-        assertEq(memeToken.balanceOf(address(memeceptionBaseTest)), 0, "creatorBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
         assertEq(memeToken.balanceOf(ALICE), 5 ether, "aliceBalance");
         assertEq(memeToken.balanceOf(BOB), 5 ether, "bobBalance");
     }
@@ -64,10 +68,9 @@ contract MEME20Transfers is DeployersME20 {
         MEME20(memeToken).approve(address(this), 10 ether);
 
         memeToken.transferFrom(memeceptionAddr, ALICE, 10 ether);
-
         assertEq(memeToken.balanceOf(memeceptionAddr), initialBalance - 10 ether, "memeceptionBalance");
-        assertEq(memeToken.balanceOf(treasury), 0, "treasuryBalance");
-        assertEq(memeToken.balanceOf(address(memeceptionBaseTest)), 0, "creatorBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
         assertEq(memeToken.balanceOf(ALICE), 10 ether, "aliceBalance");
     }
 

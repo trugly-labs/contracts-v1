@@ -6,12 +6,18 @@ import {ERC20} from "@solady/tokens/ERC20.sol";
 
 import {LibString} from "@solady/utils/LibString.sol";
 
+import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
+import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 import {DeployersME20} from "../utils/DeployersME20.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {AuctionTestData} from "../utils/AuctionTestDataME20.sol";
 
 contract BidTest is DeployersME20, AuctionTestData {
+    using FixedPointMathLib for uint256;
+
     error MemeLaunched();
     error DuplicateOG();
     error ZeroAmount();
@@ -43,6 +49,18 @@ contract BidTest is DeployersME20, AuctionTestData {
         emit MemeceptionBid(address(memeToken), address(memeceptionBaseTest), amount, Constant.TOKEN_MEMECEPTION_SUPPLY);
 
         memeceptionBaseTest.bid{value: amount}(address(memeToken));
+
+        ITruglyMemeception.Memeception memory memeceptionData = memeception.getMemeception(address(memeToken));
+
+        IUNCX_LiquidityLocker_UniV3.Lock memory lock = uncxLocker.getLock(memeceptionData.tokenId);
+        assertEq(lock.pool, memeceptionData.pool, "lock.pool");
+        assertEq(address(lock.nftPositionManager), V3_POSITION_MANAGER, "lock.nftPositionManager");
+        assertEq(lock.lock_id, memeceptionData.tokenId, "lock.lock_id");
+        assertEq(lock.owner, memeceptionBaseTest.MULTISIG(), "lock.owner");
+        assertEq(lock.pendingOwner, address(0), "lock.pendingOwner");
+        assertEq(lock.additionalCollector, address(memeception), "lock.additionalCollector");
+        assertEq(lock.unlockDate, type(uint256).max, "lock.unlockDate");
+        assertEq(lock.countryCode, 0, "lock.countryCode");
     }
 
     function test_bid_capReached_over_success() public {
@@ -67,7 +85,7 @@ contract BidTest is DeployersME20, AuctionTestData {
             uint256 timeNow = memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt
                 + i * memeception.auctionPriceDecayPeriod();
             vm.warp(timeNow);
-            (uint256 ethAuctionBal, uint256 numberMaxBids) = getAuctionData(
+            (uint256 ethAuctionBal, uint256 numberMaxBids,) = getAuctionData(
                 memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).startAt,
                 memeceptionBaseTest.memeceptionContract().auctionPriceDecayPeriod()
             );
@@ -75,7 +93,7 @@ contract BidTest is DeployersME20, AuctionTestData {
             // Loop to bid max-1 times
             while (numberMaxBids-- > 1) {
                 startHoax(makeAddr(LibString.toString(i * 100 + numberMaxBids)), MAX_BID_AMOUNT);
-                memeceptionBaseTest.memeceptionContract().bid{value: MAX_BID_AMOUNT}(memeToken);
+                memeception.bid{value: MAX_BID_AMOUNT}(memeToken);
                 vm.stopPrank();
             }
 
@@ -85,21 +103,39 @@ contract BidTest is DeployersME20, AuctionTestData {
             emit MemeceptionBid(memeToken, address(memeceptionBaseTest), amount, 0);
 
             memeceptionBaseTest.bid{value: amount}(memeToken);
+            uint256 bidAmountMeme = memeception.getBid(memeToken, address(memeceptionBaseTest)).amountMeme;
+            uint256 auctionFinalPrice = memeception.getMemeception(memeToken).auctionFinalPriceScaled;
+
+            uint256 refund = amount - auctionFinalPrice.mulWadUp(bidAmountMeme);
 
             assertApproxEqLow(
+                ERC20(memeToken).balanceOf(address(memeception)),
+                Constant.TOKEN_MEMECEPTION_SUPPLY,
+                0.00000001e18,
+                "Not enough meme token remaining"
+            );
+            assertApproxEqLow(address(memeception).balance, refund, 0.00000001e18, "Not enough ETH remaining");
+
+            assertApproxEq(
                 ethAuctionBal,
                 ERC20(WETH9).balanceOf(memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).pool),
                 0.00000001e18,
                 "Liquidity Added must not be greater than auction balance (WETH)"
             );
 
-            assertApproxEqLow(
-                MEME20Constant.TOKEN_TOTAL_SUPPLY * (10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS) / 10000
-                    - Constant.TOKEN_MEMECEPTION_SUPPLY,
+            assertApproxEq(
+                // 0.8% is taken by UNCX
+                (
+                    MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4)
+                        - Constant.TOKEN_MEMECEPTION_SUPPLY
+                ).mulDiv(992, 1000),
                 ERC20(memeToken).balanceOf(memeceptionBaseTest.memeceptionContract().getMemeception(memeToken).pool),
                 0.00000001e18,
                 "Liquidity Added must be equal to auction balance (MEMERC20)"
             );
+
+            vm.warp(timeNow + Constant.AUCTION_CLAIM_COOLDOWN);
+            memeceptionBaseTest.claim(memeToken);
         }
     }
 

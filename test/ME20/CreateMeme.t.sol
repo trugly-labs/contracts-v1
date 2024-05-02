@@ -30,7 +30,7 @@ contract CreateMemeTest is DeployersME20 {
         createMemeParams.salt = salt;
     }
 
-    function test_createMeme_success() public {
+    function test_createMeme_success_simple() public {
         createMeme("MEME");
     }
 
