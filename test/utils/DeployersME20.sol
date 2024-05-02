@@ -13,6 +13,7 @@ import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {Meme20AddressMiner} from "./Meme20AddressMiner.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
+import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 
@@ -25,7 +26,9 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     address treasury = address(1);
     Trugly20Memeception memeception;
     ISwapRouter swapRouter;
+    IUNCX_LiquidityLocker_UniV3 uncxLocker;
 
+    address MEMECREATOR = makeAddr("creator");
     uint256 public constant MAX_BID_AMOUNT = 10 ether;
 
     // Parameters
@@ -36,7 +39,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         swapFeeBps: 80,
         vestingAllocBps: 500,
         salt: "",
-        creator: address(this)
+        creator: MEMECREATOR
     });
 
     function setUp() public virtual {
@@ -49,6 +52,8 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         memeception = memeceptionBaseTest.memeceptionContract();
         // Base
         swapRouter = ISwapRouter(SWAP_ROUTER);
+
+        uncxLocker = IUNCX_LiquidityLocker_UniV3(UNCX_V3_LOCKERS);
     }
 
     function deployVesting() public virtual {
@@ -68,16 +73,12 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     function createMeme(string memory symbol) public virtual returns (address meme) {
         uint40 startAt = uint40(block.timestamp + 3 days);
         (address mineAddress, bytes32 salt) = Meme20AddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()),
-            WETH9,
-            createMemeParams.name,
-            symbol,
-            address(memeceptionBaseTest)
+            address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol, MEMECREATOR
         );
         createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
-        createMemeParams.creator = address(memeceptionBaseTest);
+        createMemeParams.creator = MEMECREATOR;
 
         (meme,) = memeceptionBaseTest.createMeme(createMemeParams);
         assertEq(meme, mineAddress, "mine memeAddress");

@@ -9,6 +9,7 @@ import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {Constant} from "./libraries/Constant.sol";
 import {MEME20Constant} from "./libraries/MEME20Constant.sol";
+import {ILiquidityLocker} from "./interfaces/external/ILiquidityLocker.sol";
 import {INonfungiblePositionManager} from "./interfaces/external/INonfungiblePositionManager.sol";
 import {ITruglyMemeception} from "./interfaces/ITruglyMemeception.sol";
 import {IUniswapV3Factory} from "./interfaces/external/IUniswapV3Factory.sol";
@@ -58,6 +59,16 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
 
     /// @dev Emited when the auction duration is updated
     event AuctionDurationUpdated(uint256 oldDuration, uint256 newDuration);
+
+    /// @dev Emitted when the fees are collected
+    event CollectFees(
+        address indexed memeToken,
+        address indexed recipient,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 fee0,
+        uint256 fee1
+    );
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       ERRORS                      */
@@ -111,6 +122,12 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
     /// @dev Thrown when the auction is out of range
     error AuctionOutOfRange();
 
+    /// @dev Thrown when the Locker fees is too high
+    error LockerFeeTooHigh();
+
+    /// @dev Thrown when the Locker fee structure is invalid
+    error InvalidLockerFeeStructure();
+
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -123,6 +140,9 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
 
     /// @dev Address of the UniswapV3 NonfungiblePositionManager
     INonfungiblePositionManager public immutable v3PositionManager;
+
+    /// @dev Address of the UNCX Locker
+    ILiquidityLocker public immutable uncxLocker;
 
     /// @dev Vesting contract for MEME20 tokens
     ITruglyVesting public immutable vesting;
@@ -147,24 +167,8 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
     address[] internal EXEMPT_UNISWAP = [
         0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1, // LP Positions
         0x42bE4D6527829FeFA1493e1fb9F3676d2425C3C1, // Staker Address
-        0x067170777BA8027cED27E034102D54074d062d71 // Fee Collector
-    ];
-
-    uint160[] internal SQRT_PRICES = [
-        9.9620638014409013576665500134366e31,
-        1.82362737790643434215160709805482e32,
-        2.61385148314342471623782117882802e32,
-        3.74004952386637585900988618606868e32,
-        5.60227709747861399187319382274581e32,
-        7.84475704480554846956081104400211e32,
-        1.029284437475773524677208730204788e33,
-        1.344009007269693266194936117742324e33,
-        1.66565590888416773239749174532807e33,
-        1.96540882188949032818435859689197e33,
-        2.31132305030739515210613901046113e33,
-        2.89300345324985299295434785749435e33,
-        3.45780049422742027739788815516414e33,
-        4.16126696071137508385761524744751e33
+        0x067170777BA8027cED27E034102D54074d062d71, // Fee Collector
+        0x231278eDd38B00B07fBd52120CEf685B9BaEBCC1 // UNCX_V3_LOCKERS
     ];
 
     uint256[] internal AUCTION_PRICES = [
@@ -192,12 +196,12 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
     constructor(
         address _v3Factory,
         address _v3PositionManager,
+        address _uncxLockers,
         address _WETH9,
         address _vesting,
         address _treasury,
         address _multisig
     ) Owned(_multisig) {
-        if (AUCTION_PRICES.length != SQRT_PRICES.length) revert InvalidAuctionDuration();
         if (
             _v3Factory == address(0) || _v3PositionManager == address(0) || _WETH9 == address(0)
                 || _vesting == address(0) || _treasury == address(0)
@@ -206,6 +210,9 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
         }
         v3Factory = IUniswapV3Factory(_v3Factory);
         v3PositionManager = INonfungiblePositionManager(_v3PositionManager);
+        uncxLocker = ILiquidityLocker(_uncxLockers);
+        v3PositionManager.setApprovalForAll(address(uncxLocker), true);
+
         WETH9 = WETH(payable(_WETH9));
         vesting = ITruglyVesting(_vesting);
         treasury = _treasury;
@@ -293,7 +300,6 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
         if (memeception.auctionTokenSold + auctionTokenAmount >= Constant.TOKEN_MEMECEPTION_SUPPLY) {
             auctionTokenAmount = Constant.TOKEN_MEMECEPTION_SUPPLY.rawSub(memeception.auctionTokenSold);
 
-            memeceptions[memeToken].auctionFinalPriceScaled = curPriceScaled.safeCastTo64();
             /// Adding liquidity to Uni V3 Pool
             _addLiquidityToUniV3Pool(
                 memeToken,
@@ -301,6 +307,7 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
                 MEME20(memeToken).balanceOf(address(this)).rawSub(Constant.TOKEN_MEMECEPTION_SUPPLY)
             );
 
+            memeceptions[memeToken].auctionFinalPriceScaled = curPriceScaled.safeCastTo64();
             memeceptions[memeToken].auctionEndedAt = block.timestamp;
         }
 
@@ -316,13 +323,20 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
     /// @param memeToken Address of the MEME20
     /// @param amountETH Amount of ETH to add to the pool
     /// @param amountMeme Amount of MEME20 to add to the pool
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal virtual {
-        uint256 step = (block.timestamp.rawSub(memeceptions[memeToken].startAt)).rawDiv(auctionPriceDecayPeriod);
-        if (step >= SQRT_PRICES.length) revert AuctionOutOfRange();
-        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(SQRT_PRICES[step]);
+    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal {
+        ILiquidityLocker.FeeStruct memory lockFee = uncxLocker.getFee("LVP");
+        uint256 amountETHMinusLockFee = amountETH;
+        if (lockFee.flatFee > 0 && lockFee.flatFeeToken == address(0)) {
+            if (lockFee.flatFee > Constant.MAX_LOCKER_FEE) revert LockerFeeTooHigh();
+            amountETHMinusLockFee -= lockFee.flatFee;
+        }
+        if (lockFee.flatFee > 0 && lockFee.flatFeeToken != address(0)) revert InvalidLockerFeeStructure();
 
-        WETH9.deposit{value: amountETH}();
-        WETH9.safeApprove(address(v3PositionManager), amountETH);
+        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETHMinusLockFee, amountMeme);
+        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
+
+        WETH9.deposit{value: amountETHMinusLockFee}();
+        WETH9.safeApprove(address(v3PositionManager), amountETHMinusLockFee);
         MEME20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
@@ -331,18 +345,40 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
             fee: Constant.UNI_LP_SWAPFEE,
             tickLower: Constant.TICK_LOWER,
             tickUpper: Constant.TICK_UPPER,
-            amount0Desired: amountETH,
+            amount0Desired: amountETHMinusLockFee,
             amount1Desired: amountMeme,
-            amount0Min: amountETH.mulDiv(99, 100),
+            amount0Min: amountETHMinusLockFee.mulDiv(99, 100),
             amount1Min: amountMeme.mulDiv(99, 100),
             recipient: address(this),
             deadline: block.timestamp + 30 minutes
         });
 
         (uint256 tokenId,,,) = v3PositionManager.mint(params);
-        memeceptions[memeToken].tokenId = tokenId;
 
-        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETH);
+        uint256 lockId = _lockLiquidity(tokenId, lockFee.flatFee);
+        memeceptions[memeToken].tokenId = lockId;
+
+        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETHMinusLockFee);
+    }
+
+    /// @dev Lock the UniV3 liquidity in the UNCX Locker
+    /// @param lpTokenId The UniV3 LP Token ID
+    /// @return lockId The UNCX lock ID
+    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal virtual returns (uint256 lockId) {
+        lockId = uncxLocker.lock{value: lockFee}(
+            ILiquidityLocker.LockParams({
+                nftPositionManager: v3PositionManager,
+                nft_id: lpTokenId,
+                dustRecipient: treasury,
+                owner: owner,
+                additionalCollector: address(this),
+                collectAddress: treasury,
+                unlockDate: type(uint256).max,
+                countryCode: 0,
+                feeName: "LVP",
+                r: new bytes[](0)
+            })
+        );
     }
 
     /// @dev Check a MEME20's UniV3 Pool is initialized with liquidity
@@ -402,18 +438,27 @@ contract Trugly20Memeception is ITruglyMemeception, Owned {
         emit MemeceptionClaimed(memeToken, msg.sender, claimableMeme, refund);
     }
 
+    /// @inheritdoc ITruglyMemeception
     function collectFees(address memeToken) external {
-        INonfungiblePositionManager.CollectParams memory collectParams = INonfungiblePositionManager.CollectParams({
-            tokenId: memeceptions[memeToken].tokenId,
-            recipient: treasury,
-            amount0Max: type(uint128).max,
-            amount1Max: type(uint128).max
-        });
-        v3PositionManager.collect(collectParams);
+        if (memeceptions[memeToken].tokenId == 0) revert InvalidMemeAddress();
+        (uint256 amount0, uint256 amount1, uint256 fee0, uint256 fee1) =
+            uncxLocker.collect(memeceptions[memeToken].tokenId, treasury, type(uint128).max, type(uint128).max);
+        emit CollectFees(memeToken, treasury, amount0, amount1, fee0, fee1);
     }
 
     function _auctionEnded(Memeception memory memeception) internal view virtual returns (bool) {
         return uint40(block.timestamp) >= memeception.startAt + auctionDuration || _poolLaunched(memeception);
+    }
+
+    function _calcSqrtPriceX96(uint256 supplyA, uint256 supplyB) internal pure returns (uint160) {
+        // Calculate the price ratio (supplyB / supplyA)
+        uint256 priceRatio = FixedPointMathLib.fullMulDiv(supplyB, 1e32, supplyA);
+
+        // Calculate the square root of the price ratio
+        uint256 sqrtRatio = FixedPointMathLib.sqrt(priceRatio);
+
+        // Convert to Q64.96 format
+        return uint160(FixedPointMathLib.fullMulDiv(sqrtRatio, 2 ** 96, FixedPointMathLib.sqrt(1e32)));
     }
 
     /// @inheritdoc ITruglyMemeception

@@ -62,7 +62,9 @@ contract MockDeploymentsFn is BaseParameters {
         returns (MockTrugly20Memeception memeception)
     {
         console2.log("Deploying TruglyMemeception..");
-        memeception = new MockTrugly20Memeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, vesting, treasury, multisig);
+        memeception = new MockTrugly20Memeception(
+            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig
+        );
         TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }

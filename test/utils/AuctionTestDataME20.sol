@@ -29,10 +29,13 @@ contract AuctionTestData {
     function getAuctionData(uint256 startAt, uint256 auctionPriceDecayPeriod)
         public
         view
-        returns (uint256 ethAuctionBal, uint256 numberMaxBids)
+        returns (uint256 ethAuctionBal, uint256 numberMaxBids, uint256 ethRaised)
     {
         uint256 step = (block.timestamp.rawSub(startAt)).rawDiv(auctionPriceDecayPeriod);
-        ethAuctionBal = ETH_RAISED[step];
-        numberMaxBids = ethAuctionBal.divUp(Constant.AUCTION_MAX_BID);
+
+        // 0.03 ETH flag fee and 0.8% for UNCX locker
+        ethAuctionBal = (ETH_RAISED[step] - 0.03 ether).mulDiv(992, 1000);
+        numberMaxBids = ETH_RAISED[step].divUp(Constant.AUCTION_MAX_BID);
+        ethRaised = ETH_RAISED[step];
     }
 }

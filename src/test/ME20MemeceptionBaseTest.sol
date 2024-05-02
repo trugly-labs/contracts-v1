@@ -56,10 +56,12 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
     ];
 
     address public MULTISIG = makeAddr("multisig");
+    address public MEMECREATOR;
 
     constructor(address _vesting, address _treasury) {
-        memeceptionContract =
-            new Trugly20Memeception(V3_FACTORY, V3_POSITION_MANAGER, WETH9, _vesting, _treasury, MULTISIG);
+        memeceptionContract = new Trugly20Memeception(
+            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG
+        );
 
         assertEq(address(memeceptionContract.v3Factory()), V3_FACTORY);
         assertEq(address(memeceptionContract.v3PositionManager()), V3_POSITION_MANAGER);
@@ -70,8 +72,8 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         external
         returns (address memeTokenAddr, address pool)
     {
-        params.creator = address(this);
         (memeTokenAddr, pool) = memeceptionContract.createMeme(params);
+        MEMECREATOR = params.creator;
 
         /// Assert Token Creation
         MEME20 memeToken = MEME20(memeTokenAddr);
@@ -81,7 +83,7 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         assertEq(memeToken.decimals(), MEME20Constant.TOKEN_DECIMALS, "memeDecimals");
         assertEq(memeToken.symbol(), params.symbol, "memeSymbol");
         assertEq(memeToken.totalSupply(), MEME20Constant.TOKEN_TOTAL_SUPPLY, "memeSupply");
-        assertEq(memeToken.creator(), address(this), "creator");
+        assertEq(memeToken.creator(), MEMECREATOR, "creator");
         assertEq(
             memeToken.balanceOf(address(memeceptionContract)),
             MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
@@ -97,7 +99,7 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         ITruglyMemeception.Memeception memory memeception = memeceptionContract.getMemeception(memeTokenAddr);
         assertEq(memeception.auctionTokenSold, 0, "memeception.auctionTokenSold");
         assertEq(memeception.auctionFinalPriceScaled, 0, "memeception.auctionFinalPrice");
-        assertEq(memeception.creator, address(this), "memeception.creator");
+        assertEq(memeception.creator, MEMECREATOR, "memeception.creator");
         assertEq(memeception.startAt, params.startAt, "memeception.startAt");
         assertEq(memeception.swapFeeBps, params.swapFeeBps, "memeception.swapFeeBps");
 
@@ -140,7 +142,7 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         );
         assertEq(
             memeceptionContract.vesting().getVestingInfo(address(memeToken)).creator,
-            params.vestingAllocBps == 0 ? address(0) : address(this),
+            params.vestingAllocBps == 0 ? address(0) : MEMECREATOR,
             "Vesting.creator"
         );
 
@@ -197,7 +199,13 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
                 0.0000000001e18,
                 "memeceptionContractETH Balance (Cap reached)"
             );
-            assertApproxEq(afterBal.poolWETH, ETH_RAISED[step], 0.0000000001e18, "poolWETH Balance (Cap reached)");
+            assertApproxEq(
+                afterBal.poolWETH,
+                // 0.03 ETH flag fee and 0.8% for UNCX locker
+                (ETH_RAISED[step] - 0.03 ether).mulDiv(992, 1000),
+                0.0000000001e18,
+                "poolWETH Balance (Cap reached)"
+            );
             assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap reached)");
             assertApproxEq(
                 afterBal.memeceptionContractMeme,
@@ -207,8 +215,11 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
             );
             assertApproxEq(
                 afterBal.poolMeme,
-                MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4)
-                    - Constant.TOKEN_MEMECEPTION_SUPPLY,
+                // 0.8% is taken by UNCX
+                (
+                    MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4)
+                        - Constant.TOKEN_MEMECEPTION_SUPPLY
+                ).mulDiv(992, 1000),
                 0.0000000001e18,
                 "PoolMemeBalance (Cap reached)"
             );

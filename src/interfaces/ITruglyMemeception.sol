@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import {IERC721Receiver} from "./external/IERC721Receiver.sol";
 
 /// @title The interface for the Trugly Launchpad
-/// @notice Launchpad is in charge of creating MemeRC20 and their Memeception
+/// @notice Launchpad is in charge of creating MEME20 and their Memeception
 interface ITruglyMemeception is IERC721Receiver {
     /// @dev Struct containing information about the Memeception and the UniV3 Pool
     struct Memeception {
@@ -32,11 +32,11 @@ interface ITruglyMemeception is IERC721Receiver {
         uint112 amountMeme;
     }
 
-    /// @dev Containing the parameters to create a MemeRC20
+    /// @dev Containing the parameters to create a MEME20
     struct MemeceptionCreationParams {
-        /// @dev Name of the MemeRC20
+        /// @dev Name of the MEME20
         string name;
-        /// @dev Symbol of the MemeRC20
+        /// @dev Symbol of the MEME20
         string symbol;
         /// @dev Date when the Memeception will start
         uint40 startAt;
@@ -49,39 +49,44 @@ interface ITruglyMemeception is IERC721Receiver {
         address creator;
     }
 
-    /// @dev Create a MemeRC20, its UniV3 Pool and setup the Memeception
-    /// @param params Parameters to create the MemeRC20 and its Memeception
-    /// @return memeToken Address of the MemeRC20
+    /// @dev Create a MEME20, its UniV3 Pool and setup the Memeception
+    /// @param params Parameters to create the MEME20 and its Memeception
+    /// @return memeToken Address of the MEME20
     /// @return pool Address of the UniV3 Pool
     function createMeme(MemeceptionCreationParams calldata params) external returns (address memeToken, address pool);
 
     /// @dev Place a bid to the Memeception
-    /// @param memeToken Address of the MemeRC20
+    /// @param memeToken Address of the MEME20
     function bid(address memeToken) external payable;
 
     /// @notice Exit the Memeception
     /// @dev Only possible after deadline is reached & cap not reached
-    /// @param memeToken Address of the MemeRC20
+    /// @param memeToken Address of the MEME20
     function exit(address memeToken) external;
 
-    /// @notice Claim the MemeRC20 from the Memeception
+    /// @notice Claim the MEME20 from the Memeception
     /// @dev Only possible after the cap is reached
-    /// @param memeToken Address of the MemeRC20
+    /// @param memeToken Address of the MEME20
     function claim(address memeToken) external;
 
-    /// @dev Get the Memeception information for a given MemeRC20
-    /// @param memeToken Address of the MemeRC20
+    /// @notice Collect the fees from the LPs
+    /// @dev Callable by anyone as it always send to the Treasury address
+    /// @param memeToken Address of the MEME20
+    function collectFees(address memeToken) external;
+
+    /// @dev Get the Memeception information for a given MEME20
+    /// @param memeToken Address of the MEME20
     /// @return memeception Memeception information
     function getMemeception(address memeToken) external view returns (Memeception memory);
 
     /// @dev Get the ETH balance of a given OG address in a Memeception
-    /// @param memeToken Address of the MemeRC20
+    /// @param memeToken Address of the MEME20
     /// @param og Address of the OG
     /// @return balanceOG ETH balance of the OG
     function getBid(address memeToken, address og) external view returns (Bid memory);
 
-    /// @dev Get the current Auction price for a given MemeRC20's memeception
-    /// @param memeToken Address of the MemeRC20
+    /// @dev Get the current Auction price for a given MEME20's memeception
+    /// @param memeToken Address of the MEME20
     /// @return priceScaled Current Auction price (scaled by 1e25)
     function getAuctionPriceScaled(address memeToken) external view returns (uint256 priceScaled);
 }

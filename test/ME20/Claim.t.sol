@@ -27,8 +27,8 @@ contract ClaimTest is DeployersME20, AuctionTestData {
         memeception.bid{value: ALICE_BID}(address(memeToken));
 
         memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
-        (uint256 ethAuctionBal,) = getAuctionData(createMemeParams.startAt, memeception.auctionPriceDecayPeriod());
-        uint256 expectedRefund = MAX_BID_AMOUNT - ethAuctionBal + ALICE_BID - 1;
+        (,, uint256 ethRaised) = getAuctionData(createMemeParams.startAt, memeception.auctionPriceDecayPeriod());
+        uint256 expectedRefund = MAX_BID_AMOUNT - ethRaised + ALICE_BID - 1;
         vm.expectEmit(true, true, false, true);
         emit MemeceptionClaimed(
             address(memeToken), address(memeceptionBaseTest), 1682013504773480662983425415, expectedRefund
@@ -40,8 +40,8 @@ contract ClaimTest is DeployersME20, AuctionTestData {
 
     function test_claim_success_no_refund() public {
         vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1.5 minutes);
-        (uint256 ethAuctionBal,) = getAuctionData(createMemeParams.startAt, memeception.auctionPriceDecayPeriod());
-        memeceptionBaseTest.bid{value: ethAuctionBal}(address(memeToken));
+        (,, uint256 ethRaised) = getAuctionData(createMemeParams.startAt, memeception.auctionPriceDecayPeriod());
+        memeceptionBaseTest.bid{value: ethRaised}(address(memeToken));
 
         vm.expectEmit(true, true, false, true);
         emit MemeceptionClaimed(address(memeToken), address(memeceptionBaseTest), Constant.TOKEN_MEMECEPTION_SUPPLY, 0);
@@ -58,8 +58,8 @@ contract ClaimTest is DeployersME20, AuctionTestData {
         memeception.bid{value: ALICE_BID}(address(memeToken));
 
         memeceptionBaseTest.bid{value: MAX_BID_AMOUNT}(address(memeToken));
-        (uint256 ethAuctionBal,) = getAuctionData(createMemeParams.startAt, memeception.auctionPriceDecayPeriod());
-        uint256 expectedRefund = MAX_BID_AMOUNT - ethAuctionBal + ALICE_BID - 1;
+        (,, uint256 ethRaised) = getAuctionData(createMemeParams.startAt, memeception.auctionPriceDecayPeriod());
+        uint256 expectedRefund = MAX_BID_AMOUNT - ethRaised + ALICE_BID - 1;
         vm.expectEmit(true, true, false, true);
         emit MemeceptionClaimed(
             address(memeToken), address(memeceptionBaseTest), 1682013504773480662983425415, expectedRefund
