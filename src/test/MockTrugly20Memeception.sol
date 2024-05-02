@@ -56,13 +56,29 @@ contract MockTrugly20Memeception is Trugly20Memeception {
         bypassLock = _bypassLock;
     }
 
+    function byPass() external {
+        if (msg.sender != testAdmin) {
+            revert("Only test admin can call this function");
+        }
+        bypassLock = true;
+        scaleDownFactor = 1e7;
+    }
+
+    function noBypass() external {
+        if (msg.sender != testAdmin) {
+            revert("Only test admin can call this function");
+        }
+        bypassLock = false;
+        scaleDownFactor = 1e4;
+    }
+
     // /// @dev Lock the UniV3 liquidity in the UNCX Locker
     // /// @param lpTokenId The UniV3 LP Token ID
     // /// @return lockId The UNCX lock ID
-    // function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal override returns (uint256 lockId) {
-    //     if (bypassLock) {
-    //         return 42;
-    //     }
-    //     super._lockLiquidity(lpTokenId, lockFee);
-    // }
+    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal override returns (uint256 lockId) {
+        if (bypassLock) {
+            return 42;
+        }
+        super._lockLiquidity(lpTokenId, lockFee);
+    }
 }
