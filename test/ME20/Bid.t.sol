@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {console2} from "forge-std/Test.sol";
 import {ERC20} from "@solady/tokens/ERC20.sol";
-
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {LibString} from "@solady/utils/LibString.sol";
 
 import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
@@ -17,6 +17,7 @@ import {AuctionTestData} from "../utils/AuctionTestDataME20.sol";
 
 contract BidTest is DeployersME20, AuctionTestData {
     using FixedPointMathLib for uint256;
+    using SafeTransferLib for address;
 
     error MemeLaunched();
     error DuplicateOG();
@@ -136,6 +137,8 @@ contract BidTest is DeployersME20, AuctionTestData {
 
             vm.warp(timeNow + Constant.AUCTION_CLAIM_COOLDOWN);
             memeceptionBaseTest.claim(memeToken);
+            hoax(address(memeception));
+            address(0).safeTransferETH(address(memeception).balance);
         }
     }
 

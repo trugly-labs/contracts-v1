@@ -49,5 +49,12 @@ library Constant {
 
     uint256 internal constant AUCTION_CLAIM_COOLDOWN = 1 minutes;
 
-    uint256 internal constant MAX_LOCKER_FEE = 0.1 ether;
+    uint256 internal constant MAX_LOCKER_FLAT_FEE = 0.1 ether;
+    uint256 internal constant MAX_LOCKER_LP_FEE = 150;
+    uint256 internal constant MAX_LOCKER_COLLECT_FEE = 200;
+
+    uint256 internal constant MAX_AUCTION_PRICE = 1e12;
+    uint256 internal constant MIN_AUCTION_PRICE = 0.1e9;
+
+    uint256 internal constant MIN_AUCTION_PRICES_TIERS = 10;
 }

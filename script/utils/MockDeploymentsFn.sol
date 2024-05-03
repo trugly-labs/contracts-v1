@@ -52,11 +52,6 @@ contract MockDeploymentsFn is BaseParameters {
         return TREASURY;
     }
 
-    function deployMultisig() public pure returns (address) {
-        console2.log("Multisig:", ADMIN);
-        return ADMIN;
-    }
-
     function deployMemeception(address vesting, address treasury, address multisig)
         public
         returns (MockTrugly20Memeception memeception)
@@ -65,7 +60,7 @@ contract MockDeploymentsFn is BaseParameters {
         memeception = new MockTrugly20Memeception(
             V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig
         );
-        TruglyVesting(vesting).setMemeception(address(memeception), true);
+        // TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }
 }

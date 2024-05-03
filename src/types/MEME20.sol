@@ -92,14 +92,9 @@ contract MEME20 is ERC20 {
         if (!_exemptFees[from] && !_exemptFees[to] && !skip && _routersAndPools[from]) {
             uint256 feesCreator = amount.mulDiv(feeBps, 1e4);
             uint256 feesProtocol = amount.mulDiv(_pFeesBps, 1e4);
-            if (feesCreator > 0) {
-                super.transfer(creator, feesCreator);
-                amount -= feesCreator;
-            }
-            if (feesProtocol > 0) {
-                super.transfer(_pTreasury, feesProtocol);
-                amount -= feesProtocol;
-            }
+            amount = amount - feesCreator - feesProtocol;
+            if (feesCreator > 0) super.transfer(creator, feesCreator);
+            if (feesProtocol > 0) super.transfer(_pTreasury, feesProtocol);
         }
 
         return super.transferFrom(from, to, amount);
@@ -116,14 +111,9 @@ contract MEME20 is ERC20 {
         if (!_exemptFees[msg.sender] && !_exemptFees[to] && !skip && _routersAndPools[msg.sender]) {
             uint256 feesCreator = amount.mulDiv(feeBps, 1e4);
             uint256 feesProtocol = amount.mulDiv(_pFeesBps, 1e4);
-            if (feesCreator > 0) {
-                super.transfer(creator, feesCreator);
-                amount -= feesCreator;
-            }
-            if (feesProtocol > 0) {
-                super.transfer(_pTreasury, feesProtocol);
-                amount -= feesProtocol;
-            }
+            amount = amount - feesCreator - feesProtocol;
+            if (feesCreator > 0) super.transfer(creator, feesCreator);
+            if (feesProtocol > 0) super.transfer(_pTreasury, feesProtocol);
         }
 
         return super.transfer(to, amount);

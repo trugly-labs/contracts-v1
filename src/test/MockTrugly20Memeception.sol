@@ -79,6 +79,6 @@ contract MockTrugly20Memeception is Trugly20Memeception {
         if (bypassLock) {
             return 42;
         }
-        super._lockLiquidity(lpTokenId, lockFee);
+        return super._lockLiquidity(lpTokenId, lockFee);
     }
 }
