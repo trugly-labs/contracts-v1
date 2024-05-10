@@ -330,7 +330,7 @@ contract Trugly20Memeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @param memeToken Address of the MEME20
     /// @param amountETH Amount of ETH to add to the pool
     /// @param amountMeme Amount of MEME20 to add to the pool
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal {
+    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal virtual {
         ILiquidityLocker.FeeStruct memory lockFee = uncxLocker.getFee("LVP");
         uint256 amountETHMinusLockFee = amountETH;
         if (lockFee.flatFee > 0 && lockFee.flatFeeToken == address(0)) {

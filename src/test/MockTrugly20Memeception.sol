@@ -72,13 +72,36 @@ contract MockTrugly20Memeception is Trugly20Memeception {
         scaleDownFactor = 1e4;
     }
 
-    // /// @dev Lock the UniV3 liquidity in the UNCX Locker
-    // /// @param lpTokenId The UniV3 LP Token ID
-    // /// @return lockId The UNCX lock ID
-    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal override returns (uint256 lockId) {
-        if (bypassLock) {
-            return 42;
+    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal override {
+        if (!bypassLock) {
+            _addLiquidityToUniV3Pool(memeToken, amountETH, amountMeme);
+            return;
         }
-        return super._lockLiquidity(lpTokenId, lockFee);
+
+        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETH, amountMeme);
+        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
+
+        WETH9.deposit{value: amountETH}();
+        WETH9.safeApprove(address(v3PositionManager), amountETH);
+        MEME20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
+
+        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
+            token0: address(WETH9),
+            token1: memeToken,
+            fee: Constant.UNI_LP_SWAPFEE,
+            tickLower: Constant.TICK_LOWER,
+            tickUpper: Constant.TICK_UPPER,
+            amount0Desired: amountETH,
+            amount1Desired: amountMeme,
+            amount0Min: amountETH.mulDiv(99, 100),
+            amount1Min: amountMeme.mulDiv(99, 100),
+            recipient: address(this),
+            deadline: block.timestamp + 30 minutes
+        });
+
+        (uint256 tokenId,,,) = v3PositionManager.mint(params);
+        memeceptions[memeToken].tokenId = tokenId;
+
+        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETH);
     }
 }

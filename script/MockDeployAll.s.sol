@@ -8,6 +8,7 @@ import {TruglyVesting} from "../src/TruglyVesting.sol";
 
 contract MockDeployAll is Script, MockDeploymentsFn {
     function run() external {
+        /// REMEMBER TO SET THE MNEMONIC_FIRST_ACC_PRIV_KEY TO THE TESTNET DEPLOYER
         uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
         // TruglyVesting vesting = deployVesting();
