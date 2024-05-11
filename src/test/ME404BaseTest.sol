@@ -57,12 +57,11 @@ contract ME404BaseTest is Test {
 
         _assertNFT(from, afterBalFrom);
         _assertNFT(to, afterBalTo);
-        _assertEliteNFT(from, to, beforeBalFrom, afterBalFrom, beforeBalTo, afterBalTo, beforeNFTData, afterNFTData);
+        _assertEliteNFT(from, beforeBalFrom, afterBalFrom, beforeBalTo, afterBalTo, beforeNFTData, afterNFTData);
     }
 
     function _assertEliteNFT(
         address from,
-        address to,
         Balances memory beforeBalFrom,
         Balances memory afterBalFrom,
         Balances memory beforeBalTo,
