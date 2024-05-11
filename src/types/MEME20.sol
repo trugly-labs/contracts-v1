@@ -81,7 +81,7 @@ contract MEME20 is ERC20 {
         _mint(msg.sender, MEME20Constant.TOKEN_TOTAL_SUPPLY);
     }
 
-    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
         if (amount == 0) {
             return super.transferFrom(from, to, 0);
         }
@@ -100,7 +100,7 @@ contract MEME20 is ERC20 {
         return super.transferFrom(from, to, amount);
     }
 
-    function transfer(address to, uint256 amount) public override returns (bool) {
+    function transfer(address to, uint256 amount) public virtual override returns (bool) {
         if (amount == 0) {
             return super.transfer(to, 0);
         }
