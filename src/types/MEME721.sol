@@ -25,7 +25,7 @@ contract MEME721 is ERC721 {
     string public baseURI;
     uint256 public nftId;
 
-    mapping(address => uint256) internal _idToOwner;
+    mapping(address => uint256) internal _ownerToId;
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       IMPLEMENTATION              */
@@ -50,14 +50,17 @@ contract MEME721 is ERC721 {
     }
 
     function mint(address account, uint256 id) external onlyMemecoin {
+        _ownerToId[account] = id;
         _mint(account, id);
     }
 
     function burn(uint256 id) external onlyMemecoin {
+        address curOwner = _ownerOf[id];
+        _ownerToId[curOwner] = 0;
         _burn(id);
     }
 
     function nftIdByOwner(address account) external view returns (uint256) {
-        return _idToOwner[account];
+        return _ownerToId[account];
     }
 }

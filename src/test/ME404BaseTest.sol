@@ -57,10 +57,12 @@ contract ME404BaseTest is Test {
 
         _assertNFT(from, afterBalFrom);
         _assertNFT(to, afterBalTo);
-        _assertEliteNFT(beforeBalFrom, afterBalFrom, beforeBalTo, afterBalTo, beforeNFTData, afterNFTData);
+        _assertEliteNFT(from, to, beforeBalFrom, afterBalFrom, beforeBalTo, afterBalTo, beforeNFTData, afterNFTData);
     }
 
     function _assertEliteNFT(
+        address from,
+        address to,
         Balances memory beforeBalFrom,
         Balances memory afterBalFrom,
         Balances memory beforeBalTo,
@@ -76,20 +78,33 @@ contract ME404BaseTest is Test {
             if (afterBalFrom.balCoin >= params[params.length - 1].amountThreshold) {
                 assertEq(afterBalFrom.balEliteNFT, 1, "assertEliteNFT - #1");
                 assertEq(afterBalFrom.eliteNFTId, beforeBalFrom.eliteNFTId, "assertEliteNFT - #2");
+                assertEq(meme721.ownerOf(beforeBalFrom.eliteNFTId), from, "assertEliteNFT - #2.2");
             } else {
                 /// Scenario 1.2: Highest Tier -> 2nd Tier
                 if (afterBalFrom.balCoin >= params[params.length - 2].amountThreshold) {
                     assertEq(afterBalFrom.balEliteNFT, 1, "assertEliteNFT - #3");
 
                     if (
-                        beforeBalTo.balCoin >= params[params.length - 2].amountThreshold
+                        beforeBalTo
+                            // Scenario 1.2.1: Recipient has 2nd Highest Tier Burn
+                            .balCoin >= params[params.length - 2].amountThreshold
                             && afterBalTo.balCoin >= params[params.length - 1].amountThreshold
                     ) {
-                        assertEq(afterBalFrom.eliteNFTId, beforeBalTo.eliteNFTId, "assertEliteNFT - #4");
+                        assertEq(afterBalFrom.eliteNFTId, beforeBalTo.eliteNFTId, "assertEliteNFT - #1,2,1");
+                        assertEq(meme721.ownerOf(beforeBalTo.eliteNFTId), from, "assertEliteNFT - #1.2.3");
                     } else {
+                        // Scenario 1.2.2: Recipient has no 2nd Highest Tier Burn
                         assertEq(
-                            afterBalFrom.eliteNFTId, beforeNFTData.curIndexSecondHighestTier, "assertEliteNFT - #5"
+                            afterBalFrom.eliteNFTId,
+                            beforeNFTData.curIndexSecondHighestTier,
+                            "assertEliteNFT - #1.2.2.1"
                         );
+                        assertEq(
+                            meme721.nftIdByOwner(from),
+                            beforeNFTData.curIndexSecondHighestTier,
+                            "assertEliteNFT - #1.2.2.2"
+                        );
+                        assertEq(meme721.ownerOf(afterBalFrom.eliteNFTId), from, "assertEliteNFT - #1.2.2.3");
                     }
                     expectBurnHighestTierFrom = true;
                 }
@@ -248,7 +263,7 @@ contract ME404BaseTest is Test {
                     );
                     assertEq(
                         afterNFTData.curIndexSecondHighestTier,
-                        beforeNFTData.curIndexSecondHighestTier + 1,
+                        beforeNFTData.curIndexSecondHighestTier,
                         "assertEliteNFTTo #13"
                     );
 
@@ -390,10 +405,9 @@ contract ME404BaseTest is Test {
         return balances;
     }
 
-    function _getNFTData() internal view returns (NFTData memory) {
+    function _getNFTData() internal view returns (NFTData memory nftData) {
         MEME404.Tier memory highestTier = meme404.getTier(params.length - 1);
         MEME404.Tier memory secondHighestTier = meme404.getTier(params.length - 2);
-        NFTData memory nftData;
         nftData.curIndexHighestTier = highestTier.curIndex;
         nftData.curIndexSecondHighestTier = secondHighestTier.curIndex;
         nftData.nextBurnIdHighestTier =
