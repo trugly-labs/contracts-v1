@@ -32,6 +32,9 @@ contract MEME404 is MEME20 {
     /// @dev Only NFT collection can call this function
     error OnlyNFT();
 
+    /// @dev When the contract is already initialized
+    error TiersAlreadyInitialized();
+
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -66,6 +69,8 @@ contract MEME404 is MEME20 {
     /// @dev Tier ID to Tier mapping
     mapping(uint256 => Tier) public tiers;
 
+    bool private _initialized;
+
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       IMPLEMENTATION              */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -74,13 +79,15 @@ contract MEME404 is MEME20 {
         _;
     }
 
-    constructor(string memory _name, string memory _symbol, address _creator, TierCreateParam[] memory _tiers)
-        MEME20(_name, _symbol, _creator)
-    {
-        if (_tiers.length == 0) revert NoTiers();
+    constructor(string memory _name, string memory _symbol, address _creator) MEME20(_name, _symbol, _creator) {}
 
-        _mint(msg.sender, MEME20Constant.TOKEN_TOTAL_SUPPLY);
-        creator = _creator;
+    /// @dev Initialize the tiers
+    /// @dev Is called automatically by the Memeception contract
+    function initializeTiers(TierCreateParam[] memory _tiers) external {
+        if (_initialized) revert TiersAlreadyInitialized();
+        _initialized = true;
+
+        if (_tiers.length == 0) revert NoTiers();
 
         /// TODO: Add validations for making sure that there's enough lowerIds and upperIds based on amountThreshold
 
@@ -107,25 +114,11 @@ contract MEME404 is MEME20 {
                     revert InvalidTierSequenceNonFungibleIds();
                 }
             }
-            tier.nft = existingNFTAddr != address(0) ? existingNFTAddr : _createNewNFT(_creator, _tiers[i]);
+            tier.nft = existingNFTAddr != address(0) ? existingNFTAddr : _createNewNFT(creator, _tiers[i]);
 
             tiers[i] = tier;
         }
         tiersCount = _tiers.length;
-    }
-
-    /// @dev Create a new NFT collection
-    /// @notice ERC1155 if fungible, ERC721 if non-fungible
-    function _createNewNFT(address _creator, TierCreateParam memory _tier) internal returns (address) {
-        if (_tier.isFungible) {
-            MEME1155 nft = new MEME1155(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL, _tier.nftId);
-            nftIdToAddress[_tier.nftId] = address(nft);
-        } else {
-            MEME721 nft = new MEME721(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL, _tier.nftId);
-            nftIdToAddress[_tier.nftId] = address(nft);
-        }
-
-        return nftIdToAddress[_tier.nftId];
     }
 
     /// @dev Transfer of memecoins
@@ -157,6 +150,21 @@ contract MEME404 is MEME20 {
         return success;
     }
 
+    /// @dev Create a new NFT collection
+    /// @notice ERC1155 if fungible, ERC721 if non-fungible
+    function _createNewNFT(address _creator, TierCreateParam memory _tier) internal returns (address) {
+        if (_tier.isFungible) {
+            MEME1155 nft = new MEME1155(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL, _tier.nftId);
+            nftIdToAddress[_tier.nftId] = address(nft);
+        } else {
+            MEME721 nft = new MEME721(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL, _tier.nftId);
+            nftIdToAddress[_tier.nftId] = address(nft);
+        }
+
+        return nftIdToAddress[_tier.nftId];
+    }
+
+    /// @dev Handle minting and burning of NFTs based on tier changes
     function _handleTierBurnAndMint(
         address from,
         address to,
@@ -189,7 +197,7 @@ contract MEME404 is MEME20 {
     /// @param _owner Address of the user
     /// @param tierId new Tier ID
     function _mintTier(address _owner, int256 tierId) internal {
-        if (tierId < 0) return;
+        if (tierId < 0 || _owner == address(0)) return;
 
         Tier storage tier = tiers[uint256(tierId)];
         if (tier.isFungible) {
@@ -219,7 +227,7 @@ contract MEME404 is MEME20 {
     /// @param _owner Address of the user
     /// @param tierId new Tier ID
     function _burnTier(address _owner, int256 tierId) internal {
-        if (tierId < 0) return;
+        if (tierId < 0 || _owner == address(0)) return;
 
         Tier storage tier = tiers[uint256(tierId)];
         if (tier.isFungible) {

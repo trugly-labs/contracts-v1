@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {WETH} from "@solmate/tokens/WETH.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {Trugly20Memeception} from "../Trugly20Memeception.sol";
+import {TruglyMemeception} from "../TruglyMemeception.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
@@ -12,7 +12,7 @@ import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePo
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../types/MEME20.sol";
 
-contract MockTrugly20Memeception is Trugly20Memeception {
+contract MockTruglyMemeception is TruglyMemeception {
     using FixedPointMathLib for uint256;
     using SafeTransferLib for WETH;
     using SafeTransferLib for MEME20;
@@ -30,7 +30,7 @@ contract MockTrugly20Memeception is Trugly20Memeception {
         address _vesting,
         address _treasury,
         address _multisig
-    ) Trugly20Memeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig) {
+    ) TruglyMemeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig) {
         testAdmin = msg.sender;
     }
 

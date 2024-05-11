@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IERC721Receiver} from "./external/IERC721Receiver.sol";
+import {MEME404} from "../types/MEME404.sol";
 
 /// @title The interface for the Trugly Launchpad
 /// @notice Launchpad is in charge of creating MEME20 and their Memeception
@@ -54,6 +55,15 @@ interface ITruglyMemeception is IERC721Receiver {
     /// @return memeToken Address of the MEME20
     /// @return pool Address of the UniV3 Pool
     function createMeme(MemeceptionCreationParams calldata params) external returns (address memeToken, address pool);
+
+    /// @dev Create a MEME404, its UniV3 Pool and setup the Memeception
+    /// @param params Parameters to create the MEME404 and its Memeception
+    /// @param tiers Array of TierCreateParam to create the tiers of the MEME404
+    /// @return memeToken Address of the MEME404
+    /// @return pool Address of the UniV3 Pool
+    function createMeme404(MemeceptionCreationParams calldata params, MEME404.TierCreateParam[] calldata tiers)
+        external
+        returns (address memeToken, address pool);
 
     /// @dev Place a bid to the Memeception
     /// @param memeToken Address of the MEME20

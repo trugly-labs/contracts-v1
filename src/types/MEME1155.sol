@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
-import {ERC1155} from "@solmate/tokens/ERC1155.sol";
+import {ERC1155} from "./ERC1155.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 
 import {MEME20Constant} from "../libraries/MEME20Constant.sol";

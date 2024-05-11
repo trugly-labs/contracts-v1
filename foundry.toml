@@ -6,7 +6,7 @@ libs = ["lib"]
 optimizer_runs = 800
 ffi = true
 fs_permissions = [{ access = "read-write", path = ".forge-snapshots/"}]
-gas_reports = ["Trugly20Memeception", "ME20MemeceptionBaseTest", "TruglyUniversalRouterBaseTest", "TruglyUniversalRouter"]
+gas_reports = ["TruglyMemeception", "ME20BaseTest", "TruglyUniversalRouterBaseTest", "TruglyUniversalRouter", "MEME20", "MEME404", "ME404BaseTest"]
 evm_version = "shanghai"
 # cancun = true
 # via_ir = true

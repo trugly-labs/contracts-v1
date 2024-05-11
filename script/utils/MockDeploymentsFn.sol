@@ -8,7 +8,7 @@ import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterIm
 import {BaseParameters} from "../parameters/Base.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
-import {MockTrugly20Memeception} from "../../src/test/MockTrugly20Memeception.sol";
+import {MockTruglyMemeception} from "../../src/test/MockTruglyMemeception.sol";
 
 contract MockDeploymentsFn is BaseParameters {
     function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
@@ -54,10 +54,10 @@ contract MockDeploymentsFn is BaseParameters {
 
     function deployMemeception(address vesting, address treasury, address multisig)
         public
-        returns (MockTrugly20Memeception memeception)
+        returns (MockTruglyMemeception memeception)
     {
         console2.log("Deploying TruglyMemeception..");
-        memeception = new MockTrugly20Memeception(
+        memeception = new MockTruglyMemeception(
             V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig
         );
         // TruglyVesting(vesting).setMemeception(address(memeception), true);

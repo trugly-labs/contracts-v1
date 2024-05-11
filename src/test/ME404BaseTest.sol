@@ -1,32 +1,30 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
+
+import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
+import {Constant} from "../libraries/Constant.sol";
+import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 import {Test, console2} from "forge-std/Test.sol";
+import {ME20BaseTest} from "./ME20BaseTest.sol";
 import {MEME404} from "../types/MEME404.sol";
 import {MEME721} from "../types/MEME721.sol";
 import {MEME1155} from "../types/MEME1155.sol";
 
-contract ME404BaseTest is Test {
-    MEME404 public meme404;
+contract ME404BaseTest is ME20BaseTest {
+    using FixedPointMathLib for uint256;
 
+    MEME404 public meme404;
     MEME1155 public meme1155;
     MEME721 public meme721;
 
-    MEME404.TierCreateParam[] public params;
-    address public CREATOR;
+    MEME404.TierCreateParam[] public tierParams;
 
-    constructor(string memory _name, string memory _symbol, address _creator, MEME404.TierCreateParam[] memory _tiers) {
-        for (uint256 i = 0; i < _tiers.length; i++) {
-            params.push(_tiers[i]);
-        }
-        meme404 = new MEME404(_name, _symbol, _creator, _tiers);
-        CREATOR = _creator;
+    constructor(address _vesting, address _treasury) ME20BaseTest(_vesting, _treasury) {}
 
-        meme1155 = MEME1155(meme404.getTier(0).nft);
-        meme721 = MEME721(meme404.getTier(_tiers.length - 1).nft);
-    }
-
-    struct Balances {
+    struct Balances404 {
         /// memecoin balances
         uint256 balCoin;
         /// nft balances
@@ -41,16 +39,130 @@ contract ME404BaseTest is Test {
         uint256 nextBurnIdSecondHighestTier;
     }
 
-    function transfer(address from, address to, uint256 amount) public {
+    function createMeme404(
+        ITruglyMemeception.MemeceptionCreationParams memory params,
+        MEME404.TierCreateParam[] memory _tierParams
+    ) public returns (address meme404Addr, address pool) {
+        delete tierParams;
+        for (uint256 i = 0; i < _tierParams.length; i++) {
+            tierParams.push(_tierParams[i]);
+        }
+        (meme404Addr, pool) = memeceptionContract.createMeme404(params, _tierParams);
+        MEMECREATOR = params.creator;
+
+        /// Assert Token Creation
+        meme404 = MEME404(meme404Addr);
+        meme1155 = MEME1155(meme404.getTier(0).nft);
+        meme721 = MEME721(meme404.getTier(_tierParams.length - 1).nft);
+        uint256 vestingAllocSupply = MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(params.vestingAllocBps, 1e4);
+        assertTrue(address(meme404) > address(WETH9), "meme404Addr > WETH9");
+        assertEq(meme404.name(), params.name, "memeName");
+        assertEq(meme404.decimals(), MEME20Constant.TOKEN_DECIMALS, "memeDecimals");
+        assertEq(meme404.symbol(), params.symbol, "memeSymbol");
+        assertEq(meme404.totalSupply(), MEME20Constant.TOKEN_TOTAL_SUPPLY, "memeSupply");
+        assertEq(meme404.creator(), MEMECREATOR, "creator");
+        assertEq(
+            meme404.balanceOf(address(memeceptionContract)),
+            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
+            "memeSupplyMinted"
+        );
+        assertEq(
+            meme404.balanceOf(address(0)),
+            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4) - vestingAllocSupply,
+            "memeSupplyBurned"
+        );
+
+        /// Assert Memeception Creation
+        ITruglyMemeception.Memeception memory memeception = memeceptionContract.getMemeception(meme404Addr);
+        assertEq(memeception.auctionTokenSold, 0, "memeception.auctionTokenSold");
+        assertEq(memeception.auctionFinalPriceScaled, 0, "memeception.auctionFinalPrice");
+        assertEq(memeception.creator, MEMECREATOR, "memeception.creator");
+        assertEq(memeception.startAt, params.startAt, "memeception.startAt");
+        assertEq(memeception.swapFeeBps, params.swapFeeBps, "memeception.swapFeeBps");
+
+        /// Assert Uniswap V3 Pool
+        assertEq(IUniswapV3Pool(pool).fee(), Constant.UNI_LP_SWAPFEE, "v3Pool.fee");
+        if (WETH9 < meme404Addr) {
+            assertEq(IUniswapV3Pool(pool).token0(), WETH9, "v3Pool.token0");
+            assertEq(IUniswapV3Pool(pool).token1(), meme404Addr, "v3Pool.token1");
+        } else {
+            assertEq(IUniswapV3Pool(pool).token0(), meme404Addr, "v3Pool.token0");
+            assertEq(IUniswapV3Pool(pool).token1(), WETH9, "v3Pool.token1");
+        }
+
+        /// Assert Vesting Contract
+        assertEq(
+            meme404.balanceOf(address(memeceptionContract.vesting())),
+            params.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
+            "vestingAllocSupply"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(meme404)).totalAllocation,
+            params.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
+            "Vesting.totalAllocation"
+        );
+        assertEq(memeceptionContract.vesting().getVestingInfo(address(meme404)).released, 0, "Vesting.released");
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(meme404)).start,
+            params.vestingAllocBps == 0 ? 0 : params.startAt,
+            "Vesting.start"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(meme404)).duration,
+            params.vestingAllocBps == 0 ? 0 : Constant.VESTING_DURATION,
+            "Vesting.duration"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(meme404)).cliff,
+            params.vestingAllocBps == 0 ? 0 : Constant.VESTING_CLIFF,
+            "Vesting.cliff"
+        );
+        assertEq(
+            memeceptionContract.vesting().getVestingInfo(address(meme404)).creator,
+            params.vestingAllocBps == 0 ? address(0) : MEMECREATOR,
+            "Vesting.creator"
+        );
+
+        assertEq(memeceptionContract.vesting().releasable(address(meme404)), 0, "Vesting.releasable");
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(block.timestamp)),
+            0,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(
+                address(meme404), uint64(params.startAt + Constant.VESTING_CLIFF - 1)
+            ),
+            0,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(params.startAt + 91.25 days)),
+            vestingAllocSupply / 8,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(params.startAt + 365 days)),
+            vestingAllocSupply / 2,
+            "Vesting.vestedAmount"
+        );
+        assertEq(
+            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(params.startAt + 365 days * 2)),
+            vestingAllocSupply,
+            "Vesting.vestedAmount"
+        );
+    }
+
+    function transfer404(address from, address to, uint256 amount) public {
         meme404.transfer(from, amount);
-        Balances memory beforeBalFrom = _getBalances(from);
-        Balances memory beforeBalTo = _getBalances(to);
+        Balances404 memory beforeBalFrom = _getBalances404(from);
+        Balances404 memory beforeBalTo = _getBalances404(to);
         NFTData memory beforeNFTData = _getNFTData();
 
         hoax(from);
         meme404.transfer(to, amount);
-        Balances memory afterBalFrom = _getBalances(from);
-        Balances memory afterBalTo = _getBalances(to);
+        Balances404 memory afterBalFrom = _getBalances404(from);
+        Balances404 memory afterBalTo = _getBalances404(to);
         NFTData memory afterNFTData = _getNFTData();
 
         _assertMemecoins(beforeBalFrom, beforeBalTo, afterBalFrom, afterBalTo, amount);
@@ -62,32 +174,32 @@ contract ME404BaseTest is Test {
 
     function _assertEliteNFT(
         address from,
-        Balances memory beforeBalFrom,
-        Balances memory afterBalFrom,
-        Balances memory beforeBalTo,
-        Balances memory afterBalTo,
+        Balances404 memory beforeBalFrom,
+        Balances404 memory afterBalFrom,
+        Balances404 memory beforeBalTo,
+        Balances404 memory afterBalTo,
         NFTData memory beforeNFTData,
         NFTData memory afterNFTData
     ) internal {
         bool expectBurnHighestTierFrom = false;
         bool expectBurnSecondHighestTierFrom = false;
         /// Scenario 1 Highest Tier
-        if (beforeBalFrom.balCoin >= params[params.length - 1].amountThreshold) {
+        if (beforeBalFrom.balCoin >= tierParams[tierParams.length - 1].amountThreshold) {
             /// Scenario 1.1: Highest Tier -> Highest Tier
-            if (afterBalFrom.balCoin >= params[params.length - 1].amountThreshold) {
+            if (afterBalFrom.balCoin >= tierParams[tierParams.length - 1].amountThreshold) {
                 assertEq(afterBalFrom.balEliteNFT, 1, "assertEliteNFT - #1");
                 assertEq(afterBalFrom.eliteNFTId, beforeBalFrom.eliteNFTId, "assertEliteNFT - #2");
                 assertEq(meme721.ownerOf(beforeBalFrom.eliteNFTId), from, "assertEliteNFT - #2.2");
             } else {
                 /// Scenario 1.2: Highest Tier -> 2nd Tier
-                if (afterBalFrom.balCoin >= params[params.length - 2].amountThreshold) {
+                if (afterBalFrom.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
                     assertEq(afterBalFrom.balEliteNFT, 1, "assertEliteNFT - #3");
 
                     if (
                         beforeBalTo
                             // Scenario 1.2.1: Recipient has 2nd Highest Tier Burn
-                            .balCoin >= params[params.length - 2].amountThreshold
-                            && afterBalTo.balCoin >= params[params.length - 1].amountThreshold
+                            .balCoin >= tierParams[tierParams.length - 2].amountThreshold
+                            && afterBalTo.balCoin >= tierParams[tierParams.length - 1].amountThreshold
                     ) {
                         assertEq(afterBalFrom.eliteNFTId, beforeBalTo.eliteNFTId, "assertEliteNFT - #1,2,1");
                         assertEq(meme721.ownerOf(beforeBalTo.eliteNFTId), from, "assertEliteNFT - #1.2.3");
@@ -109,7 +221,7 @@ contract ME404BaseTest is Test {
                 }
 
                 /// Scenario 1.3: Highest Tier -> Fungible Tier or 0
-                if (afterBalFrom.balCoin < params[params.length - 2].amountThreshold) {
+                if (afterBalFrom.balCoin < tierParams[tierParams.length - 2].amountThreshold) {
                     assertEq(afterBalFrom.balEliteNFT, 0, "assertEliteNFT - #6");
                     assertEq(afterBalFrom.eliteNFTId, 0, "assertEliteNFT - #7");
                     expectBurnHighestTierFrom = true;
@@ -129,9 +241,9 @@ contract ME404BaseTest is Test {
         }
 
         /// Scenario 2: 2nd tier
-        if (beforeBalFrom.balCoin >= params[params.length - 2].amountThreshold) {
+        if (beforeBalFrom.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
             /// Scenario 2.1 : 2nd tier -> 2nd Tier
-            if (afterBalFrom.balCoin >= params[params.length - 2].amountThreshold) {
+            if (afterBalFrom.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
                 assertEq(afterBalFrom.balEliteNFT, 1, "assertEliteNFT - #8");
                 assertEq(afterBalFrom.eliteNFTId, beforeBalFrom.eliteNFTId, "assertEliteNFT - #9");
             } else {
@@ -154,7 +266,7 @@ contract ME404BaseTest is Test {
         }
 
         /// Scenario 3: Fungible Tier o 0
-        if (beforeBalFrom.balCoin < params[params.length - 2].amountThreshold) {
+        if (beforeBalFrom.balCoin < tierParams[tierParams.length - 2].amountThreshold) {
             // Assert From
             assertEq(beforeBalFrom.eliteNFTId, 0, "assertEliteNFT - eliteNFTId 0");
             assertEq(beforeBalFrom.balEliteNFT, 0, "assertEliteNFT - balEliteNFT 0");
@@ -173,17 +285,17 @@ contract ME404BaseTest is Test {
     }
 
     function _assertEliteNFTTo(
-        Balances memory beforeBalFrom,
-        Balances memory beforeBalTo,
-        Balances memory afterBalTo,
+        Balances404 memory beforeBalFrom,
+        Balances404 memory beforeBalTo,
+        Balances404 memory afterBalTo,
         NFTData memory beforeNFTData,
         NFTData memory afterNFTData,
         bool expectBurnHighestTierFrom,
         bool expectBurnSecondHighestTierFrom
     ) internal {
         /// Recipient has no Highest Tier NFT
-        if (beforeBalTo.balCoin < params[params.length - 1].amountThreshold) {
-            if (afterBalTo.balCoin >= params[params.length - 1].amountThreshold) {
+        if (beforeBalTo.balCoin < tierParams[tierParams.length - 1].amountThreshold) {
+            if (afterBalTo.balCoin >= tierParams[tierParams.length - 1].amountThreshold) {
                 /// Recipient now has a Highest Tier NFT
                 if (expectBurnHighestTierFrom) {
                     // Expect Burn on Highest Tier
@@ -197,7 +309,7 @@ contract ME404BaseTest is Test {
                     assertEq(
                         afterNFTData.nextBurnIdHighestTier, beforeNFTData.nextBurnIdHighestTier, "assertEliteNFTTo #4"
                     );
-                    if (beforeBalTo.balCoin >= params[params.length - 2].amountThreshold) {
+                    if (beforeBalTo.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
                         assertEq(
                             afterNFTData.nextBurnIdSecondHighestTier, beforeBalTo.eliteNFTId, "assertEliteNFTTo #4.1"
                         );
@@ -230,7 +342,7 @@ contract ME404BaseTest is Test {
                     assertEq(
                         afterNFTData.nextBurnIdHighestTier, beforeNFTData.nextBurnIdHighestTier, "assertEliteNFTTo #9"
                     );
-                    if (beforeBalTo.balCoin >= params[params.length - 2].amountThreshold) {
+                    if (beforeBalTo.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
                         assertEq(
                             afterNFTData.nextBurnIdSecondHighestTier, beforeBalTo.eliteNFTId, "assertEliteNFTTo #4.1"
                         );
@@ -252,7 +364,7 @@ contract ME404BaseTest is Test {
                 }
                 return;
             }
-            if (afterBalTo.balCoin >= params[params.length - 2].amountThreshold) {
+            if (afterBalTo.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
                 /// Recipient now has a 2nd Highest Tier NFT
                 if (expectBurnSecondHighestTierFrom) {
                     // Expect Burn on 2nd Highest Tier
@@ -310,7 +422,7 @@ contract ME404BaseTest is Test {
                 return;
             }
             // Recipeint has either Fungible or 0
-            if (afterBalTo.balCoin < params[params.length - 2].amountThreshold) {
+            if (afterBalTo.balCoin < tierParams[tierParams.length - 2].amountThreshold) {
                 assertEq(afterBalTo.eliteNFTId, 0, "assertEliteNFTTo #23");
                 assertEq(afterNFTData.curIndexHighestTier, beforeNFTData.curIndexHighestTier, "assertEliteNFTTo #24");
                 assertEq(
@@ -340,10 +452,10 @@ contract ME404BaseTest is Test {
     }
 
     function _assertMemecoins(
-        Balances memory beforeBalFrom,
-        Balances memory beforeBalTo,
-        Balances memory afterBalFrom,
-        Balances memory afterBalTo,
+        Balances404 memory beforeBalFrom,
+        Balances404 memory beforeBalTo,
+        Balances404 memory afterBalFrom,
+        Balances404 memory afterBalTo,
         uint256 amount
     ) internal {
         /// Normal assert of balances
@@ -351,31 +463,31 @@ contract ME404BaseTest is Test {
         assertEq(afterBalTo.balCoin, beforeBalTo.balCoin + amount, "[Transfer] to balance");
     }
 
-    function _assertNFT(address account, Balances memory bal) internal {
+    function _assertNFT(address account, Balances404 memory bal) internal {
         /// Check Balance of NFTs
         /// Assert Highest Tier
-        if (bal.balCoin >= params[params.length - 1].amountThreshold) {
+        if (bal.balCoin >= tierParams[tierParams.length - 1].amountThreshold) {
             /// Recipient
             assertEq(bal.balEliteNFT, 1, "[Transfer|Tier -1] Balance Elite NFT");
-            for (uint256 i = 1; i <= params.length - 2; i++) {
+            for (uint256 i = 1; i <= tierParams.length - 2; i++) {
                 assertEq(meme1155.balanceOf(account, i), 0, "[Transfer|Tier -1] Balance ERC155");
             }
             return;
         }
 
         /// Assert 2nd Highest Tier
-        if (bal.balCoin >= params[params.length - 2].amountThreshold) {
+        if (bal.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
             /// Recipient
             assertEq(bal.balEliteNFT, 1, "[Transfer|Tier-2] Balance Elite NFT");
-            for (uint256 i = 1; i <= params.length - 2; i++) {
+            for (uint256 i = 1; i <= tierParams.length - 2; i++) {
                 assertEq(meme1155.balanceOf(account, i), 0, "[Transfer|Tier-2] Balance ERC155");
             }
             return;
         }
 
         /// Assert lower tier
-        for (uint256 i = params.length - 2; i > 0; i--) {
-            if (bal.balCoin >= params[i - 1].amountThreshold) {
+        for (uint256 i = tierParams.length - 2; i > 0; i--) {
+            if (bal.balCoin >= tierParams[i - 1].amountThreshold) {
                 assertEq(bal.balEliteNFT, 0, "[Transfer|Tier-n] Balance Elite NFT");
                 assertEq(bal.eliteNFTId, 0, "[Transfer|Tier-n] elite NFT id");
                 assertEq(meme1155.balanceOf(account, i), 1, "[Transfer|Tier-n] Balance ERC155");
@@ -390,14 +502,14 @@ contract ME404BaseTest is Test {
             assertEq(bal.balEliteNFT, 0, "[Transfer|Tier-0] Balance Elite NFT");
             assertEq(bal.eliteNFTId, 0, "[Transfer|Tier-0] elite NFT id");
 
-            for (uint256 i = 1; i <= params.length - 1; i++) {
+            for (uint256 i = 1; i <= tierParams.length - 1; i++) {
                 assertEq(meme1155.balanceOf(account, i), 0, "[Transfer|Tier -0] Balance ERC155");
             }
         }
     }
 
-    function _getBalances(address _account) internal view returns (Balances memory) {
-        Balances memory balances;
+    function _getBalances404(address _account) internal view returns (Balances404 memory) {
+        Balances404 memory balances;
         balances.balCoin = meme404.balanceOf(_account);
         balances.balEliteNFT = meme721.balanceOf(_account);
         balances.eliteNFTId = meme721.nftIdByOwner(_account);
@@ -405,8 +517,8 @@ contract ME404BaseTest is Test {
     }
 
     function _getNFTData() internal view returns (NFTData memory nftData) {
-        MEME404.Tier memory highestTier = meme404.getTier(params.length - 1);
-        MEME404.Tier memory secondHighestTier = meme404.getTier(params.length - 2);
+        MEME404.Tier memory highestTier = meme404.getTier(tierParams.length - 1);
+        MEME404.Tier memory secondHighestTier = meme404.getTier(tierParams.length - 2);
         nftData.curIndexHighestTier = highestTier.curIndex;
         nftData.curIndexSecondHighestTier = secondHighestTier.curIndex;
         nftData.nextBurnIdHighestTier =

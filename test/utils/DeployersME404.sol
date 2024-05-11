@@ -5,23 +5,23 @@ import {Test} from "forge-std/Test.sol";
 
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
-import {ME20BaseTest} from "../../src/test/ME20BaseTest.sol";
+import {ME404BaseTest} from "../../src/test/ME404BaseTest.sol";
 import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
-import {MEME20} from "../../src/types/MEME20.sol";
+import {MEME404} from "../../src/types/MEME404.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
-import {Meme20AddressMiner} from "./Meme20AddressMiner.sol";
+import {Meme404AddressMiner} from "./Meme404AddressMiner.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
 import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 
-contract DeployersME20 is Test, TestHelpers, BaseParameters {
+contract DeployersME404 is Test, TestHelpers, BaseParameters {
     // Global variables
-    ME20BaseTest memeceptionBaseTest;
+    ME404BaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
-    MEME20 memeToken;
+    MEME404 memeToken;
     TruglyVesting vesting;
     address treasury = address(1);
     TruglyMemeception memeception;
@@ -37,14 +37,19 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         symbol: "MEME",
         startAt: uint40(block.timestamp + 3 days),
         swapFeeBps: 80,
-        vestingAllocBps: 500,
+        vestingAllocBps: 1,
         salt: "",
         creator: MEMECREATOR
     });
 
+    // Tier Parameters
+    MEME404.TierCreateParam[] public tierParams;
+
     function setUp() public virtual {
         string memory rpc = vm.rpcUrl("base");
         vm.createSelectFork(rpc, 12490712);
+
+        _initTierParams();
         deployVesting();
         deployMemeception();
         deployUniversalRouter();
@@ -61,18 +66,18 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     }
 
     function deployMemeception() public virtual {
-        memeceptionBaseTest = new ME20BaseTest(address(vesting), treasury);
+        memeceptionBaseTest = new ME404BaseTest(address(vesting), treasury);
         vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
     }
 
-    function initCreateMeme() public virtual {
-        address meme = createMeme(createMemeParams.symbol);
-        memeToken = MEME20(meme);
+    function initCreateMeme404() public virtual {
+        address meme = createMeme404(createMemeParams.symbol);
+        memeToken = MEME404(meme);
     }
 
-    function createMeme(string memory symbol) public virtual returns (address meme) {
+    function createMeme404(string memory symbol) public virtual returns (address meme) {
         uint40 startAt = uint40(block.timestamp + 3 days);
-        (address mineAddress, bytes32 salt) = Meme20AddressMiner.find(
+        (address mineAddress, bytes32 salt) = Meme404AddressMiner.find(
             address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol, MEMECREATOR
         );
         createMemeParams.startAt = startAt;
@@ -80,9 +85,9 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         createMemeParams.salt = salt;
         createMemeParams.creator = MEMECREATOR;
 
-        (meme,) = memeceptionBaseTest.createMeme(createMemeParams);
+        (meme,) = memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
         assertEq(meme, mineAddress, "mine memeAddress");
-        memeToken = MEME20(meme);
+        memeToken = MEME404(meme);
     }
 
     function initBid(uint256 amount) public virtual {
@@ -163,5 +168,41 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         });
         hoax(recipient, amountIn);
         swapRouter.exactInputSingle{value: amountIn}(params);
+    }
+
+    function getNormalNFTCollection() public view returns (address) {
+        return memeToken.getTier(0).nft;
+    }
+
+    function getEliteNFTCollection() public view returns (address) {
+        return memeToken.getTier(tierParams.length - 1).nft;
+    }
+
+    function _initTierParams() private {
+        /// Fungible Tiers
+        tierParams.push(MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 1, 0, 1, 1, true));
+        tierParams.push(
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 222222 ether, 0, 2, 2, true)
+        );
+        tierParams.push(
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 444444 ether, 0, 3, 3, true)
+        );
+        tierParams.push(
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 888888 ether, 0, 4, 4, true)
+        );
+        tierParams.push(
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 2222222 ether, 0, 5, 5, true)
+        );
+        tierParams.push(
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 4444444 ether, 0, 6, 6, true)
+        );
+
+        /// Non Fungible Tiers
+        tierParams.push(
+            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 6666666 ether, 1, 1, 2000, false)
+        );
+        tierParams.push(
+            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 8888888 ether, 1, 2001, 2101, false)
+        );
     }
 }

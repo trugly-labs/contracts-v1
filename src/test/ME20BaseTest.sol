@@ -8,13 +8,13 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../types/MEME20.sol";
 import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
-import {Trugly20Memeception} from "../Trugly20Memeception.sol";
+import {TruglyMemeception} from "../TruglyMemeception.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 import {TestHelpers} from "../../test/utils/TestHelpers.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 
-contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
+contract ME20BaseTest is Test, TestHelpers, BaseParameters {
     error AuctionOutOfRange();
 
     using FixedPointMathLib for uint256;
@@ -36,7 +36,7 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         uint256 bidAmountMeme;
     }
 
-    Trugly20Memeception public memeceptionContract;
+    TruglyMemeception public memeceptionContract;
 
     uint256[] public ETH_RAISED = [
         2.248888888664e21,
@@ -59,7 +59,7 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
     address public MEMECREATOR;
 
     constructor(address _vesting, address _treasury) {
-        memeceptionContract = new Trugly20Memeception(
+        memeceptionContract = new TruglyMemeception(
             V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG
         );
 
