@@ -154,8 +154,10 @@ contract ME404BaseTest is ME20BaseTest {
         );
     }
 
-    function transfer404(address from, address to, uint256 amount) public {
-        meme404.transfer(from, amount);
+    function transfer404(address from, address to, uint256 amount, bool fundFrom) public {
+        if (fundFrom == true) {
+            meme404.transfer(from, amount);
+        }
         Balances404 memory beforeBalFrom = _getBalances404(from);
         Balances404 memory beforeBalTo = _getBalances404(to);
         NFTData memory beforeNFTData = _getNFTData();
@@ -184,6 +186,7 @@ contract ME404BaseTest is ME20BaseTest {
     ) internal {
         bool expectBurnHighestTierFrom = false;
         bool expectBurnSecondHighestTierFrom = false;
+        bool expectMintSecondHighestTierFrom = false;
         /// Scenario 1 Highest Tier
         if (beforeBalFrom.balCoin >= tierParams[tierParams.length - 1].amountThreshold) {
             /// Scenario 1.1: Highest Tier -> Highest Tier
@@ -197,11 +200,10 @@ contract ME404BaseTest is ME20BaseTest {
                     assertEq(afterBalFrom.balEliteNFT, 1, "assertEliteNFT - #3");
 
                     if (
-                        beforeBalTo
-                            // Scenario 1.2.1: Recipient has 2nd Highest Tier Burn
-                            .balCoin >= tierParams[tierParams.length - 2].amountThreshold
+                        beforeBalTo.balCoin >= tierParams[tierParams.length - 2].amountThreshold
                             && afterBalTo.balCoin >= tierParams[tierParams.length - 1].amountThreshold
                     ) {
+                        // Scenario 1.2.1: Recipient has 2nd Highest Tier Burn
                         assertEq(afterBalFrom.eliteNFTId, beforeBalTo.eliteNFTId, "assertEliteNFT - #1,2,1");
                         assertEq(meme721.ownerOf(beforeBalTo.eliteNFTId), from, "assertEliteNFT - #1.2.3");
                     } else {
@@ -219,6 +221,7 @@ contract ME404BaseTest is ME20BaseTest {
                         assertEq(meme721.ownerOf(afterBalFrom.eliteNFTId), from, "assertEliteNFT - #1.2.2.3");
                     }
                     expectBurnHighestTierFrom = true;
+                    expectMintSecondHighestTierFrom = true;
                 }
 
                 /// Scenario 1.3: Highest Tier -> Fungible Tier or 0
@@ -236,7 +239,8 @@ contract ME404BaseTest is ME20BaseTest {
                 beforeNFTData,
                 afterNFTData,
                 expectBurnHighestTierFrom,
-                expectBurnSecondHighestTierFrom
+                expectBurnSecondHighestTierFrom,
+                expectMintSecondHighestTierFrom
             );
             return;
         }
@@ -261,7 +265,8 @@ contract ME404BaseTest is ME20BaseTest {
                 beforeNFTData,
                 afterNFTData,
                 expectBurnHighestTierFrom,
-                expectBurnSecondHighestTierFrom
+                expectBurnSecondHighestTierFrom,
+                expectMintSecondHighestTierFrom
             );
             return;
         }
@@ -279,7 +284,8 @@ contract ME404BaseTest is ME20BaseTest {
                 beforeNFTData,
                 afterNFTData,
                 expectBurnHighestTierFrom,
-                expectBurnSecondHighestTierFrom
+                expectBurnSecondHighestTierFrom,
+                expectMintSecondHighestTierFrom
             );
             return;
         }
@@ -292,7 +298,8 @@ contract ME404BaseTest is ME20BaseTest {
         NFTData memory beforeNFTData,
         NFTData memory afterNFTData,
         bool expectBurnHighestTierFrom,
-        bool expectBurnSecondHighestTierFrom
+        bool expectBurnSecondHighestTierFrom,
+        bool expectMintSecondHighestTierFrom
     ) internal {
         /// Recipient has no Highest Tier NFT
         if (beforeBalTo.balCoin < tierParams[tierParams.length - 1].amountThreshold) {
@@ -319,13 +326,13 @@ contract ME404BaseTest is ME20BaseTest {
                             assertEq(
                                 afterNFTData.nextBurnIdSecondHighestTier,
                                 beforeBalFrom.eliteNFTId,
-                                "assertEliteNFTTo #10"
+                                "assertEliteNFTTo #5"
                             );
                         } else {
                             assertEq(
                                 afterNFTData.nextBurnIdSecondHighestTier,
                                 beforeNFTData.nextBurnIdSecondHighestTier,
-                                "assertEliteNFTTo #5"
+                                "assertEliteNFTTo #5.1"
                             );
                         }
                     }
@@ -345,7 +352,7 @@ contract ME404BaseTest is ME20BaseTest {
                     );
                     if (beforeBalTo.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
                         assertEq(
-                            afterNFTData.nextBurnIdSecondHighestTier, beforeBalTo.eliteNFTId, "assertEliteNFTTo #4.1"
+                            afterNFTData.nextBurnIdSecondHighestTier, beforeBalTo.eliteNFTId, "assertEliteNFTTo #9.1"
                         );
                     } else {
                         if (expectBurnSecondHighestTierFrom) {
@@ -358,7 +365,7 @@ contract ME404BaseTest is ME20BaseTest {
                             assertEq(
                                 afterNFTData.nextBurnIdSecondHighestTier,
                                 beforeNFTData.nextBurnIdSecondHighestTier,
-                                "assertEliteNFTTo #10"
+                                "assertEliteNFTTo #10.1"
                             );
                         }
                     }
@@ -395,16 +402,29 @@ contract ME404BaseTest is ME20BaseTest {
                         );
                     }
                 } else {
-                    // Expect no Burn on 2nd Highest Tier
-                    assertEq(afterBalTo.eliteNFTId, beforeNFTData.curIndexSecondHighestTier, "assertEliteNFTTo #16");
+                    // Expect no Burn (From) on 2nd Highest Tier
                     assertEq(
                         afterNFTData.curIndexHighestTier, beforeNFTData.curIndexHighestTier, "assertEliteNFTTo #17"
                     );
-                    assertEq(
-                        afterNFTData.curIndexSecondHighestTier,
-                        beforeNFTData.curIndexSecondHighestTier + 1,
-                        "assertEliteNFTTo #18"
-                    );
+
+                    if (expectMintSecondHighestTierFrom) {
+                        assertEq(
+                            afterBalTo.eliteNFTId, beforeNFTData.curIndexSecondHighestTier + 1, "assertEliteNFTTo #16"
+                        );
+
+                        assertEq(
+                            afterNFTData.curIndexSecondHighestTier,
+                            beforeNFTData.curIndexSecondHighestTier + 2,
+                            "assertEliteNFTTo #18"
+                        );
+                    } else {
+                        assertEq(afterBalTo.eliteNFTId, beforeNFTData.curIndexSecondHighestTier, "assertEliteNFTTo #16");
+                        assertEq(
+                            afterNFTData.curIndexSecondHighestTier,
+                            beforeNFTData.curIndexSecondHighestTier + 1,
+                            "assertEliteNFTTo #18"
+                        );
+                    }
                     assertEq(
                         afterNFTData.nextBurnIdSecondHighestTier,
                         beforeNFTData.nextBurnIdSecondHighestTier,
@@ -426,11 +446,20 @@ contract ME404BaseTest is ME20BaseTest {
             if (afterBalTo.balCoin < tierParams[tierParams.length - 2].amountThreshold) {
                 assertEq(afterBalTo.eliteNFTId, 0, "assertEliteNFTTo #23");
                 assertEq(afterNFTData.curIndexHighestTier, beforeNFTData.curIndexHighestTier, "assertEliteNFTTo #24");
-                assertEq(
-                    afterNFTData.curIndexSecondHighestTier,
-                    beforeNFTData.curIndexSecondHighestTier,
-                    "assertEliteNFTTo #25"
-                );
+
+                if (expectMintSecondHighestTierFrom) {
+                    assertEq(
+                        afterNFTData.curIndexSecondHighestTier,
+                        beforeNFTData.curIndexSecondHighestTier + 1,
+                        "assertEliteNFTTo #25"
+                    );
+                } else {
+                    assertEq(
+                        afterNFTData.curIndexSecondHighestTier,
+                        beforeNFTData.curIndexSecondHighestTier,
+                        "assertEliteNFTTo #25.1"
+                    );
+                }
                 if (expectBurnHighestTierFrom) {
                     assertEq(afterNFTData.nextBurnIdHighestTier, beforeBalFrom.eliteNFTId, "assertEliteNFTTo #26");
                 } else {

@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console2} from "forge-std/Test.sol";
 
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
@@ -188,21 +188,21 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 444444 ether, 0, 3, 3, true)
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 888888 ether, 0, 4, 4, true)
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 666666 ether, 0, 4, 4, true)
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 2222222 ether, 0, 5, 5, true)
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 888888 ether, 0, 5, 5, true)
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 4444444 ether, 0, 6, 6, true)
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL",2222222 ether, 0, 6, 6, true)
         );
 
         /// Non Fungible Tiers
         tierParams.push(
-            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 6666666 ether, 1, 1, 2000, false)
+            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 4444444 ether, 1, 1, 2000, false)
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 8888888 ether, 1, 2001, 2101, false)
+            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 88888888 ether, 1, 2001, 2101, false)
         );
     }
 }
