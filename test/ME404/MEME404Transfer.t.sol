@@ -7,7 +7,7 @@ import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 
-contract MEME404Test is DeployersME404 {
+contract MEME404TransferTest is DeployersME404 {
     using LibString for uint256;
 
     address BOB = makeAddr("bob");
@@ -122,6 +122,45 @@ contract MEME404Test is DeployersME404 {
             memeToken.transfer(FROM, tierParams[i].amountThreshold);
             memeceptionBaseTest.transfer404(FROM, ALICE, tierParams[i].amountThreshold, false);
         }
+    }
+
+    function test_transferEdgeCase() public {
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), address(this), memeToken.balanceOf(address(memeceptionBaseTest)), false
+        );
+
+        address FROM = makeAddr("FROM");
+        address TO = makeAddr("TO");
+        memeToken.transfer(FROM, tierParams[tierParams.length - 1].amountThreshold);
+        memeToken.transfer(TO, tierParams[tierParams.length - 1].amountThreshold - 1);
+
+        memeceptionBaseTest.transfer404(FROM, TO, 1, false);
+    }
+
+    function test_transferEdgeCaseTwo() public {
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), address(this), memeToken.balanceOf(address(memeceptionBaseTest)), false
+        );
+
+        address FROM = makeAddr("FROM");
+        address TO = makeAddr("TO");
+        memeToken.transfer(FROM, tierParams[tierParams.length - 1].amountThreshold - 1);
+        memeToken.transfer(TO, tierParams[tierParams.length - 2].amountThreshold - 1);
+
+        memeceptionBaseTest.transfer404(FROM, TO, tierParams[tierParams.length - 1].amountThreshold - 1, false);
+    }
+
+    function test_transferEdgeCaseThird() public {
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), address(this), memeToken.balanceOf(address(memeceptionBaseTest)), false
+        );
+
+        address FROM = makeAddr("FROM");
+        address TO = makeAddr("TO");
+        memeToken.transfer(FROM, tierParams[tierParams.length - 1].amountThreshold - 1);
+        memeToken.transfer(TO, tierParams[tierParams.length - 2].amountThreshold);
+
+        memeceptionBaseTest.transfer404(FROM, TO, tierParams[tierParams.length - 1].amountThreshold - 1, false);
     }
 
     function test_transferToAllThreshold() public {
