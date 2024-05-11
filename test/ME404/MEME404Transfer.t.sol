@@ -1,6 +1,8 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {ContractWithSelector} from "../utils/ContractWithSelector.sol";
+import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 
@@ -20,6 +22,36 @@ contract MEME404Test is DeployersME404 {
 
     function test_transferFirstTier() public {
         memeceptionBaseTest.transfer404(BOB, ALICE, tierParams[0].amountThreshold);
+    }
+
+    function test_transferFirstTierHaveSelector() public {
+        ContractWithSelector c = new ContractWithSelector();
+
+        for (uint256 i = 0; i < tierParams.length; i++) {
+            memeceptionBaseTest.transfer404(BOB, address(c), tierParams[i].amountThreshold);
+        }
+    }
+
+    function test_transferFirstTierHaveNoSelector() public {
+        ContractWithoutSelector c = new ContractWithoutSelector();
+        for (uint256 i = 0; i < tierParams.length; i++) {
+            memeceptionBaseTest.transfer404(BOB, address(c), tierParams[i].amountThreshold);
+        }
+    }
+
+    function test_transferFirstTierFromHaveSelector() public {
+        ContractWithSelector c = new ContractWithSelector();
+
+        for (uint256 i = 0; i < tierParams.length; i++) {
+            memeceptionBaseTest.transfer404(address(c), BOB, tierParams[i].amountThreshold);
+        }
+    }
+
+    function test_transferFirstTierFromHaveNoSelector() public {
+        ContractWithoutSelector c = new ContractWithoutSelector();
+        for (uint256 i = 0; i < tierParams.length; i++) {
+            memeceptionBaseTest.transfer404(address(c), BOB, tierParams[i].amountThreshold);
+        }
     }
 
     function test_transferSecondTier() public {

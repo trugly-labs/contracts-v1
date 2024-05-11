@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {ERC1155TokenReceiver} from "@solmate/tokens/ERC1155.sol";
 import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
@@ -464,6 +465,12 @@ contract ME404BaseTest is ME20BaseTest {
     }
 
     function _assertNFT(address account, Balances404 memory bal) internal {
+        if (account.code.length != 0 && !_checkERC1155Received(account, msg.sender, address(0), 0, 1)) {
+            for (uint256 i = 1; i <= tierParams.length - 1; i++) {
+                assertEq(meme1155.balanceOf(account, i), 0, "[Transfer|Tier -0] Balance ERC155");
+            }
+            return;
+        }
         /// Check Balance of NFTs
         /// Assert Highest Tier
         if (bal.balCoin >= tierParams[tierParams.length - 1].amountThreshold) {
@@ -525,5 +532,25 @@ contract ME404BaseTest is ME20BaseTest {
             highestTier.burnIds.length > 0 ? highestTier.burnIds[highestTier.burnIds.length - 1] : 0;
         nftData.nextBurnIdSecondHighestTier =
             secondHighestTier.burnIds.length > 0 ? secondHighestTier.burnIds[secondHighestTier.burnIds.length - 1] : 0;
+    }
+
+    function _checkERC1155Received(address _contract, address _operator, address _from, uint256 _id, uint256 _value)
+        internal
+        returns (bool)
+    {
+        bytes memory callData = abi.encodeWithSelector(
+            ERC1155TokenReceiver(_contract).onERC1155Received.selector, _operator, _from, _id, _value, ""
+        );
+
+        (bool success, bytes memory returnData) = _contract.call(callData);
+
+        // Check both call success and return value
+        if (success && returnData.length >= 32) {
+            // Make sure there is enough data to cover a `bytes4` return
+            bytes4 returned = abi.decode(returnData, (bytes4));
+            return returned == ERC1155TokenReceiver.onERC1155Received.selector;
+        }
+
+        return false;
     }
 }

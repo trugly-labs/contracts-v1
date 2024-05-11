@@ -37,7 +37,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         symbol: "MEME",
         startAt: uint40(block.timestamp + 3 days),
         swapFeeBps: 80,
-        vestingAllocBps: 1,
+        vestingAllocBps: 100,
         salt: "",
         creator: MEMECREATOR
     });

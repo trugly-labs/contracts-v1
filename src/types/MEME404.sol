@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
+import {ERC1155TokenReceiver} from "@solmate/tokens/ERC1155.sol";
 import {MEME20} from "./MEME20.sol";
 import {MEME1155} from "./MEME1155.sol";
 import {MEME721} from "./MEME721.sol";
@@ -201,6 +202,9 @@ contract MEME404 is MEME20 {
 
         Tier storage tier = tiers[uint256(tierId)];
         if (tier.isFungible) {
+            if ((_owner.code.length != 0) && !_checkERC1155Received(_owner, msg.sender, address(0), tier.lowerId, 1)) {
+                return;
+            }
             MEME1155 nft = MEME1155(tier.nft);
             if (nft.balanceOf(_owner, tier.lowerId) >= 1) return;
             nft.mint(_owner, tier.lowerId, 1, "");
@@ -259,5 +263,25 @@ contract MEME404 is MEME20 {
     /// @dev Get the tier details
     function getTier(uint256 tierId) public view returns (Tier memory) {
         return tiers[tierId];
+    }
+
+    function _checkERC1155Received(address _contract, address _operator, address _from, uint256 _id, uint256 _value)
+        internal
+        returns (bool)
+    {
+        bytes memory callData = abi.encodeWithSelector(
+            ERC1155TokenReceiver(_contract).onERC1155Received.selector, _operator, _from, _id, _value, ""
+        );
+
+        (bool success, bytes memory returnData) = _contract.call(callData);
+
+        // Check both call success and return value
+        if (success && returnData.length >= 32) {
+            // Make sure there is enough data to cover a `bytes4` return
+            bytes4 returned = abi.decode(returnData, (bytes4));
+            return returned == ERC1155TokenReceiver.onERC1155Received.selector;
+        }
+
+        return false;
     }
 }
