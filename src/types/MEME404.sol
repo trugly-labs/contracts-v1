@@ -23,10 +23,12 @@ contract MEME404 is MEME20 {
 
     /// @dev No tiers are provided
     error NoTiers();
+    /// @dev Too many tiers are provided
+    error MaxTiers();
     /// @dev When a fungible sequence has upperId that is not equal to lowerId
     error InvalidTierSequenceFungibleThreshold();
     /// @dev When a prev tier has a higher amount threshold than the current tier
-    error InvalidTierSequenceAmountTreshold();
+    error InvalidTierSequenceAmountThreshold();
     /// @dev When a non-fungible sequence has incorrect upperId and lowerId
     error InvalidTierSequenceNonFungibleIds();
 
@@ -67,25 +69,19 @@ contract MEME404 is MEME20 {
         bool isFungible;
     }
 
-    /// @dev Total number of tiers
-    uint256 public tiersCount;
-
     /// @dev NFT ID to NFT address mapping
     mapping(uint256 => address) public nftIdToAddress;
 
     /// @dev Tier ID to Tier mapping
     mapping(uint256 => Tier) public tiers;
 
+    uint256 public tiersCount;
+
     bool private _initialized;
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       IMPLEMENTATION              */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
-    modifier onlyNFT(uint256 nftId) {
-        if (msg.sender != nftIdToAddress[nftId]) revert OnlyNFT();
-        _;
-    }
-
     constructor(string memory _name, string memory _symbol, address _creator) MEME20(_name, _symbol, _creator) {}
 
     /// @dev Initialize the tiers
@@ -95,15 +91,18 @@ contract MEME404 is MEME20 {
         _initialized = true;
 
         if (_tiers.length == 0) revert NoTiers();
-
-        /// TODO: Add validations for making sure that there's enough lowerIds and upperIds based on amountThreshold
+        if (_tiers.length > 10) revert MaxTiers();
 
         for (uint256 i = 0; i < _tiers.length; i++) {
             if (_tiers[i].lowerId == 0) revert InvalidTierSequenceZeroId();
-            if (_tiers[i].amountThreshold == 0) revert InvalidTierSequenceAmountTreshold();
+            if (_tiers[i].amountThreshold == 0 || _tiers[i].amountThreshold > totalSupply) {
+                revert InvalidTierSequenceAmountThreshold();
+            }
             if (_tiers[i].isFungible) {
-               if (_tiers[i].lowerId != _tiers[i].upperId) revert InvalidTierSequenceFungibleThreshold();
+                if (_tiers[i].lowerId != _tiers[i].upperId) revert InvalidTierSequenceFungibleThreshold();
             } else {
+                if (_tiers[i].lowerId >= _tiers[i].upperId) revert InvalidTierSequenceNonFungibleIds();
+
                 uint256 maxNFT = totalSupply.rawDiv(_tiers[i].amountThreshold);
                 if ((_tiers[i].upperId - _tiers[i].lowerId + 1) < maxNFT) revert InvalidTierSequenceNotEnoughNFTs();
             }
@@ -121,15 +120,15 @@ contract MEME404 is MEME20 {
             });
             if (i > 0) {
                 Tier memory previousTier = tiers[i - 1];
-                if (previousTier.amountThreshold >= tier.amountThreshold) revert InvalidTierSequenceAmountTreshold();
+                if (previousTier.amountThreshold >= tier.amountThreshold) revert InvalidTierSequenceAmountThreshold();
                 if (existingNFTAddr != address(0) && previousTier.upperId >= tier.lowerId) {
                     revert InvalidTierSequenceNonFungibleIds();
                 }
             }
             tier.nft = existingNFTAddr != address(0) ? existingNFTAddr : _createNewNFT(creator, _tiers[i]);
-
             tiers[i] = tier;
         }
+
         tiersCount = _tiers.length;
     }
 
@@ -166,10 +165,10 @@ contract MEME404 is MEME20 {
     /// @notice ERC1155 if fungible, ERC721 if non-fungible
     function _createNewNFT(address _creator, TierCreateParam memory _tier) internal returns (address) {
         if (_tier.isFungible) {
-            MEME1155 nft = new MEME1155(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL, _tier.nftId);
+            MEME1155 nft = new MEME1155(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL);
             nftIdToAddress[_tier.nftId] = address(nft);
         } else {
-            MEME721 nft = new MEME721(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL, _tier.nftId);
+            MEME721 nft = new MEME721(_tier.nftName, _tier.nftSymbol, _creator, _tier.baseURL);
             nftIdToAddress[_tier.nftId] = address(nft);
         }
 
@@ -196,13 +195,21 @@ contract MEME404 is MEME20 {
 
     /// @notice Can only be called by NFT collection
     /// @dev Raw transfer of memecoins
-    /// @dev This function bypasses the NFT mint/burn
-    function rawTransferFrom(uint256 nftId, address from, address to, uint256 amount)
-        public
-        onlyNFT(nftId)
-        returns (bool)
-    {
-        return super.transferFrom(from, to, amount);
+    /// @dev This function bypasses the NFT mint/burn, approval and any fees
+    function rawTransferFrom(address from, address to, uint256 nftTokenId) public returns (bool) {
+        Tier memory tier = _getTierFromNftTokenId(msg.sender, nftTokenId);
+        if (tier.nft == address(0)) revert OnlyNFT();
+        balanceOf[from] -= tier.amountThreshold;
+
+        // Cannot overflow because the sum of all user
+        // balances can't exceed the max uint256 value.
+        unchecked {
+            balanceOf[to] += tier.amountThreshold;
+        }
+
+        emit Transfer(from, to, tier.amountThreshold);
+
+        return true;
     }
 
     /// @dev Mint NFTs once a user reaches a new tier
@@ -253,13 +260,15 @@ contract MEME404 is MEME20 {
             MEME721 nft = MEME721(tier.nft);
             if (nft.balanceOf(_owner) == 0) return;
 
-            uint256 nftIdToburn = nft.nftIdByOwner(_owner);
+            uint256 nftIdToburn = nft.tokenIdByOwner(_owner);
             nft.burn(nftIdToburn);
             tier.burnIds.push(nftIdToburn);
         }
     }
 
     /// @dev Get the tier eligibility of a user based on their memecoin balance
+    /// @param _owner Address of the user
+    /// @return Tier ID
     function _getTierEligility(address _owner) internal view returns (int256) {
         uint256 balance = balanceOf[_owner];
         for (uint256 i = tiersCount - 1; i >= 0; i--) {
@@ -271,9 +280,42 @@ contract MEME404 is MEME20 {
         return -1;
     }
 
-    /// @dev Get the tier details
+    /// @dev Get the tier by ID
+    /// @param tierId Tier ID
+    /// @return Tier
     function getTier(uint256 tierId) public view returns (Tier memory) {
         return tiers[tierId];
+    }
+
+    /// @dev Get the tier by NFT token ID
+    /// @param nft NFT address
+    /// @param tokenId NFT token ID
+    /// @return Tier
+    function _getTierFromNftTokenId(address nft, uint256 tokenId) internal view returns (Tier memory) {
+        for (uint256 i = 0; i < tiersCount; i++) {
+            Tier memory tier = tiers[i];
+            if (tier.nft != nft) continue;
+
+            if (tier.isFungible) {
+                if (tier.lowerId == tokenId) {
+                    return tier;
+                }
+            } else {
+                if (tokenId >= tier.lowerId && tokenId <= tier.upperId) {
+                    return tier;
+                }
+            }
+        }
+        return Tier({
+            baseURL: "",
+            lowerId: 0,
+            upperId: 0,
+            amountThreshold: 0,
+            isFungible: false,
+            nft: address(0),
+            curIndex: 0,
+            burnIds: new uint256[](0)
+        });
     }
 
     function _checkERC1155Received(address _contract, address _operator, address _from, uint256 _id, uint256 _value)

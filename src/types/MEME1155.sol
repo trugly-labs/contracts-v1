@@ -1,8 +1,9 @@
 /// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
-import {ERC1155} from "@solmate/tokens/ERC1155.sol";
+import {ERC1155, ERC1155TokenReceiver} from "@solmate/tokens/ERC1155.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
+import {MEME404} from "./MEME404.sol";
 
 import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 
@@ -25,7 +26,6 @@ contract MEME1155 is ERC1155 {
     address public creator;
     address public memecoin;
     string public baseURI;
-    uint256 public nftId;
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       IMPLEMENTATION              */
@@ -35,13 +35,79 @@ contract MEME1155 is ERC1155 {
         _;
     }
 
-    constructor(string memory _name, string memory _symbol, address _creator, string memory _baseURI, uint256 _nftId) {
+    constructor(string memory _name, string memory _symbol, address _creator, string memory _baseURI) {
         name = _name;
         symbol = _symbol;
         creator = _creator;
         memecoin = msg.sender;
         baseURI = _baseURI;
-        nftId = _nftId;
+    }
+
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes calldata data)
+        public
+        override
+    {
+        require(msg.sender == from || isApprovedForAll[from][msg.sender], "NOT_AUTHORIZED");
+
+        MEME404(memecoin).rawTransferFrom(from, to, id);
+
+        balanceOf[from][id] -= amount;
+        balanceOf[to][id] += amount;
+
+        emit TransferSingle(msg.sender, from, to, id, amount);
+
+        require(
+            to.code.length == 0
+                ? to != address(0)
+                : ERC1155TokenReceiver(to).onERC1155Received(msg.sender, from, id, amount, data)
+                    == ERC1155TokenReceiver.onERC1155Received.selector,
+            "UNSAFE_RECIPIENT"
+        );
+    }
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) public override {
+        require(ids.length == amounts.length, "LENGTH_MISMATCH");
+
+        require(msg.sender == from || isApprovedForAll[from][msg.sender], "NOT_AUTHORIZED");
+
+        // Storing these outside the loop saves ~15 gas per iteration.
+        uint256 id;
+        uint256 amount;
+
+        for (uint256 i = 0; i < ids.length;) {
+            id = ids[i];
+            amount = amounts[i];
+
+            for (uint256 j = 0; j < amount; j++) {
+                // This should never happen as each wallet should only have one NFT
+                MEME404(memecoin).rawTransferFrom(from, to, id);
+            }
+
+            balanceOf[from][id] -= amount;
+            balanceOf[to][id] += amount;
+
+            // An array can't have a total length
+            // larger than the max uint256 value.
+            unchecked {
+                ++i;
+            }
+        }
+
+        emit TransferBatch(msg.sender, from, to, ids, amounts);
+
+        require(
+            to.code.length == 0
+                ? to != address(0)
+                : ERC1155TokenReceiver(to).onERC1155BatchReceived(msg.sender, from, ids, amounts, data)
+                    == ERC1155TokenReceiver.onERC1155BatchReceived.selector,
+            "UNSAFE_RECIPIENT"
+        );
     }
 
     function uri(uint256 id) public view override returns (string memory) {

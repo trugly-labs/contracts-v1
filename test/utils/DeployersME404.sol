@@ -178,7 +178,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         return memeToken.getTier(tierParams.length - 1).nft;
     }
 
-    function _initTierParams() private {
+    function _initTierParams() internal {
         /// Fungible Tiers
         tierParams.push(MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 1, 0, 1, 1, true));
         tierParams.push(
@@ -194,7 +194,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 888888 ether, 0, 5, 5, true)
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL",2222222 ether, 0, 6, 6, true)
+            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 2222222 ether, 0, 6, 6, true)
         );
 
         /// Non Fungible Tiers

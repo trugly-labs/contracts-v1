@@ -44,6 +44,17 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         uint16 vestingAllocBps
     );
 
+    event Meme404Created(
+        address indexed memeToken,
+        address indexed creator,
+        string symbol,
+        address pool,
+        uint40 startAt,
+        uint16 creatorSwapFeeBps,
+        uint16 vestingAllocBps,
+        MEME404.TierCreateParam[] tiers
+    );
+
     /// @dev Emitted when a OG participates in the memeceptions
     event MemeceptionBid(address indexed memeToken, address indexed og, uint256 amountETH, uint256 amountMeme);
 
@@ -234,7 +245,17 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     function createMeme(MemeceptionCreationParams calldata params) external nonReentrant returns (address, address) {
         _verifyCreateMeme(params);
         MEME20 memeToken = new MEME20{salt: params.salt}(params.name, params.symbol, params.creator);
-        return _createMeme(params, memeToken);
+        address pool = _createMeme(params, memeToken);
+        emit MemeCreated(
+            address(memeToken),
+            params.creator,
+            params.symbol,
+            pool,
+            params.startAt,
+            params.swapFeeBps,
+            params.vestingAllocBps
+        );
+        return (address(memeToken), pool);
     }
 
     /// @inheritdoc ITruglyMemeception
@@ -246,15 +267,26 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         _verifyCreateMeme(params);
         MEME404 memeToken = new MEME404{salt: params.salt}(params.name, params.symbol, params.creator);
         memeToken.initializeTiers(tiers);
-        return _createMeme(params, memeToken);
+        address pool = _createMeme(params, memeToken);
+        emit Meme404Created(
+            address(memeToken),
+            params.creator,
+            params.symbol,
+            pool,
+            params.startAt,
+            params.swapFeeBps,
+            params.vestingAllocBps,
+            tiers
+        );
+        return (address(memeToken), pool);
     }
 
     /// @dev Create a memecoin and memeception params
     /// @dev Also initialize the vesting
-    function _createMeme(MemeceptionCreationParams calldata params, MEME20 memeToken)
-        internal
-        returns (address, address)
-    {
+    /// @param params List of parameters for the creation of a memeception
+    /// @param memeToken Address of the MEME20
+    /// @return Uniswap Pool address
+    function _createMeme(MemeceptionCreationParams calldata params, MEME20 memeToken) internal returns (address) {
         if (address(memeToken) <= address(WETH9)) revert InvalidMemeAddress();
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
 
@@ -292,16 +324,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             memeToken.transfer(address(0), MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(burnAllocBps, 1e4));
         }
 
-        emit MemeCreated(
-            address(memeToken),
-            params.creator,
-            params.symbol,
-            pool,
-            params.startAt,
-            params.swapFeeBps,
-            params.vestingAllocBps
-        );
-        return (address(memeToken), pool);
+        return pool;
     }
 
     /// @dev Verify the validity of the parameters for the creation of a memeception

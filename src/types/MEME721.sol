@@ -1,8 +1,9 @@
 /// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
-import {ERC721} from "@solmate/tokens/ERC721.sol";
+import {ERC721, ERC721TokenReceiver} from "@solmate/tokens/ERC721.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
+import {MEME404} from "./MEME404.sol";
 
 import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 
@@ -23,7 +24,6 @@ contract MEME721 is ERC721 {
     address public creator;
     address public memecoin;
     string public baseURI;
-    uint256 public nftId;
 
     mapping(address => uint256) internal _ownerToId;
 
@@ -35,18 +35,42 @@ contract MEME721 is ERC721 {
         _;
     }
 
-    constructor(string memory name, string memory _symbol, address _creator, string memory _baseURI, uint256 _nftId)
+    constructor(string memory name, string memory _symbol, address _creator, string memory _baseURI)
         ERC721(name, _symbol)
     {
         creator = _creator;
         memecoin = msg.sender;
         baseURI = _baseURI;
-
-        nftId = _nftId;
     }
 
     function tokenURI(uint256 id) public view override returns (string memory) {
         return bytes(baseURI).length > 0 ? string.concat(baseURI, id.toString()) : "";
+    }
+
+    function transferFrom(address from, address to, uint256 id) public override {
+        require(from == _ownerOf[id], "WRONG_FROM");
+
+        require(to != address(0), "INVALID_RECIPIENT");
+
+        require(
+            msg.sender == from || isApprovedForAll[from][msg.sender] || msg.sender == getApproved[id], "NOT_AUTHORIZED"
+        );
+
+        MEME404(memecoin).rawTransferFrom(from, to, id);
+
+        // Underflow of the sender's balance is impossible because we check for
+        // ownership above and the recipient's balance can't realistically overflow.
+        unchecked {
+            _balanceOf[from]--;
+
+            _balanceOf[to]++;
+        }
+
+        _ownerOf[id] = to;
+
+        delete getApproved[id];
+
+        emit Transfer(from, to, id);
     }
 
     function mint(address account, uint256 id) external onlyMemecoin {
@@ -60,7 +84,7 @@ contract MEME721 is ERC721 {
         _burn(id);
     }
 
-    function nftIdByOwner(address account) external view returns (uint256) {
+    function tokenIdByOwner(address account) external view returns (uint256) {
         return _ownerToId[account];
     }
 }

@@ -127,6 +127,12 @@ contract MEME404TansferFromTest is DeployersME404 {
         memeceptionBaseTest.transferFrom404(BOB, ALICE, 0, false);
     }
 
+    function test_transferFromNotEnoughBal() public {
+        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, 1, false);
+        vm.expectRevert();
+        memeceptionBaseTest.transferFrom404(BOB, ALICE, 2, false);
+    }
+
     function test_transferFromFromAllThreshold() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), address(this), memeToken.balanceOf(address(memeceptionBaseTest)), false

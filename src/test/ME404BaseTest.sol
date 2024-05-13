@@ -234,7 +234,7 @@ contract ME404BaseTest is ME20BaseTest {
                             "assertEliteNFT - #1.2.2.1"
                         );
                         assertEq(
-                            meme721.nftIdByOwner(from),
+                            meme721.tokenIdByOwner(from),
                             beforeNFTData.curIndexSecondHighestTier,
                             "assertEliteNFT - #1.2.2.2"
                         );
@@ -565,7 +565,7 @@ contract ME404BaseTest is ME20BaseTest {
         Balances404 memory balances;
         balances.balCoin = meme404.balanceOf(_account);
         balances.balEliteNFT = meme721.balanceOf(_account);
-        balances.eliteNFTId = meme721.nftIdByOwner(_account);
+        balances.eliteNFTId = meme721.tokenIdByOwner(_account);
         return balances;
     }
 
