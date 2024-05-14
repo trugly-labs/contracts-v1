@@ -399,7 +399,19 @@ contract ME404BaseTest is ME20BaseTest {
                 /// Recipient now has a 2nd Highest Tier NFT
                 if (expectBurnSecondHighestTierFrom) {
                     // Expect Burn on 2nd Highest Tier
-                    assertEq(afterBalTo.eliteNFTId, beforeBalFrom.eliteNFTId, "assertEliteNFTTo #11");
+                    if (beforeBalTo.balCoin >= tierParams[tierParams.length - 2].amountThreshold) {
+                        assertEq(afterBalTo.eliteNFTId, beforeBalTo.eliteNFTId, "assertEliteNFTTo #11.1");
+                        assertEq(
+                            afterNFTData.nextBurnIdSecondHighestTier, beforeBalFrom.eliteNFTId, "assertEliteNFTTo #15.1"
+                        );
+                    } else {
+                        assertEq(afterBalTo.eliteNFTId, beforeBalFrom.eliteNFTId, "assertEliteNFTTo #11.2");
+                        assertEq(
+                            afterNFTData.nextBurnIdSecondHighestTier,
+                            beforeNFTData.nextBurnIdSecondHighestTier,
+                            "assertEliteNFTTo #15.2"
+                        );
+                    }
                     assertEq(
                         afterNFTData.curIndexHighestTier, beforeNFTData.curIndexHighestTier, "assertEliteNFTTo #12"
                     );
@@ -408,13 +420,6 @@ contract ME404BaseTest is ME20BaseTest {
                         beforeNFTData.curIndexSecondHighestTier,
                         "assertEliteNFTTo #13"
                     );
-
-                    assertEq(
-                        afterNFTData.nextBurnIdSecondHighestTier,
-                        beforeNFTData.nextBurnIdSecondHighestTier,
-                        "assertEliteNFTTo #15"
-                    );
-
                     assertEq(
                         afterNFTData.nextBurnIdHighestTier, beforeNFTData.nextBurnIdHighestTier, "assertEliteNFTTo #14"
                     );

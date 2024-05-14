@@ -56,7 +56,7 @@ contract MEME721 is ERC721 {
             msg.sender == from || isApprovedForAll[from][msg.sender] || msg.sender == getApproved[id], "NOT_AUTHORIZED"
         );
 
-        MEME404(memecoin).rawTransferFrom(from, to, id);
+        MEME404(memecoin).transferFromNFT(from, to, id);
 
         // Underflow of the sender's balance is impossible because we check for
         // ownership above and the recipient's balance can't realistically overflow.

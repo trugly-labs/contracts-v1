@@ -103,12 +103,33 @@ contract MEME404TransferTest is DeployersME404 {
     }
 
     function test_transferNotEnough() public {
-        memeceptionBaseTest.transfer404(
-            address(memeceptionBaseTest), BOB, 1, false
-        );
+        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, 1, false);
         vm.expectRevert();
         memeceptionBaseTest.transfer404(BOB, ALICE, 2, false);
+    }
 
+    function test_transferNoUpgradeTier() public {
+        for (uint256 i = 0; i < tierParams.length; i++) {
+            address RECEIVER = makeAddr(i.toString());
+            memeceptionBaseTest.transfer404(BOB, RECEIVER, tierParams[i].amountThreshold, true);
+            // No Upgrade 2nd time
+            uint256 deltaToNexTier = i < tierParams.length - 1
+                ? tierParams[i + 1].amountThreshold - tierParams[i].amountThreshold - 1
+                : tierParams[i].amountThreshold;
+            memeceptionBaseTest.transfer404(BOB, RECEIVER, deltaToNexTier, true);
+        }
+    }
+
+    function test_transferNoDownTier() public {
+        for (uint256 i = 1; i < tierParams.length; i++) {
+            address RECEIVER = makeAddr(i.toString());
+            memeceptionBaseTest.transfer404(
+                address(memeceptionBaseTest), BOB, tierParams[i].amountThreshold + 10, false
+            );
+            // No Downgrade 2 times
+            memeceptionBaseTest.transfer404(BOB, RECEIVER, 1, false);
+            memeceptionBaseTest.transfer404(BOB, RECEIVER, 9, false);
+        }
     }
 
     function test_transferFromAllThreshold() public {

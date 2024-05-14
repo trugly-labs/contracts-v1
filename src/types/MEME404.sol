@@ -196,7 +196,7 @@ contract MEME404 is MEME20 {
     /// @notice Can only be called by NFT collection
     /// @dev Raw transfer of memecoins
     /// @dev This function bypasses the NFT mint/burn, approval and any fees
-    function rawTransferFrom(address from, address to, uint256 nftTokenId) public returns (bool) {
+    function transferFromNFT(address from, address to, uint256 nftTokenId) public returns (bool) {
         Tier memory tier = _getTierFromNftTokenId(msg.sender, nftTokenId);
         if (tier.nft == address(0)) revert OnlyNFT();
         balanceOf[from] -= tier.amountThreshold;

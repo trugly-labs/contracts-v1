@@ -133,6 +133,19 @@ contract MEME404TansferFromTest is DeployersME404 {
         memeceptionBaseTest.transferFrom404(BOB, ALICE, 2, false);
     }
 
+    function test_transferFromNoUpgradeTier() public {
+        for (uint256 i = 0; i < tierParams.length; i++) {
+            address RECEIVER = makeAddr(i.toString());
+            memeceptionBaseTest.transfer404(BOB, RECEIVER, tierParams[i].amountThreshold, true);
+
+            // No Upgrade 2nd time
+            uint256 deltaToNexTier = i < tierParams.length - 1
+                ? tierParams[i + 1].amountThreshold - tierParams[i].amountThreshold - 1
+                : tierParams[i].amountThreshold;
+            memeceptionBaseTest.transferFrom404(BOB, RECEIVER, deltaToNexTier, true);
+        }
+    }
+
     function test_transferFromFromAllThreshold() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), address(this), memeToken.balanceOf(address(memeceptionBaseTest)), false

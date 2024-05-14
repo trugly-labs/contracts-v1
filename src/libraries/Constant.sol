@@ -9,8 +9,8 @@ library Constant {
     /// @dev Supply dedicated for the memeceptions (50%)
     uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_444_444_444 ether;
 
-    /// @dev Memeception minimum start at (now + 1 day)
-    uint64 internal constant MEMECEPTION_MIN_START_AT = 1 hours;
+    /// @dev Memeception minimum start at (now + 30 minutes)
+    uint64 internal constant MEMECEPTION_MIN_START_AT = 10 minutes;
 
     /// @dev Memeception maximum start at (now + 30 day)
     uint64 internal constant MEMECEPTION_MAX_START_AT = 30 days;

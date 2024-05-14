@@ -8,6 +8,8 @@ import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
 import {ME404BaseTest} from "../../src/test/ME404BaseTest.sol";
 import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
 import {MEME404} from "../../src/types/MEME404.sol";
+import {MEME1155} from "../../src/types/MEME1155.sol";
+import {MEME721} from "../../src/types/MEME721.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {Meme404AddressMiner} from "./Meme404AddressMiner.sol";
@@ -22,6 +24,8 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     ME404BaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
     MEME404 memeToken;
+    MEME1155 meme1155;
+    MEME721 meme721;
     TruglyVesting vesting;
     address treasury = address(1);
     TruglyMemeception memeception;
@@ -73,6 +77,8 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     function initCreateMeme404() public virtual {
         address meme = createMeme404(createMemeParams.symbol);
         memeToken = MEME404(meme);
+        meme1155 = MEME1155(getNormalNFTCollection());
+        meme721 = MEME721(getEliteNFTCollection());
     }
 
     function createMeme404(string memory symbol) public virtual returns (address meme) {

@@ -49,7 +49,9 @@ contract MEME1155 is ERC1155 {
     {
         require(msg.sender == from || isApprovedForAll[from][msg.sender], "NOT_AUTHORIZED");
 
-        MEME404(memecoin).rawTransferFrom(from, to, id);
+        for (uint256 i = 1; i <= amount; i++) {
+            MEME404(memecoin).transferFromNFT(from, to, id);
+        }
 
         balanceOf[from][id] -= amount;
         balanceOf[to][id] += amount;
@@ -84,9 +86,9 @@ contract MEME1155 is ERC1155 {
             id = ids[i];
             amount = amounts[i];
 
-            for (uint256 j = 0; j < amount; j++) {
+            for (uint256 j = 1; j <= amount; j++) {
                 // This should never happen as each wallet should only have one NFT
-                MEME404(memecoin).rawTransferFrom(from, to, id);
+                MEME404(memecoin).transferFromNFT(from, to, id);
             }
 
             balanceOf[from][id] -= amount;

@@ -24,7 +24,7 @@ contract SwapTest404 is DeployersME404 {
         initCreatorBal = memeToken.balanceOf(MEMECREATOR);
     }
 
-    function test_swap_buy_fee_success() public {
+    function test_swap404_buy_fee_success() public {
         initSwapFromSwapRouter(0.01 ether, ALICE);
 
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 55871686075491953069537, "treasuryBalance");
@@ -32,7 +32,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), 27656484607368516769420862, "aliceBalance");
     }
 
-    function test_swap_sell_no_fee_success() public {
+    function test_swap404_sell_no_fee_success() public {
         initSwapFromSwapRouter(0.01 ether, ALICE);
         uint256 amountIn = 10000000 ether;
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
@@ -58,7 +58,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), 17656484607368516769420862, "aliceBalance");
     }
 
-    function test_swap_fee_twice_success() public {
+    function test_swap404_fee_twice_success() public {
         address BOB = makeAddr("bob");
         initSwapFromSwapRouter(10 ether, ALICE);
         initSwapFromSwapRouter(10 ether, BOB);
@@ -69,13 +69,13 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(BOB), 182892015664146676830839191, "bobBalance");
     }
 
-    function test_swap_exempt_treasury_success() public {
+    function test_swap404_exempt_treasury_success() public {
         initSwapFromSwapRouter(10 ether, treasury);
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 3134492285302770612249647743, "treasuryBalance");
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
     }
 
-    function test_swap_exempt_memeception_success() public {
+    function test_swap404_exempt_memeception_success() public {
         address memeceptionAddr = address(memeceptionBaseTest.memeceptionContract());
         uint256 initialBalance = memeToken.balanceOf(memeceptionAddr);
         initSwapFromSwapRouter(10 ether, memeceptionAddr);
@@ -86,7 +86,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
     }
 
-    function test_swap_pool_to_router() public {
+    function test_swap404_pool_to_router() public {
         address pool = memeceptionBaseTest.memeceptionContract().getMemeception(address(memeToken)).pool;
         uint256 initialBalance = memeToken.balanceOf(pool);
         initSwapFromSwapRouter(10 ether, pool);
@@ -95,7 +95,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
     }
 
-    function test_swap_creator_zero_fee() public {
+    function test_swap404_creator_zero_fee() public {
         hoax(MEMECREATOR);
         memeToken.setCreatorFeeBps(0);
 
@@ -106,7 +106,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), 27879971351670484581699010, "aliceBalance");
     }
 
-    function test_swap_protocol_zero_fee() public {
+    function test_swap404_protocol_zero_fee() public {
         hoax(memeceptionBaseTest.MULTISIG());
         memeToken.setProtocolFeeBps(0);
 
@@ -117,7 +117,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), 27712356293444008722490399, "aliceBalance");
     }
 
-    function test_swap_both_zero_fee() public {
+    function test_swap404_both_zero_fee() public {
         hoax(memeceptionBaseTest.MULTISIG());
         memeToken.setProtocolFeeBps(0);
 
@@ -131,7 +131,7 @@ contract SwapTest404 is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), 27935843037745976534768547, "aliceBalance");
     }
 
-    function test_swap_buy_fee_change_address() public {
+    function test_swap404_buy_fee_change_address() public {
         hoax(MEMECREATOR);
         memeToken.setCreatorAddress(makeAddr("newCreator"));
 

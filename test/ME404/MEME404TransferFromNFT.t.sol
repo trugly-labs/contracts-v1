@@ -17,9 +17,6 @@ contract MEME404RawTransferFromTest is DeployersME404 {
 
     using LibString for uint256;
 
-    MEME1155 meme1155;
-    MEME721 meme721;
-
     address BOB = makeAddr("bob");
     address ALICE = makeAddr("alice");
 
@@ -29,15 +26,12 @@ contract MEME404RawTransferFromTest is DeployersME404 {
         initFullBid(10 ether);
         vm.warp(block.timestamp + 1 minutes);
         memeceptionBaseTest.claim(address(memeToken));
-
-        meme1155 = MEME1155(getNormalNFTCollection());
-        meme721 = MEME721(getEliteNFTCollection());
     }
 
-    function test_rawTransferFrom1155() public {
+    function test_transferFromNFT1155() public {
         memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
         vm.startPrank(address(meme1155));
-        memeToken.rawTransferFrom(BOB, ALICE, 1);
+        memeToken.transferFromNFT(BOB, ALICE, 1);
 
         vm.stopPrank();
         assertEq(meme1155.balanceOf(BOB, 1), 1);
@@ -48,12 +42,12 @@ contract MEME404RawTransferFromTest is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), 1);
     }
 
-    function test_rawTransferFrom721() public {
+    function test_transferFromNFT721() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 2].amountThreshold, false
         );
         vm.startPrank(address(meme721));
-        memeToken.rawTransferFrom(BOB, ALICE, 1);
+        memeToken.transferFromNFT(BOB, ALICE, 1);
 
         vm.stopPrank();
         assertEq(meme1155.balanceOf(BOB, 0), 0);
@@ -64,12 +58,12 @@ contract MEME404RawTransferFromTest is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), tierParams[tierParams.length - 2].amountThreshold);
     }
 
-    function test_rawTransferFrom721HighestTier() public {
+    function test_transferFromNFT721HighestTier() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 1].amountThreshold, false
         );
         vm.startPrank(address(meme721));
-        memeToken.rawTransferFrom(BOB, ALICE, 2001);
+        memeToken.transferFromNFT(BOB, ALICE, 2001);
 
         vm.stopPrank();
         assertEq(meme1155.balanceOf(BOB, 0), 0);
@@ -80,38 +74,38 @@ contract MEME404RawTransferFromTest is DeployersME404 {
         assertEq(memeToken.balanceOf(ALICE), tierParams[tierParams.length - 1].amountThreshold);
     }
 
-    function test_rawTransferFrom1155_notNFT_revert() public {
+    function test_transferFromNFT1155_notNFT_revert() public {
         memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
         vm.expectRevert(OnlyNFT.selector);
-        memeToken.rawTransferFrom(BOB, ALICE, 1);
+        memeToken.transferFromNFT(BOB, ALICE, 1);
     }
 
-    function test_rawTransferFrom721_revert_notNFT() public {
+    function test_transferFromNFT721_revert_notNFT() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 2].amountThreshold, false
         );
         vm.expectRevert(OnlyNFT.selector);
-        memeToken.rawTransferFrom(BOB, ALICE, 1);
+        memeToken.transferFromNFT(BOB, ALICE, 1);
     }
 
-    function test_rawTransferFrom721WrongTokenId_revert() public {
+    function test_transferFromNFT721WrongTokenId_revert() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 1].amountThreshold, false
         );
         vm.expectRevert(OnlyNFT.selector);
         vm.startPrank(address(meme721));
-        memeToken.rawTransferFrom(BOB, ALICE, 2102);
+        memeToken.transferFromNFT(BOB, ALICE, 2102);
 
         vm.stopPrank();
     }
 
-    function test_rawTransferFrom1155WrongTokenId_revert() public {
+    function test_transferFromNFT1155WrongTokenId_revert() public {
         memeceptionBaseTest.transfer404(
             address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 1].amountThreshold, false
         );
         vm.expectRevert(OnlyNFT.selector);
         vm.startPrank(address(meme1155));
-        memeToken.rawTransferFrom(BOB, ALICE, 7);
+        memeToken.transferFromNFT(BOB, ALICE, 7);
 
         vm.stopPrank();
     }

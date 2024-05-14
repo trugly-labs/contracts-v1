@@ -11,6 +11,15 @@ contract ContractWithSelector {
 
     /// @dev receive ERC1155 tokens for Univ3 LP Positions
     function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
-        return this.onERC721Received.selector;
+        return this.onERC1155Received.selector;
+    }
+
+    /// @dev receive ERC1155 tokens for Univ3 LP Positions
+    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        return this.onERC1155BatchReceived.selector;
     }
 }
