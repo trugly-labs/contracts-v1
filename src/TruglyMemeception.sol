@@ -245,7 +245,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     function createMeme(MemeceptionCreationParams calldata params) external nonReentrant returns (address, address) {
         _verifyCreateMeme(params);
         MEME20 memeToken = new MEME20{salt: params.salt}(params.name, params.symbol, params.creator);
-        address pool = _createMeme(params, memeToken);
+        address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
+        _createMeme(params, memeToken, pool);
         emit MemeCreated(
             address(memeToken),
             params.creator,
@@ -261,13 +262,26 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @inheritdoc ITruglyMemeception
     function createMeme404(MemeceptionCreationParams calldata params, MEME404.TierCreateParam[] calldata tiers)
         external
+        virtual
         nonReentrant
         returns (address, address)
     {
         _verifyCreateMeme(params);
         MEME404 memeToken = new MEME404{salt: params.salt}(params.name, params.symbol, params.creator);
-        memeToken.initializeTiers(tiers);
-        address pool = _createMeme(params, memeToken);
+        address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
+
+        /// List of exempt addresses for MEME404 NFT minting
+        address[] memory exemptNFTMint = new address[](7);
+        exemptNFTMint[0] = address(this);
+        exemptNFTMint[1] = address(vesting);
+        exemptNFTMint[2] = address(v3PositionManager);
+        exemptNFTMint[3] = address(treasury);
+        exemptNFTMint[4] = pool;
+        exemptNFTMint[5] = params.creator;
+        exemptNFTMint[6] = Constant.UNCX_TREASURY;
+        memeToken.initializeTiers(tiers, exemptNFTMint);
+
+        _createMeme(params, memeToken, pool);
         emit Meme404Created(
             address(memeToken),
             params.creator,
@@ -285,10 +299,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @dev Also initialize the vesting
     /// @param params List of parameters for the creation of a memeception
     /// @param memeToken Address of the MEME20
-    /// @return Uniswap Pool address
-    function _createMeme(MemeceptionCreationParams calldata params, MEME20 memeToken) internal returns (address) {
+    function _createMeme(MemeceptionCreationParams calldata params, MEME20 memeToken, address pool) internal {
         if (address(memeToken) <= address(WETH9)) revert InvalidMemeAddress();
-        address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
 
         memeToken.initialize(
             owner, treasury, MEME20Constant.PROTOCOL_FEE_BPS, params.swapFeeBps, pool, SWAP_ROUTERS, EXEMPT_UNISWAP
@@ -323,8 +335,6 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         if (burnAllocBps > 0) {
             memeToken.transfer(address(0), MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(burnAllocBps, 1e4));
         }
-
-        return pool;
     }
 
     /// @dev Verify the validity of the parameters for the creation of a memeception

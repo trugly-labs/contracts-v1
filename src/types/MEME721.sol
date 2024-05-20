@@ -25,7 +25,21 @@ contract MEME721 is ERC721 {
     address public memecoin;
     string public baseURI;
 
-    mapping(address => uint256) internal _ownerToId;
+    /// @dev A uint32 map in storage.
+    struct Uint32Map {
+        uint256 spacer;
+    }
+
+    struct Owner {
+        /// @dev list of tokenIds owned by the address
+        Uint32Map ids;
+    }
+
+    /// @dev Mapping from address to Owner
+    mapping(address => Owner) internal _owners;
+
+    /// @dev Mapping from token ID to Owners.ids index position
+    mapping(uint256 => uint256) internal _uint32MapIndex;
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       IMPLEMENTATION              */
@@ -56,8 +70,6 @@ contract MEME721 is ERC721 {
             msg.sender == from || isApprovedForAll[from][msg.sender] || msg.sender == getApproved[id], "NOT_AUTHORIZED"
         );
 
-        MEME404(memecoin).transferFromNFT(from, to, id);
-
         // Underflow of the sender's balance is impossible because we check for
         // ownership above and the recipient's balance can't realistically overflow.
         unchecked {
@@ -68,23 +80,82 @@ contract MEME721 is ERC721 {
 
         _ownerOf[id] = to;
 
+        /// @notice Handle From custom storage
+        Owner storage fromOwner = _owners[from];
+
+        uint32 lastOwnedTokenId = _get(fromOwner.ids, _balanceOf[from] + 1);
+        if (lastOwnedTokenId != uint32(id)) {
+            _set(fromOwner.ids, _uint32MapIndex[id], lastOwnedTokenId);
+            _uint32MapIndex[lastOwnedTokenId] = _uint32MapIndex[id];
+        }
+
+        /// @notice Handle To custom storage
+        Owner storage toOwner = _owners[to];
+
+        /// @dev Add the NFT id to the beginning to handle properly burn
+        /// in MEME404 contract such that nextOwnedTokenId will point to
+        /// previous NFT
+        if (_balanceOf[to] > 1) {
+            uint256 firstOwnedTokenId = _get(toOwner.ids, 1);
+
+            _set(toOwner.ids, 1, uint32(id));
+            _set(toOwner.ids, _balanceOf[to], uint32(firstOwnedTokenId));
+            _uint32MapIndex[id] = 1;
+            _uint32MapIndex[firstOwnedTokenId] = _balanceOf[to];
+        } else {
+            _set(toOwner.ids, _balanceOf[to], uint32(id));
+            _uint32MapIndex[id] = _balanceOf[to];
+        }
+
         delete getApproved[id];
 
         emit Transfer(from, to, id);
+
+        MEME404(memecoin).transferFromNFT(from, to, id);
     }
 
     function mint(address account, uint256 id) external onlyMemecoin {
-        _ownerToId[account] = id;
         _mint(account, id);
+
+        Owner storage owner = _owners[account];
+        _set(owner.ids, _balanceOf[account], uint32(id));
+        _uint32MapIndex[id] = _balanceOf[account];
     }
 
     function burn(uint256 id) external onlyMemecoin {
-        address curOwner = _ownerOf[id];
-        _ownerToId[curOwner] = 0;
+        Owner storage owner = _owners[_ownerOf[id]];
+        uint32 lastOwnedTokenId = _get(owner.ids, _balanceOf[_ownerOf[id]]);
+
+        if (lastOwnedTokenId != uint32(id)) {
+            _set(owner.ids, _uint32MapIndex[id], lastOwnedTokenId);
+            _uint32MapIndex[lastOwnedTokenId] = _uint32MapIndex[id];
+        }
+        _uint32MapIndex[id] = 0;
+
         _burn(id);
     }
 
-    function tokenIdByOwner(address account) external view returns (uint256) {
-        return _ownerToId[account];
+    /// @dev Returns the uint32 value at `index` in `map`.
+    function _get(Uint32Map storage map, uint256 index) internal view returns (uint32 result) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            let s := add(shl(96, map.slot), shr(3, index)) // Storage slot.
+            result := and(0xffffffff, shr(shl(5, and(index, 7)), sload(s)))
+        }
+    }
+
+    /// @dev Updates the uint32 value at `index` in `map`.
+    function _set(Uint32Map storage map, uint256 index, uint32 value) internal {
+        /// @solidity memory-safe-assembly
+        assembly {
+            let s := add(shl(96, map.slot), shr(3, index)) // Storage slot.
+            let o := shl(5, and(index, 7)) // Storage slot offset (bits).
+            let v := sload(s) // Storage slot value.
+            sstore(s, xor(v, shl(o, and(0xffffffff, xor(value, shr(o, v))))))
+        }
+    }
+
+    function nextOwnedTokenId(address account) external view returns (uint256) {
+        return _get(_owners[account].ids, _balanceOf[account]);
     }
 }

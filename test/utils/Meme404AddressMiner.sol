@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
-import {MEME404} from "../../src/types/MEME404.sol";
+import {MockMEME404} from "../mock/MockMEME404.sol";
 
 library Meme404AddressMiner {
     uint256 public constant MAX_LOOP = 200;
@@ -13,7 +13,7 @@ library Meme404AddressMiner {
     {
         address memeAddress;
         bytes memory creationCodeWithArgs =
-            abi.encodePacked(type(MEME404).creationCode, abi.encode(_name, _symbol, _creator));
+            abi.encodePacked(type(MockMEME404).creationCode, abi.encode(_name, _symbol, _creator));
 
         uint256 salt;
         for (salt; salt < MAX_LOOP; salt++) {

@@ -12,7 +12,7 @@ import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePo
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../types/MEME20.sol";
 
-contract MockTruglyMemeception is TruglyMemeception {
+contract TestnetTruglyMemeception is TruglyMemeception {
     using FixedPointMathLib for uint256;
     using SafeTransferLib for WETH;
     using SafeTransferLib for MEME20;

@@ -1,15 +1,17 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {LibString} from "@solmate/utils/LibString.sol";
 import {Test, console2} from "forge-std/Test.sol";
 
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
-import {ME404BaseTest} from "../../src/test/ME404BaseTest.sol";
-import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
+import {ME404BaseTest} from "../base/ME404BaseTest.sol";
+import {RouterBaseTest} from "../base/RouterBaseTest.sol";
+import {MockMEME404} from "../mock/MockMEME404.sol";
+import {MockMEME721} from "../mock/MockMEME721.sol";
 import {MEME404} from "../../src/types/MEME404.sol";
 import {MEME1155} from "../../src/types/MEME1155.sol";
-import {MEME721} from "../../src/types/MEME721.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {Meme404AddressMiner} from "./Meme404AddressMiner.sol";
@@ -20,12 +22,14 @@ import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_L
 import {TestHelpers} from "./TestHelpers.sol";
 
 contract DeployersME404 is Test, TestHelpers, BaseParameters {
+    using LibString for *;
+
     // Global variables
     ME404BaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
-    MEME404 memeToken;
+    MockMEME404 memeToken;
     MEME1155 meme1155;
-    MEME721 meme721;
+    MockMEME721 meme721;
     TruglyVesting vesting;
     address treasury = address(1);
     TruglyMemeception memeception;
@@ -35,13 +39,15 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     address MEMECREATOR = makeAddr("creator");
     uint256 public constant MAX_BID_AMOUNT = 10 ether;
 
+    uint256[] EMPTY_UINT_ARRAY = new uint256[](0);
+
     // Parameters
     ITruglyMemeception.MemeceptionCreationParams public createMemeParams = ITruglyMemeception.MemeceptionCreationParams({
         name: "MEME Coin",
         symbol: "MEME",
         startAt: uint40(block.timestamp + 3 days),
         swapFeeBps: 80,
-        vestingAllocBps: 100,
+        vestingAllocBps: 500,
         salt: "",
         creator: MEMECREATOR
     });
@@ -76,9 +82,9 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
     function initCreateMeme404() public virtual {
         address meme = createMeme404(createMemeParams.symbol);
-        memeToken = MEME404(meme);
+        memeToken = MockMEME404(meme);
         meme1155 = MEME1155(getNormalNFTCollection());
-        meme721 = MEME721(getEliteNFTCollection());
+        meme721 = MockMEME721(getEliteNFTCollection());
     }
 
     function createMeme404(string memory symbol) public virtual returns (address meme) {
@@ -93,7 +99,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
         (meme,) = memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
         assertEq(meme, mineAddress, "mine memeAddress");
-        memeToken = MEME404(meme);
+        memeToken = MockMEME404(meme);
     }
 
     function initBid(uint256 amount) public virtual {
@@ -177,38 +183,148 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     }
 
     function getNormalNFTCollection() public view returns (address) {
-        return memeToken.getTier(0).nft;
+        return memeToken.getTier(1).nft;
     }
 
     function getEliteNFTCollection() public view returns (address) {
-        return memeToken.getTier(tierParams.length - 1).nft;
+        return memeToken.getTier(tierParams.length).nft;
     }
 
     function _initTierParams() internal {
         /// Fungible Tiers
-        tierParams.push(MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 1, 0, 1, 1, true));
         tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 222222 ether, 0, 2, 2, true)
+            MEME404.TierCreateParam({
+                baseURL: "https://nft.com/",
+                nftName: "Normal NFT",
+                nftSymbol: "NORMAL",
+                amountThreshold: 1,
+                nftId: 1,
+                lowerId: 1,
+                upperId: 1,
+                isFungible: true
+            })
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 444444 ether, 0, 3, 3, true)
+            MEME404.TierCreateParam({
+                baseURL: "https://nft.com/",
+                nftName: "Normal NFT",
+                nftSymbol: "NORMAL",
+                amountThreshold: 20 ether,
+                nftId: 1,
+                lowerId: 2,
+                upperId: 2,
+                isFungible: true
+            })
         );
-        tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 666666 ether, 0, 4, 4, true)
-        );
-        tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 888888 ether, 0, 5, 5, true)
-        );
-        tierParams.push(
-            MEME404.TierCreateParam("https://nft.com/", "Normal NFT", "NORMAL", 2222222 ether, 0, 6, 6, true)
-        );
-
         /// Non Fungible Tiers
         tierParams.push(
-            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 4444444 ether, 1, 1, 2000, false)
+            MEME404.TierCreateParam({
+                baseURL: "https://elite.com/",
+                nftName: "Elite NFT",
+                nftSymbol: "ELITE",
+                amountThreshold: 4_444_444 ether,
+                nftId: 2,
+                lowerId: 1,
+                upperId: 2000,
+                isFungible: false
+            })
         );
         tierParams.push(
-            MEME404.TierCreateParam("https://elite.com/", "Elite NFT", "ELITE", 88888888 ether, 1, 2001, 2101, false)
+            MEME404.TierCreateParam({
+                baseURL: "https://elite.com/",
+                nftName: "Elite NFT",
+                nftSymbol: "ELITE",
+                amountThreshold: 88_888_888 ether,
+                nftId: 2,
+                lowerId: 2001,
+                upperId: 2100,
+                isFungible: false
+            })
         );
+    }
+
+    function getAmountThreshold(uint256 tierId) public view returns (uint256) {
+        return memeToken.getTier(tierId).amountThreshold;
+    }
+
+    function getTokenIdForFungibleTier(uint256 tierId) public view returns (uint256) {
+        return memeToken.getTier(tierId).lowerId;
+    }
+
+    function initWalletWithTokens(address _account, uint256 _amount) public {
+        vm.startPrank(address(memeceptionBaseTest.memeceptionContract()));
+        memeToken.transfer(_account, _amount);
+        vm.stopPrank();
+    }
+
+    function assertMEME404(address _account, uint256 expectedBalance, string memory test) public {
+        assertEq(memeToken.balanceOf(_account), expectedBalance, string.concat(test, ": MockMEME404 balance"));
+    }
+
+    function assertMEME1155(address _account, uint256 tokenId, uint256 expectedBalance, string memory test) public {
+        assertEq(meme1155.balanceOf(_account, tokenId), expectedBalance, string.concat(test, ": MEME1155 balance"));
+        address[] memory accounts = new address[](1);
+        accounts[0] = _account;
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = tokenId;
+        uint256[] memory expectedBalances = new uint256[](1);
+        expectedBalances[0] = expectedBalance;
+        assertEq(
+            meme1155.balanceOfBatch(accounts, tokenIds),
+            expectedBalances,
+            string.concat(test, ": MEME1155 balanceOfBatch")
+        );
+        for (uint256 i = 0; i < tokenId; i++) {
+            assertEq(meme1155.balanceOf(_account, i), 0, string.concat(test, ": MEME1155 balance tokenId below"));
+        }
+        for (uint256 i = tokenId + 1; i < tokenId + 10; i++) {
+            assertEq(meme1155.balanceOf(_account, i), 0, string.concat(test, ": MEME1155 balance tokenId above"));
+        }
+    }
+
+    function assertMEME721(address _account, uint256[] memory _expectedTokenIds, string memory test) public {
+        assertEq(meme721.balanceOf(_account), _expectedTokenIds.length, string.concat(test, ": MEME721 balance"));
+        for (uint256 i = 1; i <= _expectedTokenIds.length; i++) {
+            uint256 tokenAtIndex = meme721.getTokenAtIndex(_account, i);
+            assertEq(tokenAtIndex, _expectedTokenIds[i - 1], string.concat(test, ": getTokenAtIndex:", i.toString()));
+            assertEq(
+                meme721.getIndexForToken(tokenAtIndex),
+                i,
+                string.concat(test, ": getIndexForToken:", tokenAtIndex.toString())
+            );
+            assertEq(
+                meme721.ownerOf(tokenAtIndex), _account, string.concat(test, ": ownerOf:", tokenAtIndex.toString())
+            );
+        }
+        assertEq(
+            meme721.nextOwnedTokenId(_account),
+            _expectedTokenIds.length > 0 ? _expectedTokenIds[_expectedTokenIds.length - 1] : 0,
+            string.concat(test, ": nextOwnedTokenId")
+        );
+    }
+
+    function assertMEME404BurnAndUmintedForTier(
+        uint256 _tierId,
+        uint256[] memory _expectedBurnIds,
+        uint256 _nextUnmintedId,
+        string memory test
+    ) public {
+        MockMEME404.Tier memory tier = memeToken.getTier(_tierId);
+        assertEq(tier.burnLength, _expectedBurnIds.length, string.concat(test, ": Burn Length"));
+        for (uint256 i = 1; i <= _expectedBurnIds.length; i++) {
+            assertEq(
+                memeToken.getBurnedTokenAtIndex(_tierId, i),
+                _expectedBurnIds[i - 1],
+                string.concat(test, ": Burn Id: ", _expectedBurnIds[i - 1].toString())
+            );
+
+            assertEq(meme721.getIndexForToken(_expectedBurnIds[i - 1]), 0, string.concat(test, ": getIndexForToken"));
+        }
+        assertEq(
+            memeToken.nextBurnId(_tierId),
+            _expectedBurnIds.length > 0 ? _expectedBurnIds[_expectedBurnIds.length - 1] : 0,
+            string.concat(test, ": Next Burn Id")
+        );
+        assertEq(tier.nextUnmintedId, _nextUnmintedId, string.concat(test, ": Next Unminted Id"));
     }
 }

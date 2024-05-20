@@ -57,4 +57,6 @@ library Constant {
     uint256 internal constant MIN_AUCTION_PRICE = 0.1e9;
 
     uint256 internal constant MIN_AUCTION_PRICES_TIERS = 10;
+
+    address internal constant UNCX_TREASURY = 0x04bDa42de3bc32Abb00df46004204424d4Cf8287;
 }

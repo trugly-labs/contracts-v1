@@ -5,13 +5,13 @@ import {Test, console2} from "forge-std/Test.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
-import {MEME20} from "../types/MEME20.sol";
-import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
-import {TruglyMemeception} from "../TruglyMemeception.sol";
-import {Constant} from "../libraries/Constant.sol";
-import {MEME20Constant} from "../libraries/MEME20Constant.sol";
-import {TestHelpers} from "../../test/utils/TestHelpers.sol";
+import {IUniswapV3Pool} from "../../src/interfaces/external/IUniswapV3Pool.sol";
+import {MEME20} from "../../src/types/MEME20.sol";
+import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
+import {MockTruglyMemeception} from "../mock/MockTruglyMemeception.sol";
+import {Constant} from "../../src/libraries/Constant.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
+import {TestHelpers} from "../utils/TestHelpers.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 
 contract ME20BaseTest is Test, TestHelpers, BaseParameters {
@@ -36,7 +36,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         uint256 bidAmountMeme;
     }
 
-    TruglyMemeception public memeceptionContract;
+    MockTruglyMemeception public memeceptionContract;
 
     uint256[] public ETH_RAISED = [
         2.248888888664e21,
@@ -59,7 +59,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
     address public MEMECREATOR;
 
     constructor(address _vesting, address _treasury) {
-        memeceptionContract = new TruglyMemeception(
+        memeceptionContract = new MockTruglyMemeception(
             V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG
         );
 

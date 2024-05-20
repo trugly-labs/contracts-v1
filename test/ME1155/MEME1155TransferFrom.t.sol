@@ -6,6 +6,7 @@ import {ContractWithSelector} from "../utils/ContractWithSelector.sol";
 import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
+import {MEME404} from "../../src/types/MEME404.sol";
 
 contract MEME1155TansferFromTest is DeployersME404 {
     using LibString for uint256;
@@ -25,6 +26,8 @@ contract MEME1155TansferFromTest is DeployersME404 {
 
         assertEq(meme1155.isApprovedForAll(BOB, address(this)), true, "isApprovedForAll");
     }
+
+    /// TODO: Test Transfer to self
 
     function test_1155transferFromNotApproval() public {
         address NO_APPROVAL = makeAddr("NO_APPROVAL");
@@ -76,6 +79,163 @@ contract MEME1155TansferFromTest is DeployersME404 {
 
         vm.expectRevert();
         meme1155.safeTransferFrom(BOB, address(c), 1, 1, "");
+    }
+
+    function test_1155transferFromRecipientCrossingFungibleTierThreshold() public {
+        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), ALICE, tierParams[1].amountThreshold - tierParams[0].amountThreshold, false
+        );
+        meme1155.safeTransferFrom(BOB, ALICE, 1, 1, "");
+
+        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
+        assertEq(meme1155.balanceOf(ALICE, 0), 0, "ALICE 1155 balance -1");
+        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
+        assertEq(meme1155.balanceOf(ALICE, 2), 1, "ALICE 1155 balance +1");
+        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
+        assertEq(memeToken.balanceOf(ALICE), tierParams[1].amountThreshold, "ALICE MEME balance");
+        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
+        assertEq(meme721.balanceOf(ALICE), 0, "ALICE 721 balance");
+
+        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
+        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
+        assertEq(highestTier.nextUnmintedId, 2001, "highestTiernextUnmintedId");
+        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
+
+        assertEq(secondHighestTier.nextUnmintedId, 1, "secondHighestTier.nextUnmintedId");
+        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
+    }
+
+    function test_1155transferFromRecipientCrossingNoFungibleTierThreshold() public {
+        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[1].amountThreshold, false);
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), ALICE, tierParams[tierParams.length - 2].amountThreshold - 1, false
+        );
+        meme1155.safeTransferFrom(BOB, ALICE, 2, 1, "");
+
+        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
+        assertEq(meme1155.balanceOf(ALICE, 2), 0, "ALICE 1155 balance -1");
+        assertEq(meme1155.balanceOf(ALICE, 5), 0, "ALICE 1155 balance");
+        assertEq(meme1155.balanceOf(ALICE, 6), 0, "ALICE 1155 balance +1");
+        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
+        assertEq(
+            memeToken.balanceOf(ALICE),
+            tierParams[tierParams.length - 2].amountThreshold - 1 + tierParams[1].amountThreshold,
+            "ALICE MEME balance"
+        );
+        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
+        assertEq(meme721.balanceOf(ALICE), 1, "ALICE 721 balance");
+        assertEq(meme721.nextOwnedTokenId(ALICE), 1, "ALICE 721 balance");
+
+        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
+        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
+        assertEq(highestTier.nextUnmintedId, 2001, "highestTiernextUnmintedId");
+        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
+
+        assertEq(secondHighestTier.nextUnmintedId, 2, "secondHighestTier.nextUnmintedId");
+        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
+    }
+
+    function test_1155transferFromRecipientCrossingHighestNoFungibleTierThreshold() public {
+        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[1].amountThreshold, false);
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), ALICE, tierParams[tierParams.length - 1].amountThreshold - 1, false
+        );
+        assertEq(meme721.nextOwnedTokenId(BOB), 2001, "BOB nextOwnedTokenId");
+        assertEq(meme721.balanceOf(BOB), 1, "BOB 721 balance");
+        meme1155.safeTransferFrom(BOB, ALICE, 2, 1, "");
+
+        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
+        assertEq(meme1155.balanceOf(ALICE, 2), 0, "ALICE 1155 balance -1");
+        assertEq(meme1155.balanceOf(ALICE, 5), 0, "ALICE 1155 balance");
+        assertEq(meme1155.balanceOf(ALICE, 6), 0, "ALICE 1155 balance +1");
+        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
+        assertEq(
+            memeToken.balanceOf(ALICE),
+            tierParams[tierParams.length - 1].amountThreshold - 1 + tierParams[1].amountThreshold,
+            "ALICE MEME balance"
+        );
+        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
+        assertEq(meme721.balanceOf(ALICE), 1, "ALICE 721 balance");
+        assertEq(meme721.nextOwnedTokenId(ALICE), 2001, "ALICE 721 balance");
+
+        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
+        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
+        assertEq(highestTier.nextUnmintedId, 2002, "highestTiernextUnmintedId");
+        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
+
+        assertEq(secondHighestTier.nextUnmintedId, 1, "secondHighestTier.nextUnmintedId");
+        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
+    }
+
+    function test_1155transferFromSenderNotCrossingNoFungibleTierThreshold() public {
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 3].amountThreshold * 2, false
+        );
+        assertEq(meme1155.balanceOf(BOB, 6), 1, "BOB balanceOf MEME1155");
+        assertEq(meme1155.balanceOf(BOB, 5), 0, "BOB balanceOf MEME1155");
+        meme1155.safeTransferFrom(BOB, ALICE, tierParams[tierParams.length - 3].lowerId, 1, "");
+
+        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 5), 0, "BOB balanceOf MEME1155");
+        assertEq(meme1155.balanceOf(BOB, 6), 1, "BOB 1155 balance +1");
+        assertEq(meme1155.balanceOf(ALICE, 0), 0, "ALICE 1155 balance -1");
+        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
+        assertEq(meme1155.balanceOf(ALICE, 6), 1, "ALICE 1155 balance +1");
+        assertEq(memeToken.balanceOf(BOB), tierParams[tierParams.length - 3].amountThreshold, "BOB MEME balance");
+        assertEq(memeToken.balanceOf(ALICE), tierParams[tierParams.length - 3].amountThreshold, "ALICE MEME balance");
+        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
+        assertEq(meme721.balanceOf(ALICE), 0, "ALICE 721 balance");
+        assertEq(meme721.nextOwnedTokenId(BOB), 0, "ALICE 721 balance");
+        assertEq(meme721.nextOwnedTokenId(ALICE), 0, "ALICE 721 balance");
+
+        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
+        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
+        assertEq(highestTier.nextUnmintedId, 2001, "highestTiernextUnmintedId");
+        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
+
+        assertEq(secondHighestTier.nextUnmintedId, 1, "secondHighestTier.nextUnmintedId");
+        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
+    }
+
+    function test_721transferFromSenderCrossingNoFungibleTierThreshold() public {
+        memeceptionBaseTest.transfer404(
+            address(memeceptionBaseTest),
+            BOB,
+            tierParams[tierParams.length - 1].amountThreshold + tierParams[tierParams.length - 2].amountThreshold,
+            false
+        );
+        assertEq(meme721.nextOwnedTokenId(BOB), 2001, "BOB tokenIByOwner");
+        meme721.transferFrom(BOB, ALICE, tierParams[tierParams.length - 1].lowerId);
+
+        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
+        assertEq(meme1155.balanceOf(BOB, 6), 0, "BOB 1155 balance +1");
+        assertEq(meme1155.balanceOf(ALICE, 0), 0, "ALICE 1155 balance -1");
+        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
+        assertEq(meme1155.balanceOf(ALICE, 6), 0, "ALICE 1155 balance +1");
+        assertEq(memeToken.balanceOf(BOB), tierParams[tierParams.length - 21].amountThreshold, "BOB MEME balance");
+        assertEq(memeToken.balanceOf(ALICE), tierParams[tierParams.length - 1].amountThreshold, "ALICE MEME balance");
+        assertEq(meme721.balanceOf(BOB), 1, "BOB 721 balance");
+        assertEq(meme721.balanceOf(ALICE), 1, "ALICE 721 balance");
+        assertEq(meme721.nextOwnedTokenId(BOB), 1, "ALICE 721 balance");
+        assertEq(meme721.nextOwnedTokenId(ALICE), 2002, "ALICE 721 balance");
+
+        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
+        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
+        assertEq(highestTier.nextUnmintedId, 2003, "highestTiernextUnmintedId");
+        assertEq(highestTier.burnLength, 1, "highestTier.burnLength");
+        assertEq(memeToken.nextBurnId(tierParams.length), 2002, "highestTier.burnLength");
+
+        assertEq(secondHighestTier.nextUnmintedId, 0, "secondHighestTier.nextUnmintedId");
+        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
     }
 
     function test_1155transferFromFromHaveSelector() public {

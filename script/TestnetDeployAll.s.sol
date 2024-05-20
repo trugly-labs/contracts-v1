@@ -3,10 +3,10 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
 
-import {MockDeploymentsFn} from "./utils/MockDeploymentsFn.sol";
+import {TestnetDeploymentsFn} from "./utils/TestnetDeploymentsFn.sol";
 import {TruglyVesting} from "../src/TruglyVesting.sol";
 
-contract MockDeployAll is Script, MockDeploymentsFn {
+contract TestnetDeployAll is Script, TestnetDeploymentsFn {
     function run() external {
         /// REMEMBER TO SET THE MNEMONIC_FIRST_ACC_PRIV_KEY TO THE TESTNET DEPLOYER
         uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");

@@ -48,15 +48,14 @@ contract MEME1155 is ERC1155 {
         override
     {
         require(msg.sender == from || isApprovedForAll[from][msg.sender], "NOT_AUTHORIZED");
-
-        for (uint256 i = 1; i <= amount; i++) {
-            MEME404(memecoin).transferFromNFT(from, to, id);
-        }
-
+        require(amount < 2, "INVALID_AMOUNT");
         balanceOf[from][id] -= amount;
-        balanceOf[to][id] += amount;
+        /// @notice Only Transfer NFT if the receiver doesn't already have it
+        if (balanceOf[to][id] == 0) balanceOf[to][id] += amount;
 
         emit TransferSingle(msg.sender, from, to, id, amount);
+
+        if (amount == 1) require(MEME404(memecoin).transferFromNFT(from, to, id), "TRANSFER_FAILED");
 
         require(
             to.code.length == 0
@@ -85,14 +84,13 @@ contract MEME1155 is ERC1155 {
         for (uint256 i = 0; i < ids.length;) {
             id = ids[i];
             amount = amounts[i];
-
-            for (uint256 j = 1; j <= amount; j++) {
-                // This should never happen as each wallet should only have one NFT
-                MEME404(memecoin).transferFromNFT(from, to, id);
-            }
+            require(amount < 2, "INVALID_AMOUNT");
 
             balanceOf[from][id] -= amount;
-            balanceOf[to][id] += amount;
+            /// @notice Only Transfer NFT if the receiver doesn't already have it
+            if (balanceOf[to][id] == 0) balanceOf[to][id] += amount;
+
+            if (amount == 1) require(MEME404(memecoin).transferFromNFT(from, to, id), "TRANSFER_FAILED");
 
             // An array can't have a total length
             // larger than the max uint256 value.

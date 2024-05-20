@@ -5,8 +5,8 @@ import {Test} from "forge-std/Test.sol";
 
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
-import {ME20BaseTest} from "../../src/test/ME20BaseTest.sol";
-import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
+import {ME20BaseTest} from "../base/ME20BaseTest.sol";
+import {RouterBaseTest} from "../base/RouterBaseTest.sol";
 import {MEME20} from "../../src/types/MEME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
