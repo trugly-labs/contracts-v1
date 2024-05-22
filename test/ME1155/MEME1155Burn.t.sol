@@ -22,10 +22,8 @@ contract MEME1155BurnTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
-        initFullBid(10 ether);
-        vm.warp(block.timestamp + 1 minutes);
-        memeceptionBaseTest.claim(address(memeToken));
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
+
+        initWalletWithTokens(BOB, getAmountThreshold(1));
     }
 
     function test_1155burn_success() public {

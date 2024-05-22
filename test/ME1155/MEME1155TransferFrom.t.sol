@@ -13,263 +13,583 @@ contract MEME1155TansferFromTest is DeployersME404 {
 
     address BOB = makeAddr("bob");
     address ALICE = makeAddr("alice");
+    address SENDER = address(this);
+    address RECEIVER = makeAddr("receiver");
 
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
-        initFullBid(10 ether);
-        vm.warp(block.timestamp + 1 minutes);
-        memeceptionBaseTest.claim(address(memeToken));
 
-        hoax(BOB);
+        vm.startPrank(SENDER);
         meme1155.setApprovalForAll(address(this), true);
-
-        assertEq(meme1155.isApprovedForAll(BOB, address(this)), true, "isApprovedForAll");
+        vm.stopPrank();
+        assertEq(meme1155.isApprovedForAll(SENDER, address(this)), true, "isApprovedForAll");
     }
 
-    /// TODO: Test Transfer to self
+    function test_1155safeTransferFromSelf() public {
+        string memory TEST = "TransferFromSelf";
+        initWalletWithTokens(SENDER, getAmountThreshold(1));
 
-    function test_1155transferFromNotApproval() public {
+        RECEIVER = SENDER;
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(1), TEST);
+        assertMEME1155(RECEIVER, 1, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    function test_1155safeTransferFromNotApproval() public {
         address NO_APPROVAL = makeAddr("NO_APPROVAL");
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), NO_APPROVAL, tierParams[0].amountThreshold, false);
-        vm.expectRevert("NOT_AUTHORIZED");
+        initWalletWithTokens(NO_APPROVAL, 1);
+
+        vm.expectRevert();
         meme1155.safeTransferFrom(NO_APPROVAL, ALICE, 1, 1, "");
     }
 
-    function test_1155transferFrom_success() public {
-        for (uint256 i = 0; i < tierParams.length - 2; i++) {
-            uint256 tokenId = i + 1;
-            memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[i].amountThreshold, false);
-            address RECEIVER = makeAddr(i.toString());
-            meme1155.safeTransferFrom(BOB, RECEIVER, tokenId, 1, "");
+    /// @notice Scenario #1 Test Wallet A (1 MEME / ERC1155 #1) -> ERC1155 #1 -> Wallet B (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (0 / 0) -> Wallet B (1 MEME / ERC1155 #1)
+    function test_1155safeTransferFromScenario1_success() public {
+        // Init Test
+        uint256 TIER = 1;
+        string memory TEST = "Scenario #1";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
 
-            assertEq(meme1155.balanceOf(BOB, tokenId - 1), 0, "BOB 1155 balance - 1");
-            assertEq(meme1155.balanceOf(BOB, tokenId), 0, "BOB 1155 balance");
-            assertEq(meme1155.balanceOf(BOB, tokenId + 1), 0, "BOB 1155 balance +1");
-            assertEq(meme1155.balanceOf(RECEIVER, tokenId - 1), 0, "ALICE 1155 balance -1");
-            assertEq(meme1155.balanceOf(RECEIVER, tokenId), 1, "ALICE 1155 balance");
-            assertEq(meme1155.balanceOf(RECEIVER, tokenId + 1), 0, "ALICE 1155 balance +1");
-            assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
-            assertEq(memeToken.balanceOf(RECEIVER), tierParams[i].amountThreshold, "ALICE MEME balance");
-            assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-            assertEq(meme721.balanceOf(RECEIVER), 0, "ALICE 721 balance");
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 1, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(TIER, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #2: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 2 / ERC1155 #2)
+    function test_1155safeTransferFromScenario2_success() public {
+        // Init Test
+        uint256 TIER = 2;
+        string memory TEST = "Scenario #2";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 2, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(TIER, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario 5: Test Wallet A (2 $MEME / ERC1155 #1) -> ERC1155 #1 -> Wallet B (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (1 / ERC1155 #1) -> Wallet B (Tier 1 / ERC1155 #1)
+    function test_1155safeTransferFromScenario5_success() public {
+        // Init Test
+        uint256 TIER = 1;
+        string memory TEST = "Scenario #5";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER) * 2);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(SENDER, 1, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 1, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #12: Test Wallet A (Tier 1 / ERC1155 #1) -> ERC1155 #1 -> Wallet B (Tier 1 / ERC1155 #1)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 1 * 2 / ERC1155 #1)
+    /// Expected: Tier 3 Burn: []
+    /// Expected: Tier 4 Burn: []
+    function test_1155safeTransferFromScenario12_success() public {
+        // Init Test
+        uint256 TIER = 1;
+        string memory TEST = "Scenario #12";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(TIER));
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER) * 2, TEST);
+        assertMEME1155(RECEIVER, 1, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #13: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 ... #20)
+    /// @notice sHTBurn []
+    /// @notice HTBurn []
+    /// @notice Unminted.length = 0
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 4 - 1 + Tier 2 / ERC721 #2001)
+    /// Expected: Tier 3 Burn: [#20 .. #1]
+    /// Expected: Tier 4 Burn: []
+    function test_1155safeTransferFromScenario13_success() public {
+        // Init Test
+        string memory TEST = "Scenario #13";
+        initWalletWithTokens(SENDER, getAmountThreshold(2));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(4) - 1);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, getTokenIdForFungibleTier(2), 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 2001;
+        assertMEME404(RECEIVER, getAmountThreshold(4) + getAmountThreshold(2) - 1, TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](20);
+        for (uint256 i = 0; i < burnTokenIds.length; i++) {
+            burnTokenIds[i] = burnTokenIds.length - i;
         }
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2002, TEST);
     }
 
-    function test_1155transferFromToHaveSelector() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
+    /// @notice Scenario #14: Test Wallet A (Tier 2 * 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 3 - 1 / ERC1155 #2)
+    /// @notice sHTBurn []
+    /// @notice HTBurn []
+    /// @notice Unminted.length = 0
+    /// Expected: Wallet A (Tier 2 / ERC1155 #2) -> Wallet B (Tier 3 - 1 + Tier 2 / ERC721 #1)
+    /// Expected: Tier 3 Burn: []
+    /// Expected: Tier 4 Burn: []
+    function test_1155safeTransferFromScenario14_success() public {
+        // Init Test
+        string memory TEST = "Scenario #14";
+        initWalletWithTokens(SENDER, getAmountThreshold(2) * 2);
+        initWalletWithTokens(RECEIVER, getAmountThreshold(3) - 1);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(2), TEST);
+        assertMEME1155(SENDER, getTokenIdForFungibleTier(2), 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 1;
+        assertMEME404(RECEIVER, getAmountThreshold(3) + getAmountThreshold(2) - 1, TEST);
+        assertMEME1155(RECEIVER, 2, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #15: An additioanl fungible Tier 3 that is super close to Tier 2 + 10
+    /// @notice Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 1 + 10 / ERC1155 #1)
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 2 + Tier 1 + 10 / ERC1155 #3)
+    function test_1155safeTransferFromScenario15_success() public {
+        // Init Test
+        string memory TEST = "Scenario #15";
+        tierParams[2] = MEME404.TierCreateParam({
+            baseURL: "https://normal.com/",
+            nftName: "Normal NFT",
+            nftSymbol: "Normal",
+            amountThreshold: getAmountThreshold(2) + 10,
+            nftId: 1,
+            lowerId: 3,
+            upperId: 3,
+            isFungible: true
+        });
+        createMemeParams.symbol = "CUSTOMMEME404";
+        initCreateMeme404();
+
+        initWalletWithTokens(SENDER, getAmountThreshold(2));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(1) + 10);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(1) + getAmountThreshold(2) + 10, TEST);
+        assertMEME1155(RECEIVER, 3, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #16: An additioanl fungible Tier 3 that is super close to Tier 2 + 10
+    /// @notice Test Wallet A (Tier 2 + Tier 1 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 1 + 10 / ERC1155 #1)
+    /// Expected: Wallet A (Tier 1 / ERC1155 #1) -> Wallet B (Tier 2 + Tier 1 + 10 / ERC1155 #3)
+    function test_1155safeTransferFromScenario16_success() public {
+        // Init Test
+        string memory TEST = "Scenario #16";
+        tierParams[2] = MEME404.TierCreateParam({
+            baseURL: "https://normal.com/",
+            nftName: "Normal NFT",
+            nftSymbol: "Normal",
+            amountThreshold: getAmountThreshold(2) + 10,
+            nftId: 1,
+            lowerId: 3,
+            upperId: 3,
+            isFungible: true
+        });
+        createMemeParams.symbol = "CUSTOMMEME404";
+        initCreateMeme404();
+
+        initWalletWithTokens(SENDER, getAmountThreshold(2) + getAmountThreshold(1));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(1) + 10);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(1), TEST);
+        assertMEME1155(SENDER, 1, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(1) + getAmountThreshold(2) + 10, TEST);
+        assertMEME1155(RECEIVER, 3, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #17: An additioanl fungible Tier 3 that is super close to Tier 2 + 10 AND Tier 4 that is super close to Tier 3
+    /// @notice Test Wallet A (Tier 3 + Tier 1 / ERC1155 #3) -> ERC1155 #3 -> Wallet B (Tier 2 + 10 / ERC1155 #1)
+    /// Expected: Wallet A (Tier 1 / #1) -> Wallet B (Tier 2 + Tier 2 + Tier 3+  10 / ERC721 #2001)
+    function test_1155safeTransferFromScenario17_success() public {
+        // Init Test
+        string memory TEST = "Scenario #17";
+        tierParams[2] = MEME404.TierCreateParam({
+            baseURL: "https://normal.com/",
+            nftName: "Normal NFT",
+            nftSymbol: "Normal",
+            amountThreshold: getAmountThreshold(2) + 10,
+            nftId: 1,
+            lowerId: 3,
+            upperId: 3,
+            isFungible: true
+        });
+        tierParams[3] = MEME404.TierCreateParam({
+            baseURL: "https://elite.com/",
+            nftName: "Elite NFT",
+            nftSymbol: "Elite",
+            amountThreshold: getAmountThreshold(2) + 20,
+            nftId: 2,
+            lowerId: 2001,
+            upperId: 80000000100,
+            isFungible: false
+        });
+        createMemeParams.symbol = "CUSTOMMEME404";
+        initCreateMeme404();
+
+        initWalletWithTokens(SENDER, getAmountThreshold(3) + getAmountThreshold(1));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(2) + 10);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 3, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(1), TEST);
+        assertMEME1155(SENDER, 1, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 2001;
+        assertMEME404(RECEIVER, getAmountThreshold(2) + getAmountThreshold(3) + 10, TEST);
+        assertMEME1155(RECEIVER, 3, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2002, TEST);
+    }
+
+    /// -------------- SCENARIOS WHERE UNLIMTED TOKENS ARE NO LONGER AVAILABLE --------------- ///
+    /// @notice Scenario #27: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 3 - 1 / #ERC1155 #2)
+    /// @notice sHTBurn [#1 #3 .. #1997 #1999]
+    /// @notice HTBurn []
+    /// @notice Unminted.length = 0
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 3 - 1 + Tier 2 / ERC721 #1999)
+    /// Expected: Tier 3 Burn: [#1 #3 .. #1997]
+    /// Expected: Tier 4 Burn: []
+    function test_1155safeTransferFromScenario27_success() public {
+        // Init Test
+        string memory TEST = "Scenario #27";
+        for (uint256 i = 0; i < (tierParams[2].upperId - tierParams[2].lowerId + 1) / 2; i++) {
+            initWalletWithTokens(BOB, getAmountThreshold(3));
+            vm.startPrank(BOB);
+            memeToken.transfer(makeAddr(i.toString()), getAmountThreshold(3));
+            vm.stopPrank();
+        }
+
+        initWalletWithTokens(SENDER, getAmountThreshold(2));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(3) - 1);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, getTokenIdForFungibleTier(2), 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 1999;
+        assertMEME404(RECEIVER, getAmountThreshold(3) + getAmountThreshold(2) - 1, TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[]((tierParams[2].upperId - tierParams[2].lowerId + 1) / 2 - 1);
+        for (uint256 i = 0; i < burnTokenIds.length; i++) {
+            burnTokenIds[i] = 1 + i * 2;
+        }
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2001, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+    /// @notice Scenario #28: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 .. #20)
+    /// @notice sHTBurn []
+    /// @notice HTBurn [ERC721 #2001 #2003 .. #2097 #2099]
+    /// @notice Unminted.length = 0
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 4 - 1 + Tier 2 / ERC721 #2099)
+    /// Expected: Tier 3 Burn: [#20 .. #1]
+    /// Expected: Tier 4 Burn: [#2001, #2003 .. #2097]
+
+    function test_1155safeTransferFromScenario28_success() public {
+        // Init Test
+        string memory TEST = "Scenario #28";
+        uint256 TIER = 4;
+        for (uint256 i = 0; i < (tierParams[TIER - 1].upperId - tierParams[TIER - 1].lowerId + 1) / 2; i++) {
+            initWalletWithTokens(BOB, getAmountThreshold(TIER));
+            vm.startPrank(BOB);
+            memeToken.transfer(makeAddr(i.toString()), getAmountThreshold(TIER));
+            vm.stopPrank();
+        }
+
+        initWalletWithTokens(SENDER, getAmountThreshold(2));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(4) - 1);
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, getTokenIdForFungibleTier(2), 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 2099;
+        assertMEME404(RECEIVER, getAmountThreshold(4) - 1 + getAmountThreshold(2), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](20);
+        for (uint256 i = 0; i < burnTokenIds.length; i++) {
+            burnTokenIds[i] = burnTokenIds.length - i;
+        }
+
+        uint256[] memory HTburnTokenIds =
+            new uint256[]((tierParams[TIER - 1].upperId - tierParams[TIER - 1].lowerId + 1) / 2 - 1);
+        for (uint256 i = 0; i < HTburnTokenIds.length; i++) {
+            HTburnTokenIds[i] = 2001 + i * 2;
+        }
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
+        assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2101, TEST);
+    }
+
+    function test_1155transferFirstTierHaveSelector() public {
+        string memory TEST = "FirstTierHaveSelector";
+        uint256 TIER = 1;
         ContractWithSelector c = new ContractWithSelector();
+        RECEIVER = address(c);
+        initWalletWithTokens(SENDER, getAmountThreshold(1));
 
-        meme1155.safeTransferFrom(BOB, address(c), 1, 1, "");
-        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance - 1");
-        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
-        assertEq(meme1155.balanceOf(address(c), 0), 0, "ALICE 1155 balance -1");
-        assertEq(meme1155.balanceOf(address(c), 1), 1, "ALICE 1155 balance");
-        assertEq(meme1155.balanceOf(address(c), 2), 0, "ALICE 1155 balance +1");
-        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
-        assertEq(memeToken.balanceOf(address(c)), 1, "ALICE MEME balance");
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(address(c)), 0, "ALICE 721 balance");
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 1, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, tierParams[2].lowerId, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
     }
 
-    function test_1155transferFromToHaveNoSelector() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
-        ContractWithoutSelector c = new ContractWithoutSelector();
-
-        vm.expectRevert();
-        meme1155.safeTransferFrom(BOB, address(c), 1, 1, "");
-    }
-
-    function test_1155transferFromRecipientCrossingFungibleTierThreshold() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
-        memeceptionBaseTest.transfer404(
-            address(memeceptionBaseTest), ALICE, tierParams[1].amountThreshold - tierParams[0].amountThreshold, false
-        );
-        meme1155.safeTransferFrom(BOB, ALICE, 1, 1, "");
-
-        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
-        assertEq(meme1155.balanceOf(ALICE, 0), 0, "ALICE 1155 balance -1");
-        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 2), 1, "ALICE 1155 balance +1");
-        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
-        assertEq(memeToken.balanceOf(ALICE), tierParams[1].amountThreshold, "ALICE MEME balance");
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 0, "ALICE 721 balance");
-
-        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
-        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
-        assertEq(highestTier.nextUnmintedId, 2001, "highestTiernextUnmintedId");
-        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
-
-        assertEq(secondHighestTier.nextUnmintedId, 1, "secondHighestTier.nextUnmintedId");
-        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
-    }
-
-    function test_1155transferFromRecipientCrossingNoFungibleTierThreshold() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[1].amountThreshold, false);
-        memeceptionBaseTest.transfer404(
-            address(memeceptionBaseTest), ALICE, tierParams[tierParams.length - 2].amountThreshold - 1, false
-        );
-        meme1155.safeTransferFrom(BOB, ALICE, 2, 1, "");
-
-        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
-        assertEq(meme1155.balanceOf(ALICE, 2), 0, "ALICE 1155 balance -1");
-        assertEq(meme1155.balanceOf(ALICE, 5), 0, "ALICE 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 6), 0, "ALICE 1155 balance +1");
-        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
-        assertEq(
-            memeToken.balanceOf(ALICE),
-            tierParams[tierParams.length - 2].amountThreshold - 1 + tierParams[1].amountThreshold,
-            "ALICE MEME balance"
-        );
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 1, "ALICE 721 balance");
-        assertEq(meme721.nextOwnedTokenId(ALICE), 1, "ALICE 721 balance");
-
-        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
-        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
-        assertEq(highestTier.nextUnmintedId, 2001, "highestTiernextUnmintedId");
-        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
-
-        assertEq(secondHighestTier.nextUnmintedId, 2, "secondHighestTier.nextUnmintedId");
-        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
-    }
-
-    function test_1155transferFromRecipientCrossingHighestNoFungibleTierThreshold() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[1].amountThreshold, false);
-        memeceptionBaseTest.transfer404(
-            address(memeceptionBaseTest), ALICE, tierParams[tierParams.length - 1].amountThreshold - 1, false
-        );
-        assertEq(meme721.nextOwnedTokenId(BOB), 2001, "BOB nextOwnedTokenId");
-        assertEq(meme721.balanceOf(BOB), 1, "BOB 721 balance");
-        meme1155.safeTransferFrom(BOB, ALICE, 2, 1, "");
-
-        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 2), 0, "BOB 1155 balance +1");
-        assertEq(meme1155.balanceOf(ALICE, 2), 0, "ALICE 1155 balance -1");
-        assertEq(meme1155.balanceOf(ALICE, 5), 0, "ALICE 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 6), 0, "ALICE 1155 balance +1");
-        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
-        assertEq(
-            memeToken.balanceOf(ALICE),
-            tierParams[tierParams.length - 1].amountThreshold - 1 + tierParams[1].amountThreshold,
-            "ALICE MEME balance"
-        );
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 1, "ALICE 721 balance");
-        assertEq(meme721.nextOwnedTokenId(ALICE), 2001, "ALICE 721 balance");
-
-        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
-        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
-        assertEq(highestTier.nextUnmintedId, 2002, "highestTiernextUnmintedId");
-        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
-
-        assertEq(secondHighestTier.nextUnmintedId, 1, "secondHighestTier.nextUnmintedId");
-        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
-    }
-
-    function test_1155transferFromSenderNotCrossingNoFungibleTierThreshold() public {
-        memeceptionBaseTest.transfer404(
-            address(memeceptionBaseTest), BOB, tierParams[tierParams.length - 3].amountThreshold * 2, false
-        );
-        assertEq(meme1155.balanceOf(BOB, 6), 1, "BOB balanceOf MEME1155");
-        assertEq(meme1155.balanceOf(BOB, 5), 0, "BOB balanceOf MEME1155");
-        meme1155.safeTransferFrom(BOB, ALICE, tierParams[tierParams.length - 3].lowerId, 1, "");
-
-        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 5), 0, "BOB balanceOf MEME1155");
-        assertEq(meme1155.balanceOf(BOB, 6), 1, "BOB 1155 balance +1");
-        assertEq(meme1155.balanceOf(ALICE, 0), 0, "ALICE 1155 balance -1");
-        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 6), 1, "ALICE 1155 balance +1");
-        assertEq(memeToken.balanceOf(BOB), tierParams[tierParams.length - 3].amountThreshold, "BOB MEME balance");
-        assertEq(memeToken.balanceOf(ALICE), tierParams[tierParams.length - 3].amountThreshold, "ALICE MEME balance");
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 0, "ALICE 721 balance");
-        assertEq(meme721.nextOwnedTokenId(BOB), 0, "ALICE 721 balance");
-        assertEq(meme721.nextOwnedTokenId(ALICE), 0, "ALICE 721 balance");
-
-        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
-        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
-        assertEq(highestTier.nextUnmintedId, 2001, "highestTiernextUnmintedId");
-        assertEq(highestTier.burnLength, 0, "highestTier.burnLength");
-
-        assertEq(secondHighestTier.nextUnmintedId, 1, "secondHighestTier.nextUnmintedId");
-        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
-    }
-
-    function test_721transferFromSenderCrossingNoFungibleTierThreshold() public {
-        memeceptionBaseTest.transfer404(
-            address(memeceptionBaseTest),
-            BOB,
-            tierParams[tierParams.length - 1].amountThreshold + tierParams[tierParams.length - 2].amountThreshold,
-            false
-        );
-        assertEq(meme721.nextOwnedTokenId(BOB), 2001, "BOB tokenIByOwner");
-        meme721.transferFrom(BOB, ALICE, tierParams[tierParams.length - 1].lowerId);
-
-        assertEq(meme1155.balanceOf(BOB, 0), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(BOB, 6), 0, "BOB 1155 balance +1");
-        assertEq(meme1155.balanceOf(ALICE, 0), 0, "ALICE 1155 balance -1");
-        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 6), 0, "ALICE 1155 balance +1");
-        assertEq(memeToken.balanceOf(BOB), tierParams[tierParams.length - 21].amountThreshold, "BOB MEME balance");
-        assertEq(memeToken.balanceOf(ALICE), tierParams[tierParams.length - 1].amountThreshold, "ALICE MEME balance");
-        assertEq(meme721.balanceOf(BOB), 1, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 1, "ALICE 721 balance");
-        assertEq(meme721.nextOwnedTokenId(BOB), 1, "ALICE 721 balance");
-        assertEq(meme721.nextOwnedTokenId(ALICE), 2002, "ALICE 721 balance");
-
-        MEME404.Tier memory highestTier = memeToken.getTier(tierParams.length);
-        MEME404.Tier memory secondHighestTier = memeToken.getTier(tierParams.length - 1);
-        assertEq(highestTier.nextUnmintedId, 2003, "highestTiernextUnmintedId");
-        assertEq(highestTier.burnLength, 1, "highestTier.burnLength");
-        assertEq(memeToken.nextBurnId(tierParams.length), 2002, "highestTier.burnLength");
-
-        assertEq(secondHighestTier.nextUnmintedId, 0, "secondHighestTier.nextUnmintedId");
-        assertEq(secondHighestTier.burnLength, 0, "secondHighestTier - burnLength");
-    }
-
-    function test_1155transferFromFromHaveSelector() public {
+    function test_1155safeTransferFromFirstTierFromHaveSelector() public {
+        string memory TEST = "FirstTierFromHaveSelector";
+        uint256 TIER = 1;
         ContractWithSelector c = new ContractWithSelector();
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), address(c), tierParams[0].amountThreshold, false);
-        address SENDER = address(c);
+        SENDER = address(c);
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
 
-        hoax(SENDER);
+        vm.startPrank(SENDER);
         meme1155.setApprovalForAll(address(this), true);
+        vm.stopPrank();
 
-        meme1155.safeTransferFrom(address(c), ALICE, 1, 1, "");
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
 
-        assertEq(meme1155.balanceOf(address(c), 1), 0, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 1), 1, "ALICE 1155 balance");
-        assertEq(memeToken.balanceOf(BOB), 0, "BOB MEME balance");
-        assertEq(memeToken.balanceOf(ALICE), tierParams[0].amountThreshold, "ALICE MEME balance");
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 0, "ALICE 721 balance");
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 1, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, tierParams[2].lowerId, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
     }
 
-    function test_1155transferFromZero() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
-        meme1155.safeTransferFrom(BOB, ALICE, 1, 0, "");
-        assertEq(meme1155.balanceOf(BOB, 1), 1, "BOB 1155 balance");
-        assertEq(meme1155.balanceOf(ALICE, 1), 0, "ALICE 1155 balance");
-        assertEq(memeToken.balanceOf(BOB), tierParams[0].amountThreshold, "BOB MEME balance");
-        assertEq(memeToken.balanceOf(ALICE), 0, "ALICE MEME balance");
-        assertEq(meme721.balanceOf(BOB), 0, "BOB 721 balance");
-        assertEq(meme721.balanceOf(ALICE), 0, "ALICE 721 balance");
-    }
+    function test_1155transferFromFirstTierNoSelector() public {
+        string memory TEST = "FirstTierNoSelector";
+        uint256 TIER = 1;
+        ContractWithoutSelector c = new ContractWithoutSelector();
+        RECEIVER = address(c);
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
 
-    function test_1155transferFromNotEnoughBal() public {
-        memeceptionBaseTest.transfer404(address(memeceptionBaseTest), BOB, tierParams[0].amountThreshold, false);
         vm.expectRevert();
-        meme1155.safeTransferFrom(BOB, ALICE, 1, 2, "");
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 1, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(SENDER, 1, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, 0, TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, tierParams[2].lowerId, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
+    }
+
+    function test_1155safeTransferFromZero() public {
+        string memory TEST = "404safeTransferFromZero";
+        uint256 TIER = 1;
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        meme1155.safeTransferFrom(SENDER, ALICE, 1, 0, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(1), TEST);
+        assertMEME1155(SENDER, 1, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, 0, TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
+    }
+
+    function test_1155transferNotEnough() public {
+        vm.expectRevert();
+        meme1155.safeTransferFrom(makeAddr("NEW WALLET"), ALICE, 1, 1, "");
+    }
+
+    function test_1155transferNotTooHighAmount() public {
+        initWalletWithTokens(SENDER, getAmountThreshold(1) * 2);
+        vm.expectRevert();
+        meme1155.safeTransferFrom(SENDER, ALICE, 1, 2, "");
     }
 }

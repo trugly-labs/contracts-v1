@@ -14,23 +14,23 @@ contract MEME404InitializerTest is DeployersME404 {
     /// @dev Too many tiers are provided
     error MaxTiers();
     /// @dev When a fungible sequence has upperId that is not equal to lowerId
-    error InvalidTierSequenceFungibleThreshold();
+    error InvalidTierParamsFungibleThreshold();
     /// @dev When a prev tier has a higher amount threshold than the current tier
-    error InvalidTierSequenceAmountThreshold();
+    error InvalidTierParamsAmountThreshold();
     /// @dev When a non-fungible sequence has incorrect upperId and lowerId
-    error InvalidTierSequenceNonFungibleIds();
+    error InvalidTierParamsNonFungibleIds();
 
     /// @dev tokenId is 0
-    error InvalidTierSequenceZeroId();
+    error INvalidTierParamsZeroId();
 
     /// @dev When the contract is already initialized
     error TiersAlreadyInitialized();
 
     /// @dev When there's not enough NFTS based on amount threshold
-    error InvalidTierSequenceNotEnoughNFTs();
+    error InvalidTierParamsNotEnoughNFTs();
 
     /// @dev When a NFT sequence is followed by a fungible one
-    error InvalidTierSequenceFungibleAfterNonFungible();
+    error InvalidTierParamsFungibleAfterNonFungible();
 
     MockMEME404 meme404;
 
@@ -63,33 +63,36 @@ contract MEME404InitializerTest is DeployersME404 {
 
         assertEq(meme404.tiersCount(), tierParams.length, "constructor: tiersCount");
 
-        assertEq(meme404.nftIdToAddress(0), nftNormalTier, "constructor: nftIdToAddress normal");
-        assertEq(meme404.nftIdToAddress(1), nftEliteTier, "constructor: nftIdToAddress elite");
-        assertEq(meme404.nftIdToAddress(2), address(0), "constructor: nftIdToAddress over");
+        assertEq(meme404.nftIdToAddress(0), address(0), "constructor: nftIdToAddress 0");
+        assertEq(meme404.nftIdToAddress(1), nftNormalTier, "constructor: nftIdToAddress normal");
+        assertEq(meme404.nftIdToAddress(2), nftEliteTier, "constructor: nftIdToAddress elite");
+        assertEq(meme404.nftIdToAddress(3), address(0), "constructor: nftIdToAddress over");
         assertEq(meme404.exemptNFTMint(address(42)), true, "constructor: exemptNFTMint #1");
         assertEq(meme404.exemptNFTMint(address(43)), true, "constructor: exemptNFTMint #2");
         assertEq(meme404.initialized(), true, "constructor: initialized");
 
         for (uint256 i = 1; i <= tierParams.length; i++) {
             MEME404.Tier memory tier = meme404.getTier(i);
-            assertEq(tier.baseURL, tierParams[i].baseURL, "constructor: baseURL");
-            assertEq(tier.lowerId, tierParams[i].lowerId, "constructor: lowerId");
-            assertEq(tier.upperId, tierParams[i].upperId, "constructor: upperId");
-            assertEq(tier.amountThreshold, tierParams[i].amountThreshold, "constructor: amountThreshold");
-            assertEq(tier.isFungible, tierParams[i].isFungible, "constructor: isFungible");
+            assertEq(tier.baseURL, tierParams[i - 1].baseURL, "constructor: baseURL");
+            assertEq(tier.lowerId, tierParams[i - 1].lowerId, "constructor: lowerId");
+            assertEq(tier.upperId, tierParams[i - 1].upperId, "constructor: upperId");
+            assertEq(tier.amountThreshold, tierParams[i - 1].amountThreshold, "constructor: amountThreshold");
+            assertEq(tier.isFungible, tierParams[i - 1].isFungible, "constructor: isFungible");
 
-            assertEq(tier.nextUnmintedId, tierParams[i].lowerId, "constructor: nextUnmintedId");
+            assertEq(
+                tier.nextUnmintedId, tier.isFungible ? 0 : tierParams[i - 1].lowerId, "constructor: nextUnmintedId"
+            );
             assertEq(tier.burnLength, 0, "constructor: burnIds");
             assertEq(meme404.nextBurnId(i), 0, "constructor: nextBurnId");
 
-            if (i < tierParams.length - 2) {
+            if (i < tierParams.length - 1) {
                 assertEq(tier.nft, nftNormalTier, "constructor: nft normal");
             } else {
                 assertEq(tier.nft, nftEliteTier, "constructor: nft elite");
             }
         }
 
-        MEME404.Tier memory overTier = meme404.getTier(tierParams.length);
+        MEME404.Tier memory overTier = meme404.getTier(tierParams.length + 1);
         assertEq(overTier.nft, address(0), "constructor: nft over");
 
         /// Assert NFT collection
@@ -131,7 +134,7 @@ contract MEME404InitializerTest is DeployersME404 {
     function test_initializeTiersFungibleThreshold_revert() public {
         MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
         _tierParams[0] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 1, 1, 1, 42, true);
-        vm.expectRevert(InvalidTierSequenceFungibleThreshold.selector);
+        vm.expectRevert(InvalidTierParamsFungibleThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -139,14 +142,14 @@ contract MEME404InitializerTest is DeployersME404 {
         MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](2);
         _tierParams[0] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 10, 1, 1, 1, true);
         _tierParams[1] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 9, 1, 1, 1, true);
-        vm.expectRevert(InvalidTierSequenceAmountThreshold.selector);
+        vm.expectRevert(InvalidTierParamsAmountThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersAmountThresholdZero_revert() public {
         MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
         _tierParams[0] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 0, 1, 1, 1, true);
-        vm.expectRevert(InvalidTierSequenceAmountThreshold.selector);
+        vm.expectRevert(InvalidTierParamsAmountThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -155,7 +158,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[0] = MEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY + 1, 1, 1, 1, true
         );
-        vm.expectRevert(InvalidTierSequenceAmountThreshold.selector);
+        vm.expectRevert(InvalidTierParamsAmountThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -164,7 +167,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[0] = MEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 11, 1, false
         );
-        vm.expectRevert(InvalidTierSequenceNonFungibleIds.selector);
+        vm.expectRevert(InvalidTierParamsNonFungibleIds.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -176,7 +179,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[1] = MEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 1, 10, false
         );
-        vm.expectRevert(InvalidTierSequenceNonFungibleIds.selector);
+        vm.expectRevert(InvalidTierParamsNonFungibleIds.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -185,7 +188,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[0] = MEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 0, 15, false
         );
-        vm.expectRevert(InvalidTierSequenceZeroId.selector);
+        vm.expectRevert(INvalidTierParamsZeroId.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -194,7 +197,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[0] = MEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 1, 9, false
         );
-        vm.expectRevert(InvalidTierSequenceNotEnoughNFTs.selector);
+        vm.expectRevert(InvalidTierParamsNotEnoughNFTs.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
@@ -206,7 +209,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[1] = MEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 5, 2, 1, 1, true
         );
-        vm.expectRevert(InvalidTierSequenceFungibleAfterNonFungible.selector);
+        vm.expectRevert(InvalidTierParamsFungibleAfterNonFungible.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 

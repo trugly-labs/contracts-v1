@@ -1,9 +1,6 @@
 /// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
-// TODO: REMOVE THIS
-import {console2} from "forge-std/Test.sol";
-
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 import {ERC1155TokenReceiver} from "@solmate/tokens/ERC1155.sol";
 
@@ -218,7 +215,6 @@ contract MEME404 is MEME20 {
         Tier memory tier = _getTierFromNftTokenId(msg.sender, nftTokenId);
         if (tier.nft == address(0)) revert OnlyNFT();
 
-        _TierEligibility memory beforeTierFrom = _getTierEligility(from);
         _TierEligibility memory beforeTierTo = _getTierEligility(to);
 
         balanceOf[from] -= tier.amountThreshold;
@@ -234,7 +230,7 @@ contract MEME404 is MEME20 {
 
         /// @dev NFT has already been transferred
         /// Need to check if the user has decreased in tier and mint the NFTs
-        if (afterTierFrom.tierId != beforeTierFrom.tierId) _mintTier(from, afterTierFrom);
+        _mintTier(from, afterTierFrom);
 
         if (afterTierTo.tierId > 0 && tier.tierId != uint256(afterTierTo.tierId)) {
             if (tier.isFungible) {
@@ -349,7 +345,9 @@ contract MEME404 is MEME20 {
                         tierId: int256(_tiers[i].tierId),
                         expectedNFTBal: balance.rawDiv(_tiers[i].amountThreshold),
                         nft: _tiers[i].nft,
-                        currentNFTBal: MEME721(_tiers[i].nft).balanceOf(_owner)
+                        currentNFTBal: _tiers[i].isFungible
+                            ? MEME1155(_tiers[i].nft).balanceOf(_owner, _tiers[i].lowerId)
+                            : MEME721(_tiers[i].nft).balanceOf(_owner)
                     });
                 }
             }

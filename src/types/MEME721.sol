@@ -70,6 +70,11 @@ contract MEME721 is ERC721 {
             msg.sender == from || isApprovedForAll[from][msg.sender] || msg.sender == getApproved[id], "NOT_AUTHORIZED"
         );
 
+        if (from == to) {
+            emit Transfer(from, to, id);
+            return;
+        }
+
         // Underflow of the sender's balance is impossible because we check for
         // ownership above and the recipient's balance can't realistically overflow.
         unchecked {

@@ -258,7 +258,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     }
 
     function assertMEME404(address _account, uint256 expectedBalance, string memory test) public {
-        assertEq(memeToken.balanceOf(_account), expectedBalance, string.concat(test, ": MockMEME404 balance"));
+        assertEq(memeToken.balanceOf(_account), expectedBalance, string.concat(test, ": MEME404 balance"));
     }
 
     function assertMEME1155(address _account, uint256 tokenId, uint256 expectedBalance, string memory test) public {
@@ -315,7 +315,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             assertEq(
                 memeToken.getBurnedTokenAtIndex(_tierId, i),
                 _expectedBurnIds[i - 1],
-                string.concat(test, ": Burn Id: ", _expectedBurnIds[i - 1].toString())
+                string.concat(test, ": Burn Token Id: ", _expectedBurnIds[i - 1].toString())
             );
 
             assertEq(meme721.getIndexForToken(_expectedBurnIds[i - 1]), 0, string.concat(test, ": getIndexForToken"));
@@ -326,5 +326,23 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             string.concat(test, ": Next Burn Id")
         );
         assertEq(tier.nextUnmintedId, _nextUnmintedId, string.concat(test, ": Next Unminted Id"));
+    }
+
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    /// @dev receive ERC1155 tokens for Univ3 LP Positions
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    /// @dev receive ERC1155 tokens for Univ3 LP Positions
+    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        return this.onERC1155BatchReceived.selector;
     }
 }

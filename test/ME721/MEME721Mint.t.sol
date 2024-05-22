@@ -7,12 +7,10 @@ import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 
-contract MEME1155MintTest is DeployersME404 {
+contract MEME721MintTest is DeployersME404 {
     error OnlyMemecoin();
 
-    event TransferSingle(
-        address indexed operator, address indexed from, address indexed to, uint256 id, uint256 amount
-    );
+    event Transfer(address indexed from, address indexed to, uint256 indexed id);
 
     using LibString for uint256;
 
@@ -24,18 +22,22 @@ contract MEME1155MintTest is DeployersME404 {
         initCreateMeme404();
     }
 
-    function test_1155mint_success() public {
+    function test_721mint_success() public {
         vm.expectEmit(true, true, false, true);
-        emit TransferSingle(address(memeToken), address(0), BOB, 1, 1);
+        emit Transfer(address(0), BOB, 1);
         startHoax(address(memeToken));
-        meme1155.mint(BOB, 1, 1, "");
+        meme721.mint(BOB, 1);
         vm.stopPrank();
 
-        assertEq(meme1155.balanceOf(BOB, 1), 1, "balance");
+        assertEq(meme721.balanceOf(BOB), 1, "balance");
+        assertEq(meme721.ownerOf(1), BOB, "balance");
+        assertEq(meme721.getIndexForToken(1), 1);
+        assertEq(meme721.nextOwnedTokenId(BOB), 1);
+        assertEq(meme721.getTokenAtIndex(BOB, 1), 1);
     }
 
-    function test_1155mint_fail_not_memecoin() public {
+    function test_721mint_fail_not_memecoin() public {
         vm.expectRevert(OnlyMemecoin.selector);
-        meme1155.mint(BOB, 1, 1, "");
+        meme721.mint(BOB, 1);
     }
 }
