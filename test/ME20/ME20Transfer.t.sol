@@ -6,6 +6,8 @@ import {MEME20} from "../../src/types/MEME20.sol";
 import {DeployersME20} from "../utils/DeployersME20.sol";
 
 contract MEME20Transfers is DeployersME20 {
+    error PoolNotInitialized();
+
     address ALICE;
     uint256 initTreasuryBal;
     uint256 initCreatorBal;
@@ -13,16 +15,18 @@ contract MEME20Transfers is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initFullBid(10 ether);
+        initBuyMemecoin(createMemeParams.targetETH);
 
         ALICE = makeAddr("Alice");
         initTreasuryBal = memeToken.balanceOf(treasury);
         initCreatorBal = memeToken.balanceOf(MEMECREATOR);
+
+        memeToken.transfer(address(memeception), 10 ether);
     }
 
     function test_transfer_exempt() public {
         address memeceptionAddr = address(memeceptionBaseTest.memeceptionContract());
-        hoax(memeceptionAddr, 10 ether);
+        hoax(memeceptionAddr);
         memeToken.transfer(ALICE, 10 ether);
         address BOB = makeAddr("bob");
         hoax(ALICE, 10 ether);
@@ -37,7 +41,7 @@ contract MEME20Transfers is DeployersME20 {
     function test_transfer_exempt_memeception_success() public {
         address memeceptionAddr = address(memeceptionBaseTest.memeceptionContract());
         uint256 initialBalance = memeToken.balanceOf(memeceptionAddr);
-        hoax(memeceptionAddr, 10 ether);
+        hoax(memeceptionAddr);
         memeToken.transfer(ALICE, 10 ether);
         assertEq(memeToken.balanceOf(memeceptionAddr), initialBalance - 10 ether, "memeceptionBalance");
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
@@ -47,7 +51,7 @@ contract MEME20Transfers is DeployersME20 {
 
     function test_transfer_from_exempt() public {
         address memeceptionAddr = address(memeceptionBaseTest.memeceptionContract());
-        hoax(memeceptionAddr, 10 ether);
+        hoax(memeceptionAddr);
         MEME20(memeToken).approve(address(this), 10 ether);
         memeToken.transferFrom(memeceptionAddr, ALICE, 10 ether);
         address BOB = makeAddr("bob");
@@ -64,7 +68,7 @@ contract MEME20Transfers is DeployersME20 {
     function test_transfer_from_exempt_memeception_success() public {
         address memeceptionAddr = address(memeceptionBaseTest.memeceptionContract());
         uint256 initialBalance = memeToken.balanceOf(memeceptionAddr);
-        hoax(memeceptionAddr, 10 ether);
+        hoax(memeceptionAddr);
         MEME20(memeToken).approve(address(this), 10 ether);
 
         memeToken.transferFrom(memeceptionAddr, ALICE, 10 ether);
@@ -75,13 +79,24 @@ contract MEME20Transfers is DeployersME20 {
     }
 
     function test_transfer_fail_no_balance() public {
+        vm.startPrank(makeAddr("NO_BALANCE"));
         vm.expectRevert();
         memeToken.transfer(ALICE, 10 ether);
+        vm.stopPrank();
     }
 
     function test_transferFrom_fail_no_approval() public {
         initSwapFromSwapRouter(0.01 ether, ALICE);
         vm.expectRevert();
         memeToken.transferFrom(ALICE, makeAddr("bob"), 1);
+    }
+
+    function test_transfer_not_initialized_error() public {
+        MEME20 m = new MEME20("MEME", "MEME", address(this));
+        m.transfer(ALICE, 1);
+
+        vm.expectRevert(PoolNotInitialized.selector);
+        vm.startPrank(ALICE);
+        m.transfer(address(this), 1);
     }
 }

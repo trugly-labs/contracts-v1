@@ -9,7 +9,7 @@ contract SetTreasury404 is DeployersME404 {
 
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
 
-    function test_setTreasury_success() public {
+    function test_404setTreasury_success() public {
         vm.expectEmit(true, true, false, true);
         emit TreasuryUpdated(treasury, makeAddr("alice"));
 
@@ -17,13 +17,13 @@ contract SetTreasury404 is DeployersME404 {
         memeception.setTreasury(makeAddr("alice"));
     }
 
-    function test_setTreasury_fail_not_owner() public {
+    function test_404setTreasury_fail_not_owner() public {
         vm.expectRevert("UNAUTHORIZED");
         hoax(makeAddr("alice"));
         memeception.setTreasury(makeAddr("alice"));
     }
 
-    function test_setTreasury_fail_address_zero() public {
+    function test_404setTreasury_fail_address_zero() public {
         hoax(memeceptionBaseTest.MULTISIG());
         vm.expectRevert(ZeroAddress.selector);
         memeception.setTreasury(address(0));

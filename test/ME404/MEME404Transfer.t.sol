@@ -18,6 +18,7 @@ contract MEME404TransferTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
     }
 
     /// @notice Scenario #0 Test Wallet A (1 MEME / ERC1155 #1) -> All $MEME -> Wallet A

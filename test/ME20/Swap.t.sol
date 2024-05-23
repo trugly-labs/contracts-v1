@@ -16,7 +16,7 @@ contract SwapTest is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initFullBid(10 ether);
+        initBuyMemecoin(createMemeParams.targetETH);
 
         ALICE = makeAddr("Alice");
 
@@ -27,14 +27,14 @@ contract SwapTest is DeployersME20 {
     function test_swap_buy_fee_success() public {
         initSwapFromSwapRouter(0.01 ether, ALICE);
 
-        assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 55871686075491953069537, "treasuryBalance");
-        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal + 223486744301967812278148, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 27656484607368516769420862, "aliceBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 19979859013091641490321, "treasuryBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal + 31967774420946626384513, "creatorBalance");
+        assertEq(memeToken.balanceOf(ALICE), 3944024169184290030189393, "aliceBalance");
     }
 
     function test_swap_sell_no_fee_success() public {
         initSwapFromSwapRouter(0.01 ether, ALICE);
-        uint256 amountIn = 10000000 ether;
+        uint256 amountIn = 3944024169184290030189393;
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: address(memeToken),
             tokenOut: WETH9,
@@ -55,7 +55,7 @@ contract SwapTest is DeployersME20 {
 
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 17656484607368516769420862, "aliceBalance");
+        assertEq(memeToken.balanceOf(ALICE), 0, "aliceBalance");
     }
 
     function test_swap_fee_twice_success() public {
@@ -63,15 +63,15 @@ contract SwapTest is DeployersME20 {
         initSwapFromSwapRouter(10 ether, ALICE);
         initSwapFromSwapRouter(10 ether, BOB);
 
-        assertEq(memeToken.balanceOf(treasury), 6695352279012269864561593, "treasuryBalance");
-        assertEq(memeToken.balanceOf(MEMECREATOR), 26781409116049079458246375, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 3103147362449742906127151267, "aliceBalance");
-        assertEq(memeToken.balanceOf(BOB), 182892015664146676830839191, "bobBalance");
+        assertEq(memeToken.balanceOf(treasury), 13422032085561497325869369, "treasuryBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), 21475251336898395721390991, "creatorBalance");
+        assertEq(memeToken.balanceOf(ALICE), 1966072289156626505880925896, "aliceBalance");
+        assertEq(memeToken.balanceOf(BOB), 651852844533213066245700573, "bobBalance");
     }
 
     function test_swap_exempt_treasury_success() public {
         initSwapFromSwapRouter(10 ether, treasury);
-        assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 3134492285302770612249647743, "treasuryBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 1991967871485943774955345385, "treasuryBalance");
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
     }
 
@@ -80,7 +80,7 @@ contract SwapTest is DeployersME20 {
         uint256 initialBalance = memeToken.balanceOf(memeceptionAddr);
         initSwapFromSwapRouter(10 ether, memeceptionAddr);
         assertEq(
-            memeToken.balanceOf(memeceptionAddr), initialBalance + 3134492285302770612249647743, "memeceptionBalance"
+            memeToken.balanceOf(memeceptionAddr), initialBalance + 1991967871485943774955345385, "memeceptionBalance"
         );
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
@@ -101,9 +101,9 @@ contract SwapTest is DeployersME20 {
 
         initSwapFromSwapRouter(0.01 ether, ALICE);
 
-        assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 55871686075491953069537, "treasuryBalance");
+        assertEq(memeToken.balanceOf(treasury), initTreasuryBal + 19979859013091641490321, "treasuryBalance");
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 27879971351670484581699010, "aliceBalance");
+        assertEq(memeToken.balanceOf(ALICE), 3975991943605236656573906, "aliceBalance");
     }
 
     function test_swap_protocol_zero_fee() public {
@@ -113,8 +113,8 @@ contract SwapTest is DeployersME20 {
         initSwapFromSwapRouter(0.01 ether, ALICE);
 
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
-        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal + 223486744301967812278148, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 27712356293444008722490399, "aliceBalance");
+        assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal + 31967774420946626384513, "creatorBalance");
+        assertEq(memeToken.balanceOf(ALICE), 3964004028197381671679714, "aliceBalance");
     }
 
     function test_swap_both_zero_fee() public {
@@ -128,7 +128,7 @@ contract SwapTest is DeployersME20 {
 
         assertEq(memeToken.balanceOf(treasury), initTreasuryBal, "treasuryBalance");
         assertEq(memeToken.balanceOf(MEMECREATOR), initCreatorBal, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 27935843037745976534768547, "aliceBalance");
+        assertEq(memeToken.balanceOf(ALICE), 3995971802618328298064227, "aliceBalance");
     }
 
     function test_swap_buy_fee_change_address() public {
@@ -140,8 +140,8 @@ contract SwapTest is DeployersME20 {
 
         initSwapFromSwapRouter(0.01 ether, ALICE);
 
-        assertEq(memeToken.balanceOf(makeAddr("newTreasury")), 55871686075491953069537, "treasuryBalance");
-        assertEq(memeToken.balanceOf(makeAddr("newCreator")), 223486744301967812278148, "creatorBalance");
-        assertEq(memeToken.balanceOf(ALICE), 27656484607368516769420862, "aliceBalance");
+        assertEq(memeToken.balanceOf(makeAddr("newTreasury")), 19979859013091641490321, "treasuryBalance");
+        assertEq(memeToken.balanceOf(makeAddr("newCreator")), 31967774420946626384513, "creatorBalance");
+        assertEq(memeToken.balanceOf(ALICE), 3944024169184290030189393, "aliceBalance");
     }
 }

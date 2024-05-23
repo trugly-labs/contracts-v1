@@ -22,6 +22,7 @@ contract MEME1155MintTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
     }
 
     function test_1155mint_success() public {

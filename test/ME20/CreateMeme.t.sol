@@ -7,17 +7,17 @@ import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CreateMemeTest is DeployersME20 {
     error InvalidMemeAddress();
-    error MemeSymbolExist();
     error InvalidMemeceptionDate();
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
+    error TargetETHTooLow();
 
     string constant symbol = "MEME";
 
     function setUp() public override {
         super.setUp();
 
-        uint40 startAt = uint40(block.timestamp + 3 days);
+        uint40 startAt = 0;
         (, bytes32 salt) = Meme20AddressMiner.find(
             address(memeceptionBaseTest.memeceptionContract()),
             WETH9,
@@ -49,17 +49,23 @@ contract CreateMemeTest is DeployersME20 {
         createMeme("MEME");
     }
 
-    function test_createMeme_fail_symbolExist() public {
+    function test_createMemeSymbolExist_success() public {
         createMeme("MEME");
 
-        vm.expectRevert(MemeSymbolExist.selector);
+        createMemeParams.salt = bytes32("4");
         memeceptionBaseTest.createMeme(createMemeParams);
     }
 
-    function test_createMeme_fail_minStartAt() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MIN_START_AT - 1);
-        vm.expectRevert(InvalidMemeceptionDate.selector);
+    function test_createMemeSameSymbolAndSalt_collision_revert() public {
+        createMeme("MEME");
+
+        vm.expectRevert();
         memeceptionBaseTest.createMeme(createMemeParams);
+    }
+
+    function test_createMeme_success_future() public {
+        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT);
+        createMeme("MEME");
     }
 
     function test_createMeme_fail_maxStartAt() public {
@@ -77,6 +83,12 @@ contract CreateMemeTest is DeployersME20 {
     function test_createMeme_fail_vestingAlloc() public {
         createMemeParams.vestingAllocBps = 1001;
         vm.expectRevert(VestingAllocTooHigh.selector);
+        memeceptionBaseTest.createMeme(createMemeParams);
+    }
+
+    function test_createMeme_fail_targetETH() public {
+        createMemeParams.targetETH = Constant.MIN_TARGET_ETH - 1;
+        vm.expectRevert(TargetETHTooLow.selector);
         memeceptionBaseTest.createMeme(createMemeParams);
     }
 }

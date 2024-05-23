@@ -9,28 +9,22 @@ import {MEME404} from "../types/MEME404.sol";
 interface ITruglyMemeception is IERC721Receiver {
     /// @dev Struct containing information about the Memeception and the UniV3 Pool
     struct Memeception {
+        /// @dev Target ETH
+        uint256 targetETH;
+        /// @dev ETH collected
+        uint256 collectedETH;
         /// @dev LP Token ID
         uint256 tokenId;
         /// @dev Address of the UniV3 Pool
         address pool;
-        /// @dev Auction final price (0 is not finished or auction ended without selling all tokens) scaled by 18
-        uint64 auctionFinalPriceScaled;
         /// @dev Swap Fee of the UniV3 Pool (in bps)
         uint16 swapFeeBps;
         /// @dev Address of the creator of the Memeception
         address creator;
         /// @dev Date when the Memeception will/has started
         uint40 startAt;
-        /// @dev Amount of token currently sold in the Memeception Auction
-        uint112 auctionTokenSold;
-        uint256 auctionEndedAt;
-    }
-
-    struct Bid {
-        /// @dev Amount deposited by the bidder
-        /// enough to store <10,000 ether
-        uint80 amountETH;
-        uint112 amountMeme;
+        /// @dev Epoch when the memeception ended
+        uint40 endedAt;
     }
 
     /// @dev Containing the parameters to create a MEME20
@@ -47,7 +41,10 @@ interface ITruglyMemeception is IERC721Receiver {
         uint16 vestingAllocBps;
         /// @dev Salt to create the MEMERC20 with an address lower than WETH9
         bytes32 salt;
+        /// @dev Address of the creator of the memecoin
         address creator;
+        /// @dev Target ETH
+        uint256 targetETH;
     }
 
     /// @dev Create a MEME20, its UniV3 Pool and setup the Memeception
@@ -65,19 +62,15 @@ interface ITruglyMemeception is IERC721Receiver {
         external
         returns (address memeToken, address pool);
 
-    /// @dev Place a bid to the Memeception
+    /// @dev Buy Memecoins during a fair launch
     /// @param memeToken Address of the MEME20
-    function bid(address memeToken) external payable;
+    function buyMemecoin(address memeToken) external payable;
 
-    /// @notice Exit the Memeception
-    /// @dev Only possible after deadline is reached & cap not reached
+    /// @notice Exit the memecoin fair launch (and get a refund)
+    /// @dev Only possible when target ETH is not reached
     /// @param memeToken Address of the MEME20
-    function exit(address memeToken) external;
-
-    /// @notice Claim the MEME20 from the Memeception
-    /// @dev Only possible after the cap is reached
-    /// @param memeToken Address of the MEME20
-    function claim(address memeToken) external;
+    /// @param amountMeme amountMeme to return
+    function exitMemecoin(address memeToken, uint256 amountMeme) external;
 
     /// @notice Collect the fees from the LPs
     /// @dev Callable by anyone as it always send to the Treasury address
@@ -89,14 +82,8 @@ interface ITruglyMemeception is IERC721Receiver {
     /// @return memeception Memeception information
     function getMemeception(address memeToken) external view returns (Memeception memory);
 
-    /// @dev Get the ETH balance of a given OG address in a Memeception
-    /// @param memeToken Address of the MEME20
-    /// @param og Address of the OG
-    /// @return balanceOG ETH balance of the OG
-    function getBid(address memeToken, address og) external view returns (Bid memory);
-
-    /// @dev Get the current Auction price for a given MEME20's memeception
-    /// @param memeToken Address of the MEME20
-    /// @return priceScaled Current Auction price (scaled by 1e25)
-    function getAuctionPriceScaled(address memeToken) external view returns (uint256 priceScaled);
+    /// @dev Get the token  price for a given memecoin fair launch
+    /// @param memeToken Address of the memecoin
+    /// @return price Amount of tokens per ETH
+    function getPricePerETH(address memeToken) external view returns (uint256 price);
 }

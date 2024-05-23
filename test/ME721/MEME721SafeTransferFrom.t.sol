@@ -19,6 +19,7 @@ contract MEME721SafeTransferFromTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
 
         vm.startPrank(SENDER);
         meme721.setApprovalForAll(address(this), true);
@@ -1470,7 +1471,6 @@ contract MEME721SafeTransferFromTest is DeployersME404 {
         ContractWithoutSelector c = new ContractWithoutSelector();
         RECEIVER = address(c);
         initWalletWithTokens(SENDER, getAmountThreshold(TIER));
-
 
         vm.expectRevert();
         meme721.safeTransferFrom(SENDER, RECEIVER, 1);

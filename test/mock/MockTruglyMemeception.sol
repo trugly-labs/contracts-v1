@@ -39,16 +39,7 @@ contract MockTruglyMemeception is TruglyMemeception {
         memeToken.initializeTiers(tiers, exemptNFTMint);
 
         _createMeme(params, memeToken, pool);
-        emit Meme404Created(
-            address(memeToken),
-            params.creator,
-            params.symbol,
-            pool,
-            params.startAt,
-            params.swapFeeBps,
-            params.vestingAllocBps,
-            tiers
-        );
+        emit Meme404Created(address(memeToken), pool, params, tiers);
         return (address(memeToken), pool);
     }
 }

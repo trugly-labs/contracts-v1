@@ -19,6 +19,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
 
         vm.startPrank(SENDER);
         meme1155.setApprovalForAll(address(this), true);

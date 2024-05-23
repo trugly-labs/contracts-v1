@@ -37,6 +37,7 @@ contract MEME20 is ERC20 {
     error ProtocolFeeTooHigh();
     error AddressZero();
     error AlreadyInitialized();
+    error PoolNotInitialized();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -85,6 +86,8 @@ contract MEME20 is ERC20 {
         if (amount == 0) {
             return super.transferFrom(from, to, 0);
         }
+        /// @dev Forbid trading until UniV3 LP is initialized
+        if (!_initialized && msg.sender != _protocol) revert PoolNotInitialized();
 
         // @dev skip to avoid double fees;
         bool skip = _routersAndPools[from] && _routersAndPools[to];
@@ -104,6 +107,8 @@ contract MEME20 is ERC20 {
         if (amount == 0) {
             return super.transfer(to, 0);
         }
+        /// @dev Forbid trading until UniV3 LP is initialized
+        if (!_initialized && msg.sender != _protocol) revert PoolNotInitialized();
 
         // @dev skip to avoid double fees;
         bool skip = _routersAndPools[msg.sender] && _routersAndPools[to];

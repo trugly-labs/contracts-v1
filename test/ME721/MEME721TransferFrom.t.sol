@@ -9,6 +9,7 @@ import {DeployersME404} from "../utils/DeployersME404.sol";
 import {MEME404} from "../../src/types/MEME404.sol";
 
 contract MEME721TansferFromTest is DeployersME404 {
+    error PoolNotInitialized();
     using LibString for uint256;
 
     address BOB = makeAddr("bob");
@@ -19,6 +20,7 @@ contract MEME721TansferFromTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
 
         vm.startPrank(SENDER);
         meme721.setApprovalForAll(address(this), true);
@@ -1542,4 +1544,5 @@ contract MEME721TansferFromTest is DeployersME404 {
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas used for MEME721.transferFrom:", gasUsed);
     }
+
 }

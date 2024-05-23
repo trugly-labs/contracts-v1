@@ -15,23 +15,23 @@ contract CollectFees is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initFullBid(MAX_BID_AMOUNT);
+        initBuyMemecoin(createMemeParams.targetETH);
     }
 
     function test_collectFees_success() public {
-        initSwapFromSwapRouter(amountIn, address(memeceptionBaseTest));
+        initSwapFromSwapRouter(amountIn, address(this));
         uint256 beforeBal = ERC20(WETH9).balanceOf(treasury);
         memeceptionBaseTest.collectFees(address(memeToken));
         assertEq(ERC20(WETH9).balanceOf(treasury), beforeBal + 29700000000000, "treasuryBalance");
     }
 
     function test_collectFees_success_twice() public {
-        initSwapFromSwapRouter(amountIn, address(memeceptionBaseTest));
+        initSwapFromSwapRouter(amountIn, address(this));
         uint256 beforeBal = ERC20(WETH9).balanceOf(treasury);
         memeceptionBaseTest.collectFees(address(memeToken));
         assertEq(ERC20(WETH9).balanceOf(treasury), beforeBal + 29700000000000, "treasuryBalance");
 
-        initSwapFromSwapRouter(amountIn, address(memeceptionBaseTest));
+        initSwapFromSwapRouter(amountIn, address(this));
         memeceptionBaseTest.collectFees(address(memeToken));
         assertEq(ERC20(WETH9).balanceOf(treasury), beforeBal + 29700000000000 * 2, "treasuryBalance");
     }
@@ -49,7 +49,7 @@ contract CollectFees is DeployersME20 {
 
     function test_collectFee_sell_success() public {
         address ALICE = makeAddr("Alice");
-        initSwapFromSwapRouter(0.01 ether, ALICE);
+        initSwapFromSwapRouter(10 ether, ALICE);
         uint256 amountMemeIn = 10000000 ether;
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: address(memeToken),

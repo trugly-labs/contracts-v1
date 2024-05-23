@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {DeployersME20} from "../utils/DeployersME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 
 contract CreatorProtocolAdminTest is DeployersME20 {
     event CreatorFeesUpdated(uint256 oldFeesBps, uint256 newFeesBps);
@@ -23,7 +24,7 @@ contract CreatorProtocolAdminTest is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initFullBid(10 ether);
+        initBuyMemecoin(10 ether);
 
         assertEq(memeToken.creator(), MEMECREATOR, "creator post setup");
 
@@ -138,15 +139,15 @@ contract CreatorProtocolAdminTest is DeployersME20 {
     function test_setProtocolFeeBps_success() public {
         uint256 newFee = 10;
         vm.expectEmit(false, false, false, true);
-        emit ProtocolFeesUpdated(20, newFee);
+        emit ProtocolFeesUpdated(MEME20Constant.MAX_PROTOCOL_FEE_BPS, newFee);
         hoax(memeceptionBaseTest.MULTISIG());
         memeToken.setProtocolFeeBps(newFee);
     }
 
-    function test_setProtocolFeeBps_success_zero() public {
+    function test_setProtocolFeeBps_zero_success() public {
         uint256 newFee = 0;
         vm.expectEmit(false, false, false, true);
-        emit ProtocolFeesUpdated(20, newFee);
+        emit ProtocolFeesUpdated(MEME20Constant.MAX_PROTOCOL_FEE_BPS, newFee);
         hoax(memeceptionBaseTest.MULTISIG());
         memeToken.setProtocolFeeBps(newFee);
     }
@@ -159,7 +160,7 @@ contract CreatorProtocolAdminTest is DeployersME20 {
     function test_setProtocolFeeBps_fail_too_high() public {
         hoax(memeceptionBaseTest.MULTISIG());
         vm.expectRevert(ProtocolFeeTooHigh.selector);
-        memeToken.setProtocolFeeBps(31);
+        memeToken.setProtocolFeeBps(MEME20Constant.MAX_PROTOCOL_FEE_BPS + 1);
     }
 
     function test_setTreasuryAddress_success() public {

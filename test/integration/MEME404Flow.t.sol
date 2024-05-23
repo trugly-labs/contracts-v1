@@ -20,6 +20,7 @@ contract MEME404TransferTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
 
         vm.startPrank(BOB);
         meme721.setApprovalForAll(address(this), true);

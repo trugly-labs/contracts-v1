@@ -23,6 +23,7 @@ contract MEME404RawTransferFromTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
     }
 
     function test_transferFromNFT1155_notNFT_revert() public {

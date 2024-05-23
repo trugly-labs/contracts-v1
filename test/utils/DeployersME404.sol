@@ -13,6 +13,7 @@ import {MockMEME721} from "../mock/MockMEME721.sol";
 import {MEME404} from "../../src/types/MEME404.sol";
 import {MEME1155} from "../../src/types/MEME1155.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {Meme404AddressMiner} from "./Meme404AddressMiner.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
@@ -37,19 +38,33 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     IUNCX_LiquidityLocker_UniV3 uncxLocker;
 
     address MEMECREATOR = makeAddr("creator");
-    uint256 public constant MAX_BID_AMOUNT = 10 ether;
 
     uint256[] EMPTY_UINT_ARRAY = new uint256[](0);
 
+    address[] internal SWAP_ROUTERS = [
+        0x2626664c2603336E57B271c5C0b26F421741e481, // SwapRouter02
+        0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD // UniswapRouter
+    ];
+
+    address[] internal EXEMPT_UNISWAP = [
+        0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1, // LP Positions
+        0x42bE4D6527829FeFA1493e1fb9F3676d2425C3C1, // Staker Address
+        0x067170777BA8027cED27E034102D54074d062d71, // Fee Collector
+        0x231278eDd38B00B07fBd52120CEf685B9BaEBCC1, // UNCX_V3_LOCKERS
+        0xe22dDaFcE4A76DC48BBE590F3237E741e2F58Be7, // TruglyRouter (Prod)
+        0x0B3cC9681b151c5BbEa095629CDD56700B5b6c87 // TruglyRouter (Testnet)
+    ];
+
     // Parameters
     ITruglyMemeception.MemeceptionCreationParams public createMemeParams = ITruglyMemeception.MemeceptionCreationParams({
-        name: "MEME Coin",
-        symbol: "MEME",
-        startAt: uint40(block.timestamp + 3 days),
+        name: "MEME404 Coin",
+        symbol: "MEME404",
+        startAt: 0,
         swapFeeBps: 80,
         vestingAllocBps: 500,
         salt: "",
-        creator: MEMECREATOR
+        creator: MEMECREATOR,
+        targetETH: 10 ether
     });
 
     // Tier Parameters
@@ -87,12 +102,24 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         meme721 = MockMEME721(getEliteNFTCollection());
     }
 
+    function initializeToken() public virtual {
+        vm.startPrank(address(memeception));
+        memeToken.initialize(
+            makeAddr("owner"),
+            treasury,
+            MEME20Constant.MAX_PROTOCOL_FEE_BPS,
+            20,
+            makeAddr("pool"),
+            SWAP_ROUTERS,
+            EXEMPT_UNISWAP
+        );
+        vm.stopPrank();
+    }
+
     function createMeme404(string memory symbol) public virtual returns (address meme) {
-        uint40 startAt = uint40(block.timestamp + 3 days);
         (address mineAddress, bytes32 salt) = Meme404AddressMiner.find(
             address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol, MEMECREATOR
         );
-        createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
         createMemeParams.creator = MEMECREATOR;
@@ -102,15 +129,8 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         memeToken = MockMEME404(meme);
     }
 
-    function initBid(uint256 amount) public virtual {
-        vm.warp(createMemeParams.startAt);
-        memeceptionBaseTest.bid{value: amount}(address(memeToken));
-    }
-
-    function initFullBid(uint256 lastBidAmount) public virtual {
-        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
-
-        memeceptionBaseTest.bid{value: lastBidAmount}(address(memeToken));
+    function initBuyMemecoin(uint256 amount) public virtual {
+        memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
     }
 
     function deployUniversalRouter() public virtual {
@@ -345,4 +365,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     {
         return this.onERC1155BatchReceived.selector;
     }
+
+    /// @notice receive native tokens
+    receive() external payable {}
 }

@@ -20,6 +20,7 @@ contract MEME721BurnTest is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
+        initializeToken();
 
         initWalletWithTokens(BOB, getAmountThreshold(3));
     }
