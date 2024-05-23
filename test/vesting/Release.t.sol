@@ -13,11 +13,27 @@ contract ReleaseTest is DeployersME20 {
     address CREATOR = address(3);
     uint64 VESTING_START;
 
+    address[] internal SWAP_ROUTERS = [
+        0x2626664c2603336E57B271c5C0b26F421741e481, // SwapRouter02
+        0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD // UniswapRouter
+    ];
+
+    address[] internal EXEMPT_UNISWAP = [
+        0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1, // LP Positions
+        0x42bE4D6527829FeFA1493e1fb9F3676d2425C3C1, // Staker Address
+        0x067170777BA8027cED27E034102D54074d062d71, // Fee Collector
+        0x231278eDd38B00B07fBd52120CEf685B9BaEBCC1, // UNCX_V3_LOCKERS
+        0xe22dDaFcE4A76DC48BBE590F3237E741e2F58Be7, // TruglyRouter (Prod)
+        0x0B3cC9681b151c5BbEa095629CDD56700B5b6c87 // TruglyRouter (Testnet)
+    ];
+
     function setUp() public override {
         super.setUp();
         vesting.setMemeception(address(this), true);
         mockMemeToken = new MEME20("MEME", "MEME", address(this));
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
+
+        mockMemeToken.initialize(makeAddr("owner"), treasury, 50, 20, makeAddr("pool"), SWAP_ROUTERS, EXEMPT_UNISWAP);
         VESTING_START = uint64(block.timestamp + 3 days);
         vesting.startVesting(
             address(mockMemeToken),

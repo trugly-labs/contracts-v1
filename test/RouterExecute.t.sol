@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {DeployersME20} from "./utils/DeployersME20.sol";
-import {RouterBaseTest} from "../src/test/RouterBaseTest.sol";
+import {RouterBaseTest} from "./base/RouterBaseTest.sol";
 
 contract TruglyUniversalRouterExecuteTest is DeployersME20 {
     /// @notice Test the execute function for a V3 Swap In with creator fees

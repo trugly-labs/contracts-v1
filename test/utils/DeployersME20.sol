@@ -3,10 +3,10 @@ pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 
-import {Trugly20Memeception} from "../../src/Trugly20Memeception.sol";
+import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
-import {ME20MemeceptionBaseTest} from "../../src/test/ME20MemeceptionBaseTest.sol";
-import {RouterBaseTest} from "../../src/test/RouterBaseTest.sol";
+import {ME20BaseTest} from "../base/ME20BaseTest.sol";
+import {RouterBaseTest} from "../base/RouterBaseTest.sol";
 import {MEME20} from "../../src/types/MEME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
@@ -19,27 +19,27 @@ import {TestHelpers} from "./TestHelpers.sol";
 
 contract DeployersME20 is Test, TestHelpers, BaseParameters {
     // Global variables
-    ME20MemeceptionBaseTest memeceptionBaseTest;
+    ME20BaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
     MEME20 memeToken;
     TruglyVesting vesting;
     address treasury = address(1);
-    Trugly20Memeception memeception;
+    TruglyMemeception memeception;
     ISwapRouter swapRouter;
     IUNCX_LiquidityLocker_UniV3 uncxLocker;
 
     address MEMECREATOR = makeAddr("creator");
-    uint256 public constant MAX_BID_AMOUNT = 10 ether;
 
     // Parameters
     ITruglyMemeception.MemeceptionCreationParams public createMemeParams = ITruglyMemeception.MemeceptionCreationParams({
         name: "MEME Coin",
         symbol: "MEME",
-        startAt: uint40(block.timestamp + 3 days),
+        startAt: 0,
         swapFeeBps: 80,
         vestingAllocBps: 500,
         salt: "",
-        creator: MEMECREATOR
+        creator: MEMECREATOR,
+        targetETH: 10 ether
     });
 
     function setUp() public virtual {
@@ -61,7 +61,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     }
 
     function deployMemeception() public virtual {
-        memeceptionBaseTest = new ME20MemeceptionBaseTest(address(vesting), treasury);
+        memeceptionBaseTest = new ME20BaseTest(address(vesting), treasury);
         vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
     }
 
@@ -71,11 +71,9 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     }
 
     function createMeme(string memory symbol) public virtual returns (address meme) {
-        uint40 startAt = uint40(block.timestamp + 3 days);
         (address mineAddress, bytes32 salt) = Meme20AddressMiner.find(
             address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol, MEMECREATOR
         );
-        createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
         createMemeParams.creator = MEMECREATOR;
@@ -85,15 +83,8 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         memeToken = MEME20(meme);
     }
 
-    function initBid(uint256 amount) public virtual {
-        vm.warp(createMemeParams.startAt);
-        memeceptionBaseTest.bid{value: amount}(address(memeToken));
-    }
-
-    function initFullBid(uint256 lastBidAmount) public virtual {
-        vm.warp(createMemeParams.startAt + memeception.auctionDuration() - 1);
-
-        memeceptionBaseTest.bid{value: lastBidAmount}(address(memeToken));
+    function initBuyMemecoin(uint256 amount) public virtual {
+        memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
     }
 
     function deployUniversalRouter() public virtual {
@@ -164,4 +155,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         hoax(recipient, amountIn);
         swapRouter.exactInputSingle{value: amountIn}(params);
     }
+
+    /// @notice receive native tokens
+    receive() external payable {}
 }

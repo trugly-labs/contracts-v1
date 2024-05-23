@@ -2,20 +2,23 @@
 pragma solidity ^0.8.23;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
-import {MEME20} from "../types/MEME20.sol";
-import {ITruglyMemeception} from "../interfaces/ITruglyMemeception.sol";
-import {Trugly20Memeception} from "../Trugly20Memeception.sol";
-import {Constant} from "../libraries/Constant.sol";
-import {MEME20Constant} from "../libraries/MEME20Constant.sol";
-import {TestHelpers} from "../../test/utils/TestHelpers.sol";
+import {IUniswapV3Pool} from "../../src/interfaces/external/IUniswapV3Pool.sol";
+import {MEME20} from "../../src/types/MEME20.sol";
+import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
+import {MockTruglyMemeception} from "../mock/MockTruglyMemeception.sol";
+import {Constant} from "../../src/libraries/Constant.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
+import {TestHelpers} from "../utils/TestHelpers.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 
-contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
+contract ME20BaseTest is Test, TestHelpers, BaseParameters {
     error AuctionOutOfRange();
+
+    using SafeTransferLib for address;
 
     using FixedPointMathLib for uint256;
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -30,36 +33,16 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         uint256 memeceptionContractMeme;
         uint256 poolMeme;
         uint256 vestingMeme;
-        uint256 auctionMeme;
-        uint256 auctionFinalPrice;
-        uint256 bidAmountETH;
-        uint256 bidAmountMeme;
+        uint256 collectedETH;
     }
 
-    Trugly20Memeception public memeceptionContract;
-
-    uint256[] public ETH_RAISED = [
-        2.248888888664e21,
-        6.71111111044e20,
-        3.26666666634e20,
-        1.595555555396e20,
-        7.1111111104e19,
-        3.626666666304e19,
-        2.106666666456e19,
-        1.235555555432e19,
-        8.04444444364e18,
-        5.7777777772e18,
-        4.17777777736e18,
-        2.6666666664e18,
-        1.86666666648e18,
-        1.28888888876e18
-    ];
+    MockTruglyMemeception public memeceptionContract;
 
     address public MULTISIG = makeAddr("multisig");
     address public MEMECREATOR;
 
     constructor(address _vesting, address _treasury) {
-        memeceptionContract = new Trugly20Memeception(
+        memeceptionContract = new MockTruglyMemeception(
             V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG
         );
 
@@ -74,6 +57,8 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
     {
         (memeTokenAddr, pool) = memeceptionContract.createMeme(params);
         MEMECREATOR = params.creator;
+
+        uint256 startAt = params.startAt == 0 ? block.timestamp : params.startAt;
 
         /// Assert Token Creation
         MEME20 memeToken = MEME20(memeTokenAddr);
@@ -97,11 +82,14 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
 
         /// Assert Memeception Creation
         ITruglyMemeception.Memeception memory memeception = memeceptionContract.getMemeception(memeTokenAddr);
-        assertEq(memeception.auctionTokenSold, 0, "memeception.auctionTokenSold");
-        assertEq(memeception.auctionFinalPriceScaled, 0, "memeception.auctionFinalPrice");
-        assertEq(memeception.creator, MEMECREATOR, "memeception.creator");
-        assertEq(memeception.startAt, params.startAt, "memeception.startAt");
+        assertEq(memeception.targetETH, params.targetETH, "memeception.targetETH");
+        assertEq(memeception.collectedETH, 0, "memeception.collectedETH");
+        assertEq(memeception.tokenId, 0, "memeception.tokenId");
+        assertNotEq(memeception.pool, address(0), "memeception.tokenId");
         assertEq(memeception.swapFeeBps, params.swapFeeBps, "memeception.swapFeeBps");
+        assertEq(memeception.creator, MEMECREATOR, "memeception.creator");
+        assertEq(memeception.startAt, startAt, "memeception.startAt");
+        assertEq(memeception.endedAt, 0, "memeception.endedAt");
 
         /// Assert Uniswap V3 Pool
         assertEq(IUniswapV3Pool(pool).fee(), Constant.UNI_LP_SWAPFEE, "v3Pool.fee");
@@ -127,7 +115,7 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
         assertEq(memeceptionContract.vesting().getVestingInfo(address(memeToken)).released, 0, "Vesting.released");
         assertEq(
             memeceptionContract.vesting().getVestingInfo(address(memeToken)).start,
-            params.vestingAllocBps == 0 ? 0 : params.startAt,
+            params.vestingAllocBps == 0 ? 0 : startAt,
             "Vesting.start"
         );
         assertEq(
@@ -153,87 +141,79 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(
-                address(memeToken), uint64(params.startAt + Constant.VESTING_CLIFF - 1)
-            ),
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + Constant.VESTING_CLIFF - 1)),
             0,
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 91.25 days)),
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + 91.25 days)),
             vestingAllocSupply / 8,
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days)),
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + 365 days)),
             vestingAllocSupply / 2,
             "Vesting.vestedAmount"
         );
         assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(params.startAt + 365 days * 2)),
+            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + 365 days * 2)),
             vestingAllocSupply,
             "Vesting.vestedAmount"
         );
     }
 
-    function bid(address memeToken) external payable {
-        Balances memory beforeBal = getBalances(memeToken);
-        uint256 remainingAuctionToken =
-            Constant.TOKEN_MEMECEPTION_SUPPLY - memeceptionContract.getMemeception(memeToken).auctionTokenSold;
-        uint256 curPriceScaled = memeceptionContract.getAuctionPriceScaled(memeToken);
-        uint256 bidTokenAmount = msg.value * 1e18 / curPriceScaled;
+    function buyMemecoin(address memeToken) external payable {
+        address SENDER = msg.sender;
+        SENDER.safeTransferETH(msg.value);
 
-        memeceptionContract.bid{value: msg.value}(memeToken);
-        uint256 step = block.timestamp.rawSub(memeceptionContract.getMemeception(memeToken).startAt).rawDiv(
-            memeceptionContract.auctionPriceDecayPeriod()
-        );
-        if (step >= ETH_RAISED.length) revert AuctionOutOfRange();
+        ITruglyMemeception.Memeception memory memeception = memeceptionContract.getMemeception(memeToken);
+        uint256 remainingETH = memeception.targetETH - memeception.collectedETH;
+        uint256 pricePerETH = memeceptionContract.getPricePerETH(memeToken);
+        Balances memory beforeBal = getBalances(memeToken);
+
+        vm.startPrank(SENDER);
+        memeceptionContract.buyMemecoin{value: msg.value}(memeToken);
+        vm.stopPrank();
         Balances memory afterBal = getBalances(memeToken);
 
-        if (bidTokenAmount >= remainingAuctionToken) {
+        memeception = memeceptionContract.getMemeception(memeToken);
+
+        if (msg.value >= remainingETH) {
             /// Cap is reached
-            assertEq(afterBal.userETH, beforeBal.userETH - msg.value, "userETH Balance (Cap reached)");
+            assertEq(afterBal.collectedETH, memeception.targetETH, "memeception.collectedETH (Cap reached)");
+            assertEq(afterBal.userETH, beforeBal.userETH - remainingETH, "userETH Balance (Cap reached)");
             assertApproxEq(
-                afterBal.memeceptionContractETH,
-                beforeBal.memeceptionContractETH + msg.value - Constant.TOKEN_MEMECEPTION_SUPPLY.mulWad(curPriceScaled),
-                0.0000000001e18,
-                "memeceptionContractETH Balance (Cap reached)"
+                afterBal.memeceptionContractETH, 0, 0.0000000001e18, "memeceptionContractETH Balance (Cap reached)"
             );
             assertApproxEq(
                 afterBal.poolWETH,
                 // 0.03 ETH flag fee and 0.8% for UNCX locker
-                (ETH_RAISED[step] - 0.03 ether).mulDiv(992, 1000),
+                (memeception.targetETH - 0.03 ether).mulDiv(992, 1000),
                 0.0000000001e18,
                 "poolWETH Balance (Cap reached)"
             );
-            assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap reached)");
-            assertApproxEq(
-                afterBal.memeceptionContractMeme,
-                Constant.TOKEN_MEMECEPTION_SUPPLY,
-                0.0000000001e18,
-                "LaunchpadMeme Balance (Cap reached)"
+            assertEq(
+                afterBal.userMeme,
+                beforeBal.userMeme + remainingETH.rawMul(pricePerETH),
+                "userMeme Balance (Cap reached)"
             );
+            assertApproxEq(afterBal.memeceptionContractMeme, 0, 0.0100000001e18, "LaunchpadMeme Balance (Cap reached)");
             assertApproxEq(
                 afterBal.poolMeme,
                 // 0.8% is taken by UNCX
-                (
-                    MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4)
-                        - Constant.TOKEN_MEMECEPTION_SUPPLY
-                ).mulDiv(992, 1000),
+                Constant.TOKEN_MEMECEPTION_SUPPLY.mulDiv(992, 1000),
                 0.0000000001e18,
                 "PoolMemeBalance (Cap reached)"
             );
             assertEq(afterBal.vestingMeme, beforeBal.vestingMeme, "VestingMemeBalance (Cap reached)");
-            assertEq(afterBal.bidAmountETH, msg.value, "bidAmountETH (Cap reached)");
-            assertEq(afterBal.bidAmountMeme, remainingAuctionToken, "bidAmountMeme (Cap reached)");
 
-            /// Assert Memeception Auction
-            assertEq(
-                afterBal.auctionMeme, Constant.TOKEN_MEMECEPTION_SUPPLY, "memeception.auctionTokenSold(Cap reached)"
-            );
-            assertEq(afterBal.auctionFinalPrice, curPriceScaled, "memeception.auctionFinalPrice (Cap reached)");
+            assertEq(memeception.endedAt, uint40(block.timestamp), "memeception.endedAt (Cap Reached)");
+            assertNotEq(memeception.tokenId, 0, "memeception.tokenid (Cap Reached)");
         } else {
             /// Cap is not reached
+            assertEq(
+                afterBal.collectedETH, beforeBal.collectedETH + msg.value, "memeception.collectedETH (Cap not reached)"
+            );
             assertEq(afterBal.userETH, beforeBal.userETH - msg.value, "userETH Balance (Cap not reached)");
             assertEq(
                 afterBal.memeceptionContractETH,
@@ -241,91 +221,60 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
                 "memeceptionContractETH Balance (Cap not reached)"
             );
             assertEq(afterBal.poolWETH, 0, "poolWETH Balance (Cap not reached)");
-            assertEq(afterBal.userMeme, 0, "userMeme Balance (Cap not reached)");
+            assertEq(
+                afterBal.userMeme,
+                beforeBal.userMeme + msg.value.rawMul(pricePerETH),
+                "userMeme Balance (Cap not reached)"
+            );
             assertEq(
                 afterBal.memeceptionContractMeme,
-                MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
+                beforeBal.memeceptionContractMeme - msg.value.rawMul(pricePerETH),
                 "LaunchpadMeme Balance (Cap not reached)"
             );
             assertEq(afterBal.poolMeme, 0, "PoolMemeBalance (Cap not reached)");
             assertEq(afterBal.vestingMeme, beforeBal.vestingMeme, "VestingMemeBalance (Cap reached)");
-            assertEq(afterBal.bidAmountETH, msg.value, "bidAmountETH (Cap reached)");
-            assertEq(afterBal.bidAmountMeme, bidTokenAmount, "bidAmountMeme (Cap reached)");
-
-            /// Assert Memeception Auction
-            assertEq(
-                afterBal.auctionMeme,
-                beforeBal.auctionMeme + bidTokenAmount,
-                "memeception.auctionTokenSold(Cap reached)"
-            );
-            assertEq(afterBal.auctionFinalPrice, 0, "memeception.auctionFinalPrice (Cap reached)");
         }
     }
 
-    function exit(address memeToken) external {
+    function exitMemecoin(address memeToken, uint256 amountMeme) external {
+        uint256 pricePerETH = memeceptionContract.getPricePerETH(memeToken);
         Balances memory beforeBal = getBalances(memeToken);
 
-        memeceptionContract.exit(memeToken);
+        uint256 refundAmountETH = amountMeme.rawDiv(pricePerETH);
+
+        vm.startPrank(msg.sender);
+        MEME20(memeToken).approve(address(memeceptionContract), amountMeme);
+        memeceptionContract.exitMemecoin(memeToken, amountMeme);
+        vm.stopPrank();
 
         Balances memory afterBal = getBalances(memeToken);
 
         /// Assert Memeception Exit Balances
-        assertEq(afterBal.userETH, beforeBal.userETH + beforeBal.bidAmountETH, "userETH Balance");
+        assertEq(afterBal.userETH, beforeBal.userETH + refundAmountETH, "userETH Balance");
         assertEq(
             afterBal.memeceptionContractETH,
-            beforeBal.memeceptionContractETH - beforeBal.bidAmountETH,
+            beforeBal.memeceptionContractETH - refundAmountETH,
             "memeceptionContractETH Balance"
         );
         assertEq(afterBal.poolWETH, 0, "poolWETH Balance");
-        assertEq(afterBal.userMeme, 0, "userMeme Balance");
-        assertEq(afterBal.memeceptionContractMeme, beforeBal.memeceptionContractMeme, "LaunchpadMeme Balance");
+        assertEq(afterBal.userMeme, beforeBal.userMeme - amountMeme, "userMeme Balance");
+        assertEq(
+            afterBal.memeceptionContractMeme, beforeBal.memeceptionContractMeme + amountMeme, "LaunchpadMeme Balance"
+        );
         assertEq(afterBal.poolMeme, 0, "PoolMemeBalance");
-        assertEq(afterBal.auctionMeme, beforeBal.auctionMeme, "memeception.auctionTokenSold");
-        assertEq(afterBal.auctionFinalPrice, 0, "memeception.auctionFinalPrice");
-        assertEq(afterBal.bidAmountETH, 0, "bidAmountETH");
-        assertEq(afterBal.bidAmountMeme, 0, "bidAmountMeme");
-    }
-
-    function claim(address memeToken) external {
-        Balances memory beforeBal = getBalances(memeToken);
-        memeceptionContract.claim(memeToken);
-        Balances memory afterBal = getBalances(memeToken);
-
-        uint256 refund = beforeBal.bidAmountETH - beforeBal.auctionFinalPrice.mulWadUp(beforeBal.bidAmountMeme);
-
-        /// Assert Memeception Claim Balances
-        assertEq(afterBal.userETH, beforeBal.userETH + refund, "userETH Balance");
-        assertEq(
-            afterBal.memeceptionContractETH, beforeBal.memeceptionContractETH - refund, "memeceptionContractETH Balance"
-        );
-        assertEq(afterBal.poolWETH, beforeBal.poolWETH, "poolWETH Balance");
-        assertEq(afterBal.userMeme, beforeBal.bidAmountMeme, "userMeme Balance");
-        assertEq(
-            afterBal.memeceptionContractMeme,
-            beforeBal.memeceptionContractMeme - beforeBal.bidAmountMeme,
-            "LaunchpadMeme Balance"
-        );
-        assertEq(afterBal.poolMeme, beforeBal.poolMeme, "PoolMemeBalance");
-        assertEq(afterBal.vestingMeme, beforeBal.vestingMeme, "VestingMemeBalance");
-        assertEq(afterBal.auctionMeme, beforeBal.auctionMeme, "memeception.auctionTokenSold");
-        assertEq(afterBal.auctionFinalPrice, beforeBal.auctionFinalPrice, "memeception.auctionFinalPrice");
-        assertEq(afterBal.bidAmountETH, 0, "bidAmountETH");
-        assertEq(afterBal.bidAmountMeme, 0, "bidAmountMeme");
+        assertEq(afterBal.collectedETH, beforeBal.collectedETH - refundAmountETH, "memeception.collectedETH");
     }
 
     function getBalances(address memeToken) public view returns (Balances memory bal) {
         bal = Balances({
-            userETH: address(this).balance,
+            userETH: msg.sender.balance,
             memeceptionContractETH: address(memeceptionContract).balance,
             poolWETH: ERC20(WETH9).balanceOf(memeceptionContract.getMemeception(memeToken).pool),
-            userMeme: MEME20(memeToken).balanceOf(address(this)),
+            userMeme: MEME20(memeToken).balanceOf(msg.sender),
             memeceptionContractMeme: MEME20(memeToken).balanceOf(address(memeceptionContract)),
             poolMeme: MEME20(memeToken).balanceOf(memeceptionContract.getMemeception(memeToken).pool),
             vestingMeme: MEME20(memeToken).balanceOf(address(memeceptionContract.vesting())),
-            auctionMeme: memeceptionContract.getMemeception(memeToken).auctionTokenSold,
-            auctionFinalPrice: memeceptionContract.getMemeception(memeToken).auctionFinalPriceScaled,
-            bidAmountETH: memeceptionContract.getBid(memeToken, address(this)).amountETH,
-            bidAmountMeme: memeceptionContract.getBid(memeToken, address(this)).amountMeme
+            collectedETH: memeceptionContract.getMemeception(memeToken).collectedETH
         });
     }
 
@@ -334,11 +283,9 @@ contract ME20MemeceptionBaseTest is Test, TestHelpers, BaseParameters {
     }
 
     function collectFees(address memeToken) external {
+        vm.startPrank(msg.sender);
         memeceptionContract.collectFees(memeToken);
-    }
-
-    function setAuctionPriceDecayPeriod(uint256 period) external {
-        memeceptionContract.setAuctionPriceDecayPeriod(period);
+        vm.stopPrank();
     }
 
     function setCreatorAddress(address memeToken, address _newCreator) external {

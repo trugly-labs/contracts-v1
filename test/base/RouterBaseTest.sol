@@ -2,10 +2,10 @@
 pragma solidity ^0.8.23;
 
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
-
 import {Test, console2} from "forge-std/Test.sol";
-import {MEME20} from "../types/MEME20.sol";
-import {TruglyUniversalRouter} from "../TruglyUniversalRouter.sol";
+
+import {MEME20} from "../../src/types/MEME20.sol";
+import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 
 contract RouterBaseTest is Test, BaseParameters {
