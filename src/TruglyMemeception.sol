@@ -33,9 +33,13 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /*                       EVENTS                      */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
-    /// @dev Emitted when a memeceptions is created
+    /// @dev Emitted when a MEME20 is created
     event MemeCreated(address indexed memeToken, address pool, ITruglyMemeception.MemeceptionCreationParams params);
 
+    /// @dev Emitted when a MEMEFLUENCER is created
+    event MemeKOL(address indexed memeToken, address pool, ITruglyMemeception.MemeceptionCreationParams params);
+
+    /// @dev Emitted when a MEME404 is created
     event Meme404Created(
         address indexed memeToken,
         address pool,
@@ -200,6 +204,20 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
         _createMeme(params, memeToken, pool);
         emit Meme404Created(address(memeToken), pool, params, tiers);
+        return (address(memeToken), pool);
+    }
+
+    /// @inheritdoc ITruglyMemeception
+    function createMemeKOL(MemeceptionCreationParams calldata params)
+        external
+        nonReentrant
+        returns (address, address)
+    {
+        _verifyCreateMeme(params);
+        MEME20 memeToken = new MEME20{salt: params.salt}(params.name, params.symbol, params.creator);
+        address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
+        _createMeme(params, memeToken, pool);
+        emit MemeKOL(address(memeToken), pool, params);
         return (address(memeToken), pool);
     }
 

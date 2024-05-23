@@ -53,6 +53,14 @@ interface ITruglyMemeception is IERC721Receiver {
     /// @return pool Address of the UniV3 Pool
     function createMeme(MemeceptionCreationParams calldata params) external returns (address memeToken, address pool);
 
+    /// @dev Create a MEMEKOL, its UniV3 Pool and setup the Memeception
+    /// @param params Parameters to create the MEME20 and its Memeception
+    /// @return memeToken Address of the MEME20
+    /// @return pool Address of the UniV3 Pool
+    function createMemeKOL(MemeceptionCreationParams calldata params)
+        external
+        returns (address memeToken, address pool);
+
     /// @dev Create a MEME404, its UniV3 Pool and setup the Memeception
     /// @param params Parameters to create the MEME404 and its Memeception
     /// @param tiers Array of TierCreateParam to create the tiers of the MEME404
