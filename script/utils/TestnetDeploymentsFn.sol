@@ -8,6 +8,8 @@ import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterIm
 import {BaseParameters} from "../parameters/Base.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
+import {TruglyFactory} from "../../src/TruglyFactory.sol";
+import {TruglyFactoryNFT} from "../../src/TruglyFactoryNFT.sol";
 import {TestnetTruglyMemeception} from "../../src/test/TestnetTruglyMemeception.sol";
 
 contract TestnetDeploymentsFn is BaseParameters {
@@ -52,13 +54,22 @@ contract TestnetDeploymentsFn is BaseParameters {
         return TREASURY;
     }
 
-    function deployMemeception(address vesting, address treasury, address multisig)
+    function deployFactory() public returns (TruglyFactory factory) {
+        console2.log("Deploying TruglyFactoryNFT..");
+        TruglyFactoryNFT factoryNFT = new TruglyFactoryNFT();
+
+        console2.log("Deploying TruglyFactory..");
+        factory = new TruglyFactory(address(factoryNFT));
+        console2.log("TruglyFactory Deployed:", address(factory));
+    }
+
+    function deployMemeception(address vesting, address treasury, address multisig, address factory)
         public
         returns (TestnetTruglyMemeception memeception)
     {
         console2.log("Deploying TruglyMemeception..");
         memeception = new TestnetTruglyMemeception(
-            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig
+            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig, factory
         );
         // TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));

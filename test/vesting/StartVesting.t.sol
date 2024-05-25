@@ -32,7 +32,7 @@ contract StartVestingTest is DeployersME20 {
     function setUp() public override {
         super.setUp();
         vesting.setMemeception(address(this), true);
-        mockMemeToken = new MEME20("MEME", "MEME", address(this));
+        mockMemeToken = new MEME20("MEME", "MEME", address(this), address(this));
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
     }
 
@@ -161,7 +161,7 @@ contract StartVestingTest is DeployersME20 {
     }
 
     function test_startVesting_fail_insufficient_balance() public {
-        MEME20 mockMemeToken2 = new MEME20("MEME", "MEME", address(this));
+        MEME20 mockMemeToken2 = new MEME20("MEME", "MEME", address(this), address(this));
         mockMemeToken2.transfer(address(vesting), VESTING_ALLOCATION - 1);
         vm.expectRevert(InsufficientBalance.selector);
         vesting.startVesting(

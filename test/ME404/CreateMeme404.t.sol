@@ -7,10 +7,9 @@ import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CreateMeme404Test is DeployersME404 {
     error InvalidMemeAddress();
-    error InvalidMemeceptionDate();
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
-    error TargetETHTooLow();
+    error ZeroAmount();
 
     string constant symbol = "MEME";
 
@@ -19,11 +18,7 @@ contract CreateMeme404Test is DeployersME404 {
 
         uint40 startAt = 0;
         (, bytes32 salt) = Meme20AddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()),
-            WETH9,
-            createMemeParams.name,
-            symbol,
-            address(memeceptionBaseTest)
+            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), address(memeceptionBaseTest)
         );
         createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
@@ -52,7 +47,7 @@ contract CreateMeme404Test is DeployersME404 {
     function test_404createMemeSymbolExist_success() public {
         createMeme404("MEME");
 
-        createMemeParams.salt = bytes32("4");
+        createMemeParams.salt = bytes32("7");
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 
@@ -60,17 +55,6 @@ contract CreateMeme404Test is DeployersME404 {
         createMeme404("MEME");
 
         vm.expectRevert();
-        memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
-    }
-
-    function test_404createMeme_success_future() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT);
-        createMeme404("MEME");
-    }
-
-    function test_404createMeme_fail_maxStartAt() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT + 1);
-        vm.expectRevert(InvalidMemeceptionDate.selector);
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 
@@ -87,8 +71,8 @@ contract CreateMeme404Test is DeployersME404 {
     }
 
     function test_404createMeme_fail_targetETH() public {
-        createMemeParams.targetETH = Constant.MIN_TARGET_ETH - 1;
-        vm.expectRevert(TargetETHTooLow.selector);
+        createMemeParams.targetETH = 0;
+        vm.expectRevert(ZeroAmount.selector);
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 }

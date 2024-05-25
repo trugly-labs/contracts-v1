@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IUniswapV3Pool} from "../../src/interfaces/external/IUniswapV3Pool.sol";
-import {MockTruglyMemeception} from "../mock/MockTruglyMemeception.sol";
+import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 import {DeployersME20} from "../utils/DeployersME20.sol";
@@ -15,40 +15,32 @@ contract CreateMemeKOLTest is DeployersME20 {
     using FixedPointMathLib for uint256;
 
     error InvalidMemeAddress();
-    error InvalidMemeceptionDate();
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
-    error TargetETHTooLow();
+    error ZeroAmount();
 
     string constant symbol = "MEME";
 
-    MockTruglyMemeception public memeceptionContract;
+    TruglyMemeception public memeceptionContract;
 
     function setUp() public override {
         super.setUp();
+        memeceptionContract = memeceptionBaseTest.memeceptionContract();
+    }
 
-        uint40 startAt = 0;
+    function createMemeKOL(string memory name) public {
+        uint40 startAt = createMemeParams.startAt == 0 ? uint40(block.timestamp) : createMemeParams.startAt;
+        createMemeParams.name = name;
         (, bytes32 salt) = Meme20AddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()),
-            WETH9,
-            createMemeParams.name,
-            symbol,
-            address(memeceptionBaseTest)
+            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR
         );
         createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
 
-        memeceptionContract = memeceptionBaseTest.memeceptionContract();
-    }
-
-    function createMemeKOL(string memory name) public {
-        createMemeParams.name = name;
         (address memeTokenAddr, address pool) = memeception.createMemeKOL(createMemeParams);
 
         MEMECREATOR = createMemeParams.creator;
-
-        uint256 startAt = createMemeParams.startAt == 0 ? block.timestamp : createMemeParams.startAt;
 
         MEME20 memeToken = MEME20(memeTokenAddr);
         uint256 vestingAllocSupply = MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(createMemeParams.vestingAllocBps, 1e4);
@@ -183,17 +175,6 @@ contract CreateMemeKOLTest is DeployersME20 {
         memeception.createMemeKOL(createMemeParams);
     }
 
-    function test_createMemeKOL_success_future() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT);
-        createMemeKOL("MEME");
-    }
-
-    function test_createMemeKOL_fail_maxStartAt() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT + 1);
-        vm.expectRevert(InvalidMemeceptionDate.selector);
-        memeception.createMemeKOL(createMemeParams);
-    }
-
     function test_createMemeKOL_fail_swapFee() public {
         createMemeParams.swapFeeBps = 81;
         vm.expectRevert(MemeSwapFeeTooHigh.selector);
@@ -207,8 +188,8 @@ contract CreateMemeKOLTest is DeployersME20 {
     }
 
     function test_createMemeKOL_fail_targetETH() public {
-        createMemeParams.targetETH = Constant.MIN_TARGET_ETH - 1;
-        vm.expectRevert(TargetETHTooLow.selector);
+        createMemeParams.targetETH = 0;
+        vm.expectRevert(ZeroAmount.selector);
         memeception.createMemeKOL(createMemeParams);
     }
 }

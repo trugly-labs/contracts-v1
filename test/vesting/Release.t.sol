@@ -30,7 +30,7 @@ contract ReleaseTest is DeployersME20 {
     function setUp() public override {
         super.setUp();
         vesting.setMemeception(address(this), true);
-        mockMemeToken = new MEME20("MEME", "MEME", address(this));
+        mockMemeToken = new MEME20("MEME", "MEME", address(this), address(this));
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
 
         mockMemeToken.initialize(makeAddr("owner"), treasury, 50, 20, makeAddr("pool"), SWAP_ROUTERS, EXEMPT_UNISWAP);

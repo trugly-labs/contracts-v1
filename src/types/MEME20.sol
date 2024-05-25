@@ -64,22 +64,22 @@ contract MEME20 is ERC20 {
         _;
     }
 
-    constructor(string memory _name, string memory _symbol, address _creator)
+    constructor(string memory _name, string memory _symbol, address _memeception, address _creator)
         ERC20(_name, _symbol, MEME20Constant.TOKEN_DECIMALS)
     {
         // Set Creator
         creator = _creator;
-        // Set Temporarily to Launchpad (will be transfer to protocol after deployment and setting routers & pools)
-        _protocol = msg.sender;
+        // Set Temporarily to TruglyMemeception (will be transfer to protocol after deployment and setting routers & pools)
+        _protocol = _memeception;
 
         // Exempt
-        _exemptFees[msg.sender] = true;
+        _exemptFees[_memeception] = true;
         _exemptFees[address(this)] = true;
         _exemptFees[address(0)] = true;
         _exemptFees[_creator] = true;
 
         // Mint to Launchpad
-        _mint(msg.sender, MEME20Constant.TOKEN_TOTAL_SUPPLY);
+        _mint(_memeception, MEME20Constant.TOKEN_TOTAL_SUPPLY);
     }
 
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
@@ -151,16 +151,6 @@ contract MEME20 is ERC20 {
     function setCreatorAddress(address _creator) public onlyCreator {
         emit CreatorAddressUpdated(creator, _creator);
         creator = _creator;
-    }
-
-    function recovery(address _stuckToken) public onlyCreator {
-        if (_stuckToken == address(0)) {
-            creator.safeTransferETH(address(this).balance);
-        } else {
-            if (_stuckToken != address(this)) {
-                ERC20(_stuckToken).safeTransfer(msg.sender, ERC20(_stuckToken).balanceOf(address(this)));
-            }
-        }
     }
 
     function setProtocolFeeBps(uint256 _newFeeBps) public onlyProtocol {
