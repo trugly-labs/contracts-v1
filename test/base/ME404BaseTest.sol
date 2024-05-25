@@ -26,7 +26,9 @@ contract ME404BaseTest is ME20BaseTest {
 
     MEME404.TierCreateParam[] public tierParams;
 
-    constructor(address _vesting, address _treasury) ME20BaseTest(_vesting, _treasury) {}
+    constructor(address _vesting, address _treasury, address _mockFactory)
+        ME20BaseTest(_vesting, _treasury, _mockFactory)
+    {}
 
     function createMeme404(
         ITruglyMemeception.MemeceptionCreationParams memory params,

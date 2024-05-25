@@ -6,7 +6,7 @@ import {ContractWithSelector} from "../utils/ContractWithSelector.sol";
 import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
-import {MEME404} from "../../src/types/MEME404.sol";
+import {IMEME404} from "../../src/interfaces/IMEME404.sol";
 
 contract MEME721SafeTransferFromTest is DeployersME404 {
     using LibString for uint256;
@@ -1361,7 +1361,7 @@ contract MEME721SafeTransferFromTest is DeployersME404 {
     function test_721safeTransferFromScenario42_success() public {
         string memory TEST = "Scenario 42";
         tierParams.push(
-            MEME404.TierCreateParam({
+            IMEME404.TierCreateParam({
                 baseURL: "https://elite.com/",
                 nftName: "Elite NFT",
                 nftSymbol: "ELITE",

@@ -9,12 +9,6 @@ library Constant {
     /// @dev Supply dedicated for the fair launch (45% of total supply)
     uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_000_000_000 ether;
 
-    /// @dev Memeception maximum start at (now + 7 days)
-    uint64 internal constant MEMECEPTION_MAX_START_AT = 7 days;
-
-    /// @dev Maximum creator swap fee (in bps)
-    uint16 internal constant CREATOR_MAX_FEE_BPS = 80;
-
     /// @dev Maximum creator vesting allocation (in bps)
     uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 1000;
 
@@ -26,8 +20,6 @@ library Constant {
 
     /// @dev The maximum tick that may be passed to #getSqrtRatioAtTick computed from log base 1.0001 of 2**128
     int24 internal constant TICK_UPPER = -TICK_LOWER;
-
-    uint256 internal constant MIN_TARGET_ETH = 1 ether;
 
     /// ~~~~~~~ VESTING / AUCTION ~~~~~~~
     //// @dev Vesting duration

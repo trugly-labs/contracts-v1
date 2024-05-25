@@ -50,4 +50,14 @@ interface IMEME20 {
     function setProtocolAddress(address _protocolAddress) external;
 
     function setTreasuryAddress(address _treasury) external;
+
+    function initialize(
+        address _protocolAddr,
+        address _protocolTreasury,
+        uint256 _protocolFeesBps,
+        uint256 _creatorFeesBps,
+        address _pool,
+        address[] calldata _routers,
+        address[] calldata _exemptsAddr
+    ) external;
 }

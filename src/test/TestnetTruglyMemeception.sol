@@ -1,20 +1,21 @@
 /// SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.23;
 
-import {WETH} from "@solmate/tokens/WETH.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TruglyMemeception} from "../TruglyMemeception.sol";
 import {Constant} from "../libraries/Constant.sol";
 import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 
+import {IMEME20} from "../interfaces/IMEME20.sol";
+import {IWETH9} from "./../interfaces/external/IWETH9.sol";
 import {ILiquidityLocker} from "../interfaces/external/ILiquidityLocker.sol";
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../types/MEME20.sol";
+import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 
 contract TestnetTruglyMemeception is TruglyMemeception {
     using FixedPointMathLib for uint256;
-    using SafeTransferLib for WETH;
     using SafeTransferLib for MEME20;
 
     bool public bypassLock = true;
@@ -28,19 +29,12 @@ contract TestnetTruglyMemeception is TruglyMemeception {
         address _WETH9,
         address _vesting,
         address _treasury,
-        address _multisig
-    ) TruglyMemeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig) {
+        address _multisig,
+        address _factory
+    )
+        TruglyMemeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig, _factory)
+    {
         testAdmin = msg.sender;
-    }
-
-    /// Bypass verification
-    function _verifyCreateMeme(MemeceptionCreationParams calldata params) internal view override {
-        if (params.startAt > uint40(block.timestamp) + Constant.MEMECEPTION_MAX_START_AT) {
-            revert InvalidMemeceptionDate();
-        }
-        if (params.swapFeeBps > Constant.CREATOR_MAX_FEE_BPS) revert MemeSwapFeeTooHigh();
-        if (params.vestingAllocBps > Constant.CREATOR_MAX_VESTED_ALLOC_BPS) revert VestingAllocTooHigh();
-        if (params.targetETH < 0.0001 ether) revert TargetETHTooLow();
     }
 
     function setBypassLock(bool _bypassLock) external {
@@ -56,12 +50,23 @@ contract TestnetTruglyMemeception is TruglyMemeception {
             return;
         }
 
-        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETH, amountMeme);
+        uint256 amountETHMinusLockFee = amountETH;
+
+        IMEME20(memeToken).initialize(
+            owner,
+            treasury,
+            MEME20Constant.MAX_PROTOCOL_FEE_BPS,
+            memeceptions[memeToken].swapFeeBps,
+            memeceptions[memeToken].pool,
+            SWAP_ROUTERS,
+            EXEMPT_UNISWAP
+        );
+        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETHMinusLockFee, amountMeme);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
 
-        WETH9.deposit{value: amountETH}();
-        WETH9.safeApprove(address(v3PositionManager), amountETH);
-        MEME20(memeToken).safeApprove(address(v3PositionManager), amountMeme);
+        WETH9.deposit{value: amountETHMinusLockFee}();
+        WETH9.approve(address(v3PositionManager), amountETHMinusLockFee);
+        IMEME20(memeToken).approve(address(v3PositionManager), amountMeme);
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
             token0: address(WETH9),
@@ -69,9 +74,9 @@ contract TestnetTruglyMemeception is TruglyMemeception {
             fee: Constant.UNI_LP_SWAPFEE,
             tickLower: Constant.TICK_LOWER,
             tickUpper: Constant.TICK_UPPER,
-            amount0Desired: amountETH,
+            amount0Desired: amountETHMinusLockFee,
             amount1Desired: amountMeme,
-            amount0Min: amountETH.mulDiv(99, 100),
+            amount0Min: amountETHMinusLockFee.mulDiv(99, 100),
             amount1Min: amountMeme.mulDiv(99, 100),
             recipient: address(this),
             deadline: block.timestamp + 30 minutes
@@ -80,6 +85,6 @@ contract TestnetTruglyMemeception is TruglyMemeception {
         (uint256 tokenId,,,) = v3PositionManager.mint(params);
         memeceptions[memeToken].tokenId = tokenId;
 
-        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETH);
+        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETHMinusLockFee);
     }
 }

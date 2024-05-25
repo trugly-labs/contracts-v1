@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
+import {IMEME404} from "../../src/interfaces/IMEME404.sol";
 import {MEME404} from "../../src/types/MEME404.sol";
 import {MockMEME404} from "../mock/MockMEME404.sol";
 import {MEME1155} from "../../src/types/MEME1155.sol";
@@ -14,11 +15,11 @@ contract MEME404InitializerTest is DeployersME404 {
     /// @dev Too many tiers are provided
     error MaxTiers();
     /// @dev When a fungible sequence has upperId that is not equal to lowerId
-    error InvalidTierParamsFungibleThreshold();
+    error FungibleThreshold();
     /// @dev When a prev tier has a higher amount threshold than the current tier
-    error InvalidTierParamsAmountThreshold();
+    error AmountThreshold();
     /// @dev When a non-fungible sequence has incorrect upperId and lowerId
-    error InvalidTierParamsNonFungibleIds();
+    error NonFungibleIds();
 
     /// @dev tokenId is 0
     error INvalidTierParamsZeroId();
@@ -27,18 +28,18 @@ contract MEME404InitializerTest is DeployersME404 {
     error TiersAlreadyInitialized();
 
     /// @dev When there's not enough NFTS based on amount threshold
-    error InvalidTierParamsNotEnoughNFTs();
+    error NotEnoughNFTs();
 
     /// @dev When a NFT sequence is followed by a fungible one
-    error InvalidTierParamsFungibleAfterNonFungible();
+    error FungibleAfterNonFungible();
 
     MockMEME404 meme404;
 
     address[] public exemptAddresses;
 
     function setUp() public override {
-        _initTierParams();
-        meme404 = new MockMEME404("HELLO", "WORLD", MEMECREATOR);
+        super.setUp();
+        meme404 = new MockMEME404("HELLO", "WORLD", address(memeception), MEMECREATOR, address(factoryNFT));
 
         exemptAddresses = new address[](0);
     }
@@ -122,70 +123,70 @@ contract MEME404InitializerTest is DeployersME404 {
 
     function test_initializeTiersNoTiers_revert() public {
         vm.expectRevert(NoTiers.selector);
-        meme404.initializeTiers(new MEME404.TierCreateParam[](0), exemptAddresses);
+        meme404.initializeTiers(new IMEME404.TierCreateParam[](0), exemptAddresses);
     }
 
     function test_initializeTiersMaxTiers_revert() public {
         vm.expectRevert(MaxTiers.selector);
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](11);
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](11);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersFungibleThreshold_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
-        _tierParams[0] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 1, 1, 1, 42, true);
-        vm.expectRevert(InvalidTierParamsFungibleThreshold.selector);
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](1);
+        _tierParams[0] = IMEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 1, 1, 1, 42, true);
+        vm.expectRevert(FungibleThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersAmountThreshold_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](2);
-        _tierParams[0] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 10, 1, 1, 1, true);
-        _tierParams[1] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 9, 1, 1, 1, true);
-        vm.expectRevert(InvalidTierParamsAmountThreshold.selector);
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](2);
+        _tierParams[0] = IMEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 10, 1, 1, 1, true);
+        _tierParams[1] = IMEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 9, 1, 1, 1, true);
+        vm.expectRevert(AmountThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersAmountThresholdZero_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
-        _tierParams[0] = MEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 0, 1, 1, 1, true);
-        vm.expectRevert(InvalidTierParamsAmountThreshold.selector);
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](1);
+        _tierParams[0] = IMEME404.TierCreateParam("https://nft.com/", "NAME", "SYMBOL", 0, 1, 1, 1, true);
+        vm.expectRevert(AmountThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersAmountThresholdAboveSupply_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
-        _tierParams[0] = MEME404.TierCreateParam(
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](1);
+        _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY + 1, 1, 1, 1, true
         );
-        vm.expectRevert(InvalidTierParamsAmountThreshold.selector);
+        vm.expectRevert(AmountThreshold.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersNonFungibleIds_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
-        _tierParams[0] = MEME404.TierCreateParam(
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](1);
+        _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 11, 1, false
         );
-        vm.expectRevert(InvalidTierParamsNonFungibleIds.selector);
+        vm.expectRevert(NonFungibleIds.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersNonFungibleIds_betweenTiers_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](2);
-        _tierParams[0] = MEME404.TierCreateParam(
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](2);
+        _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 100, 1, 11, 150, false
         );
-        _tierParams[1] = MEME404.TierCreateParam(
+        _tierParams[1] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 1, 10, false
         );
-        vm.expectRevert(InvalidTierParamsNonFungibleIds.selector);
+        vm.expectRevert(NonFungibleIds.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersZeroId_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
-        _tierParams[0] = MEME404.TierCreateParam(
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](1);
+        _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 0, 15, false
         );
         vm.expectRevert(INvalidTierParamsZeroId.selector);
@@ -193,23 +194,23 @@ contract MEME404InitializerTest is DeployersME404 {
     }
 
     function test_initializeTiersNotEnoughNFT_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](1);
-        _tierParams[0] = MEME404.TierCreateParam(
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](1);
+        _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 1, 9, false
         );
-        vm.expectRevert(InvalidTierParamsNotEnoughNFTs.selector);
+        vm.expectRevert(NotEnoughNFTs.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
     function test_initializeTiersFungibleAfterNFT_revert() public {
-        MEME404.TierCreateParam[] memory _tierParams = new MEME404.TierCreateParam[](2);
-        _tierParams[0] = MEME404.TierCreateParam(
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](2);
+        _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 1, 10, false
         );
-        _tierParams[1] = MEME404.TierCreateParam(
+        _tierParams[1] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 5, 2, 1, 1, true
         );
-        vm.expectRevert(InvalidTierParamsFungibleAfterNonFungible.selector);
+        vm.expectRevert(FungibleAfterNonFungible.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 

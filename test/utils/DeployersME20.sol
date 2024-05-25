@@ -10,6 +10,8 @@ import {RouterBaseTest} from "../base/RouterBaseTest.sol";
 import {MEME20} from "../../src/types/MEME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
+import {MockTruglyFactory} from "../mock/MockTruglyFactory.sol";
+import {MockTruglyFactoryNFT} from "../mock/MockTruglyFactoryNFT.sol";
 import {Meme20AddressMiner} from "./Meme20AddressMiner.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
@@ -23,6 +25,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     RouterBaseTest routerBaseTest;
     MEME20 memeToken;
     TruglyVesting vesting;
+    MockTruglyFactory factory;
     address treasury = address(1);
     TruglyMemeception memeception;
     ISwapRouter swapRouter;
@@ -46,6 +49,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         string memory rpc = vm.rpcUrl("base");
         vm.createSelectFork(rpc, 12490712);
         deployVesting();
+        deployFactory();
         deployMemeception();
         deployUniversalRouter();
 
@@ -60,8 +64,13 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
         vesting = new TruglyVesting();
     }
 
+    function deployFactory() public virtual {
+        MockTruglyFactoryNFT factoryNFT = new MockTruglyFactoryNFT();
+        factory = new MockTruglyFactory(address(factoryNFT));
+    }
+
     function deployMemeception() public virtual {
-        memeceptionBaseTest = new ME20BaseTest(address(vesting), treasury);
+        memeceptionBaseTest = new ME20BaseTest(address(vesting), treasury, address(factory));
         vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
     }
 
@@ -72,7 +81,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
 
     function createMeme(string memory symbol) public virtual returns (address meme) {
         (address mineAddress, bytes32 salt) = Meme20AddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol, MEMECREATOR
+            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR
         );
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;

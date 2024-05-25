@@ -92,11 +92,11 @@ contract MEME20Transfers is DeployersME20 {
     }
 
     function test_transfer_not_initialized_error() public {
-        MEME20 m = new MEME20("MEME", "MEME", address(this));
+        MEME20 m = new MEME20("MEME", "MEME", address(this), address(this));
         m.transfer(ALICE, 1);
 
-        vm.expectRevert(PoolNotInitialized.selector);
         vm.startPrank(ALICE);
+        vm.expectRevert(PoolNotInitialized.selector);
         m.transfer(address(this), 1);
     }
 }

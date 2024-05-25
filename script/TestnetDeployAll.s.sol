@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 
 import {TestnetDeploymentsFn} from "./utils/TestnetDeploymentsFn.sol";
 import {TruglyVesting} from "../src/TruglyVesting.sol";
+import {TruglyFactory} from "../src/TruglyFactory.sol";
 
 contract TestnetDeployAll is Script, TestnetDeploymentsFn {
     function run() external {
@@ -13,9 +14,13 @@ contract TestnetDeployAll is Script, TestnetDeploymentsFn {
         vm.startBroadcast(deployerPrivateKey);
         // TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
+        TruglyFactory factory = deployFactory();
         console2.log("Deployer Address: ", 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD);
         deployMemeception(
-            0x5E5571147F71E7f58484c2AfA0AB859dc80E8251, treasury, 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD
+            0x5E5571147F71E7f58484c2AfA0AB859dc80E8251, // Vesting
+            treasury,
+            0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD, // Owner
+            address(factory)
         );
         // deployUniversalRouter(treasury);
         vm.stopBroadcast();

@@ -9,7 +9,7 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IUniswapV3Pool} from "../../src/interfaces/external/IUniswapV3Pool.sol";
 import {MEME20} from "../../src/types/MEME20.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
-import {MockTruglyMemeception} from "../mock/MockTruglyMemeception.sol";
+import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {TestHelpers} from "../utils/TestHelpers.sol";
@@ -36,14 +36,14 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         uint256 collectedETH;
     }
 
-    MockTruglyMemeception public memeceptionContract;
+    TruglyMemeception public memeceptionContract;
 
     address public MULTISIG = makeAddr("multisig");
     address public MEMECREATOR;
 
-    constructor(address _vesting, address _treasury) {
-        memeceptionContract = new MockTruglyMemeception(
-            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG
+    constructor(address _vesting, address _treasury, address _mockFactory) {
+        memeceptionContract = new TruglyMemeception(
+            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG, _mockFactory
         );
 
         assertEq(address(memeceptionContract.v3Factory()), V3_FACTORY);

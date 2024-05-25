@@ -10,11 +10,13 @@ import {ME404BaseTest} from "../base/ME404BaseTest.sol";
 import {RouterBaseTest} from "../base/RouterBaseTest.sol";
 import {MockMEME404} from "../mock/MockMEME404.sol";
 import {MockMEME721} from "../mock/MockMEME721.sol";
-import {MEME404} from "../../src/types/MEME404.sol";
+import {IMEME404} from "../../src/interfaces/IMEME404.sol";
 import {MEME1155} from "../../src/types/MEME1155.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
+import {MockTruglyFactory} from "../mock/MockTruglyFactory.sol";
+import {MockTruglyFactoryNFT} from "../mock/MockTruglyFactoryNFT.sol";
 import {Meme404AddressMiner} from "./Meme404AddressMiner.sol";
 import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
@@ -32,6 +34,8 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     MEME1155 meme1155;
     MockMEME721 meme721;
     TruglyVesting vesting;
+    MockTruglyFactory factory;
+    MockTruglyFactoryNFT factoryNFT;
     address treasury = address(1);
     TruglyMemeception memeception;
     ISwapRouter swapRouter;
@@ -68,7 +72,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     });
 
     // Tier Parameters
-    MEME404.TierCreateParam[] public tierParams;
+    IMEME404.TierCreateParam[] public tierParams;
 
     function setUp() public virtual {
         string memory rpc = vm.rpcUrl("base");
@@ -76,8 +80,10 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
         _initTierParams();
         deployVesting();
+        deployFactory();
         deployMemeception();
         deployUniversalRouter();
+
 
         memeception = memeceptionBaseTest.memeceptionContract();
         // Base
@@ -90,8 +96,13 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         vesting = new TruglyVesting();
     }
 
+    function deployFactory() public virtual {
+        factoryNFT = new MockTruglyFactoryNFT();
+        factory = new MockTruglyFactory(address(factoryNFT));
+    }
+
     function deployMemeception() public virtual {
-        memeceptionBaseTest = new ME404BaseTest(address(vesting), treasury);
+        memeceptionBaseTest = new ME404BaseTest(address(vesting), treasury, address(factory));
         vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
     }
 
@@ -118,7 +129,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
     function createMeme404(string memory symbol) public virtual returns (address meme) {
         (address mineAddress, bytes32 salt) = Meme404AddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()), WETH9, createMemeParams.name, symbol, MEMECREATOR
+            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR, address(factoryNFT)
         );
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
@@ -213,7 +224,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     function _initTierParams() internal {
         /// Fungible Tiers
         tierParams.push(
-            MEME404.TierCreateParam({
+            IMEME404.TierCreateParam({
                 baseURL: "https://nft.com/",
                 nftName: "Normal NFT",
                 nftSymbol: "NORMAL",
@@ -225,7 +236,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             })
         );
         tierParams.push(
-            MEME404.TierCreateParam({
+            IMEME404.TierCreateParam({
                 baseURL: "https://nft.com/",
                 nftName: "Normal NFT",
                 nftSymbol: "NORMAL",
@@ -238,7 +249,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         );
         /// Non Fungible Tiers
         tierParams.push(
-            MEME404.TierCreateParam({
+            IMEME404.TierCreateParam({
                 baseURL: "https://elite.com/",
                 nftName: "Elite NFT",
                 nftSymbol: "ELITE",
@@ -250,7 +261,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             })
         );
         tierParams.push(
-            MEME404.TierCreateParam({
+            IMEME404.TierCreateParam({
                 baseURL: "https://elite.com/",
                 nftName: "Elite NFT",
                 nftSymbol: "ELITE",

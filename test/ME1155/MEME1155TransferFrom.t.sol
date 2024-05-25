@@ -6,7 +6,7 @@ import {ContractWithSelector} from "../utils/ContractWithSelector.sol";
 import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
-import {MEME404} from "../../src/types/MEME404.sol";
+import {IMEME404} from "../../src/interfaces/IMEME404.sol";
 
 contract MEME1155TansferFromTest is DeployersME404 {
     using LibString for uint256;
@@ -249,7 +249,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
     function test_1155safeTransferFromScenario15_success() public {
         // Init Test
         string memory TEST = "Scenario #15";
-        tierParams[2] = MEME404.TierCreateParam({
+        tierParams[2] = IMEME404.TierCreateParam({
             baseURL: "https://normal.com/",
             nftName: "Normal NFT",
             nftSymbol: "Normal",
@@ -290,7 +290,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
     function test_1155safeTransferFromScenario16_success() public {
         // Init Test
         string memory TEST = "Scenario #16";
-        tierParams[2] = MEME404.TierCreateParam({
+        tierParams[2] = IMEME404.TierCreateParam({
             baseURL: "https://normal.com/",
             nftName: "Normal NFT",
             nftSymbol: "Normal",
@@ -331,7 +331,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
     function test_1155safeTransferFromScenario17_success() public {
         // Init Test
         string memory TEST = "Scenario #17";
-        tierParams[2] = MEME404.TierCreateParam({
+        tierParams[2] = IMEME404.TierCreateParam({
             baseURL: "https://normal.com/",
             nftName: "Normal NFT",
             nftSymbol: "Normal",
@@ -341,7 +341,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
             upperId: 3,
             isFungible: true
         });
-        tierParams[3] = MEME404.TierCreateParam({
+        tierParams[3] = IMEME404.TierCreateParam({
             baseURL: "https://elite.com/",
             nftName: "Elite NFT",
             nftSymbol: "Elite",

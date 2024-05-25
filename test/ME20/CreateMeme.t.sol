@@ -7,10 +7,9 @@ import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CreateMemeTest is DeployersME20 {
     error InvalidMemeAddress();
-    error InvalidMemeceptionDate();
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
-    error TargetETHTooLow();
+    error ZeroAmount();
 
     string constant symbol = "MEME";
 
@@ -19,11 +18,7 @@ contract CreateMemeTest is DeployersME20 {
 
         uint40 startAt = 0;
         (, bytes32 salt) = Meme20AddressMiner.find(
-            address(memeceptionBaseTest.memeceptionContract()),
-            WETH9,
-            createMemeParams.name,
-            symbol,
-            address(memeceptionBaseTest)
+            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), address(memeceptionBaseTest)
         );
         createMemeParams.startAt = startAt;
         createMemeParams.symbol = symbol;
@@ -63,17 +58,6 @@ contract CreateMemeTest is DeployersME20 {
         memeceptionBaseTest.createMeme(createMemeParams);
     }
 
-    function test_createMeme_success_future() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT);
-        createMeme("MEME");
-    }
-
-    function test_createMeme_fail_maxStartAt() public {
-        createMemeParams.startAt = uint40(block.timestamp + Constant.MEMECEPTION_MAX_START_AT + 1);
-        vm.expectRevert(InvalidMemeceptionDate.selector);
-        memeceptionBaseTest.createMeme(createMemeParams);
-    }
-
     function test_createMeme_fail_swapFee() public {
         createMemeParams.swapFeeBps = 81;
         vm.expectRevert(MemeSwapFeeTooHigh.selector);
@@ -87,8 +71,8 @@ contract CreateMemeTest is DeployersME20 {
     }
 
     function test_createMeme_fail_targetETH() public {
-        createMemeParams.targetETH = Constant.MIN_TARGET_ETH - 1;
-        vm.expectRevert(TargetETHTooLow.selector);
-        memeceptionBaseTest.createMeme(createMemeParams);
+        createMemeParams.targetETH = 0;
+        vm.expectRevert(ZeroAmount.selector);
+        memeception.createMeme(createMemeParams);
     }
 }

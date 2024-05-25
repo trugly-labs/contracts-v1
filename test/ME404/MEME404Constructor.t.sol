@@ -10,7 +10,7 @@ contract MEME404ConstructorTest is DeployersME404 {
     MockMEME404 meme404;
 
     function setUp() public override {
-        meme404 = new MockMEME404("HELLO", "WORLD", MEMECREATOR);
+        meme404 = new MockMEME404("HELLO", "WORLD", address(memeception), MEMECREATOR, address(factoryNFT));
     }
 
     function test_constructor() public {

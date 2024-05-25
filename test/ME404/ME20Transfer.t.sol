@@ -94,7 +94,7 @@ contract MEME20Transfers is DeployersME404 {
     }
 
     function test_404transfer_not_initialized_error() public {
-        MEME404 m = new MEME404("MEME", "MEME", address(this));
+        MEME404 m = new MEME404("MEME", "MEME", address(this), address(this), address(factoryNFT));
         m.transfer(ALICE, 1);
 
         vm.expectRevert(PoolNotInitialized.selector);
