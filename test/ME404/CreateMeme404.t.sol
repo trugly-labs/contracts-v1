@@ -13,18 +13,6 @@ contract CreateMeme404Test is DeployersME404 {
 
     string constant symbol = "MEME";
 
-    function setUp() public override {
-        super.setUp();
-
-        uint40 startAt = 0;
-        (, bytes32 salt) = Meme20AddressMiner.find(
-            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), address(memeceptionBaseTest)
-        );
-        createMemeParams.startAt = startAt;
-        createMemeParams.symbol = symbol;
-        createMemeParams.salt = salt;
-    }
-
     function test_404createMeme_success_simple() public {
         createMeme404("MEME");
     }
@@ -47,7 +35,7 @@ contract CreateMeme404Test is DeployersME404 {
     function test_404createMemeSymbolExist_success() public {
         createMeme404("MEME");
 
-        createMemeParams.salt = bytes32("7");
+        createMemeParams.salt = bytes32("8");
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 

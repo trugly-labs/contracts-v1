@@ -303,7 +303,7 @@ contract MEME404 is IMEME404, MEME20 {
         _TierEligibility memory _afterTierEligibility,
         uint256 _incrementFromNFTTransfer
     ) internal {
-        if (_beforeTierEligibility.tierId < 0 || _owner == address(0) || _exemptNFTMint[_owner]) return;
+        if (_beforeTierEligibility.tierId < 0 || _owner == address(0)) return;
 
         Tier storage tier = _tiers[uint256(_beforeTierEligibility.tierId)];
         if (tier.isFungible) {

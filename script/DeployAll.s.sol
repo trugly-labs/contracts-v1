@@ -6,6 +6,8 @@ import "forge-std/Script.sol";
 import {DeploymentsFn} from "./utils/DeploymentsFn.sol";
 import {TruglyVesting} from "../src/TruglyVesting.sol";
 
+import {TruglyFactory} from "../src/TruglyFactory.sol";
+
 contract DeployAll is Script, DeploymentsFn {
     /// REMEMBER TO SET THE MNEMONIC_FIRST_ACC_PRIV_KEY TO THE DEPLOYER
     function run() external {
@@ -14,7 +16,8 @@ contract DeployAll is Script, DeploymentsFn {
         // TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
         address multisig = deployMultisig();
-        deployMemeception(0xD309DcF90f6A4eAd4D0fddD7760f33fAc511c71d, treasury, multisig);
+        TruglyFactory factory = deployFactory();
+        deployMemeception(0xD309DcF90f6A4eAd4D0fddD7760f33fAc511c71d, treasury, multisig, address(factory));
         // deployUniversalRouter(treasury);
         vm.stopBroadcast();
     }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.23;
 
+import {MEME404} from "../../src/types/MEME404.sol";
 import {MockMEME404} from "../mock/MockMEME404.sol";
 
 library Meme404AddressMiner {
@@ -14,17 +15,21 @@ library Meme404AddressMiner {
         address _memeception,
         address _creator,
         address _factoryNFT
-    ) external pure returns (address, bytes32) {
+    ) external pure returns (address, bytes32, bytes memory) {
         address memeAddress;
+        // bytes memory creationCodeWithArgs = abi.encodePacked(
+        //     type(MockMEME404).creationCode, abi.encode(_name, _symbol, _memeception, _creator, _factoryNFT)
+        // );
+
         bytes memory creationCodeWithArgs = abi.encodePacked(
-            type(MockMEME404).creationCode, abi.encode(_name, _symbol, _memeception, _creator, _factoryNFT)
+            type(MEME404).creationCode, abi.encode(_name, _symbol, _memeception, _creator, _factoryNFT)
         );
 
         uint256 salt;
         for (salt; salt < MAX_LOOP; salt++) {
             memeAddress = computeAddress(deployer, salt, creationCodeWithArgs);
             if (memeAddress > _WETH9) {
-                return (memeAddress, bytes32(salt));
+                return (memeAddress, bytes32(salt), type(MEME404).creationCode);
             }
         }
         revert("MemeAddressMiner: could not find salt");

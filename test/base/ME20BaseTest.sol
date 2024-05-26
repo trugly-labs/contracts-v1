@@ -49,6 +49,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         assertEq(address(memeceptionContract.v3Factory()), V3_FACTORY);
         assertEq(address(memeceptionContract.v3PositionManager()), V3_POSITION_MANAGER);
         assertEq(address(memeceptionContract.WETH9()), WETH9);
+        assertEq(address(memeceptionContract.factory()), _mockFactory);
     }
 
     function createMeme(ITruglyMemeception.MemeceptionCreationParams memory params)

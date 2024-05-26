@@ -11,12 +11,10 @@ import {IWETH9} from "./../interfaces/external/IWETH9.sol";
 import {ILiquidityLocker} from "../interfaces/external/ILiquidityLocker.sol";
 import {INonfungiblePositionManager} from "../interfaces/external/INonfungiblePositionManager.sol";
 import {IUniswapV3Pool} from "../interfaces/external/IUniswapV3Pool.sol";
-import {MEME20} from "../types/MEME20.sol";
 import {MEME20Constant} from "../libraries/MEME20Constant.sol";
 
 contract TestnetTruglyMemeception is TruglyMemeception {
     using FixedPointMathLib for uint256;
-    using SafeTransferLib for MEME20;
 
     bool public bypassLock = true;
 

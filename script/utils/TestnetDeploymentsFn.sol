@@ -57,6 +57,7 @@ contract TestnetDeploymentsFn is BaseParameters {
     function deployFactory() public returns (TruglyFactory factory) {
         console2.log("Deploying TruglyFactoryNFT..");
         TruglyFactoryNFT factoryNFT = new TruglyFactoryNFT();
+        console2.log("TruglyFactoryNFT Deployed:", address(factoryNFT));
 
         console2.log("Deploying TruglyFactory..");
         factory = new TruglyFactory(address(factoryNFT));

@@ -1457,6 +1457,196 @@ contract MEME404TansferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, tierParams[3].upperId + 1, TEST);
     }
 
+    /// @notice Scenario #38 Test Wallet A (1 MEME / ERC1155 #1) -> All $MEME -> Treasury (EXEMPT) (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (0 / 0) -> Wallet B (1 MEME / 0)
+    function test_404transferFromScenario38_success() public {
+        // Init Test
+        uint256 TIER = 1;
+        string memory TEST = "Scenario #38";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        RECEIVER = treasury;
+
+        memeToken.transferFrom(SENDER, RECEIVER, getAmountThreshold(TIER));
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #39 Test Wallet A (Tier 3 MEME / ERC722 #1) -> All $MEME -> Treasury (EXEMPT) (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 3 MEME / 0)
+    function test_404transferFromScenario39_success() public {
+        // Init Test
+        uint256 TIER = 3;
+        string memory TEST = "Scenario #39";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        RECEIVER = treasury;
+
+        memeToken.transferFrom(SENDER, RECEIVER, getAmountThreshold(TIER));
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](1);
+        burnTokenIds[0] = 1;
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #40 Test Wallet A (Tier 3 MEME / ERC722 #1) -> ERC721 #1 -> Treasury (EXEMPT) (Tier 3 MEME / ERC721 #1)
+    /// @notice Treasury  (Tier 3 / ERC721 #1) -> Tier 2 MEME -> Wallet A (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (Tier 2 MEME / ERC1155 #2) -> Treasury (Tier 3 MEME / 0)
+    function test_404transferFromScenario40_success() public {
+        // Init Test
+        uint256 TIER = 3;
+        string memory TEST = "Scenario #40";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        RECEIVER = treasury;
+
+        vm.startPrank(SENDER);
+        meme721.setApprovalForAll(address(this), true);
+        vm.stopPrank();
+        meme721.transferFrom(SENDER, RECEIVER, 1);
+
+        vm.startPrank(treasury);
+        memeToken.approve(address(this), getAmountThreshold(2));
+        vm.stopPrank();
+        memeToken.transferFrom(RECEIVER, SENDER, getAmountThreshold(2));
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(2), TEST);
+        assertMEME1155(SENDER, 2, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(treasury, getAmountThreshold(TIER) - getAmountThreshold(2), TEST);
+        assertMEME1155(treasury, 2, 0, TEST);
+        assertMEME721(treasury, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](1);
+        burnTokenIds[0] = 1;
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario #41 Test Wallet A (Tier 4 MEME / ERC722 #2001) -> ERC721 #2001 -> Treasury (EXEMPT) (Tier 4 MEME / ERC721 #2001)
+    /// @notice Treasury  (Tier 4 MEME / ERC721 #2001) -> Tier 3 MEME -> Wallet A (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (Tier 3 MEME / ERC721 #1) -> Treasury (Tier 4 - Tier 3 MEME / 0)
+    function test_404transferFromScenario41_success() public {
+        // Init Test
+        uint256 TIER = 4;
+        string memory TEST = "Scenario #41";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        RECEIVER = treasury;
+
+        vm.startPrank(SENDER);
+        meme721.setApprovalForAll(address(this), true);
+        vm.stopPrank();
+        meme721.transferFrom(SENDER, RECEIVER, 2001);
+
+        vm.startPrank(treasury);
+        memeToken.approve(address(this), getAmountThreshold(3));
+        vm.stopPrank();
+        memeToken.transferFrom(RECEIVER, SENDER, getAmountThreshold(3));
+
+        // Assert Sender
+        uint256[] memory senderTokenIds = new uint256[](1);
+        senderTokenIds[0] = 1;
+        assertMEME404(SENDER, getAmountThreshold(3), TEST);
+        assertMEME1155(SENDER, 2, 0, TEST);
+        assertMEME721(SENDER, senderTokenIds, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(treasury, getAmountThreshold(TIER) - getAmountThreshold(3), TEST);
+        assertMEME1155(treasury, 2, 0, TEST);
+        assertMEME721(treasury, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](1);
+        burnTokenIds[0] = 2001;
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, burnTokenIds, 2002, TEST);
+    }
+
+    /// @notice Scenario #42 Test Wallet A (Tier 2 MEME / ERC1155 #2) -> ERC1155#2 -> Treasury (EXEMPT) (0 / 0)
+    /// @notice Treasury  (Tier 2 MEME / ERC1155 #2) -> Tier 1 MEME -> Wallet A (0 / 0)
+    /// @notice Burn list empty
+    /// @notice Available unminted tokens
+    /// Expected: Wallet A (Tier 1 MEME / ERC1155 #1) -> Treasury (Tier 2 - Tier 1 MEME / 0)
+    function test_404transferFromScenario42_success() public {
+        // Init Test
+        uint256 TIER = 2;
+        string memory TEST = "Scenario #42";
+        initWalletWithTokens(SENDER, getAmountThreshold(TIER));
+
+        RECEIVER = treasury;
+
+        vm.startPrank(SENDER);
+        meme1155.setApprovalForAll(address(this), true);
+        vm.stopPrank();
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        vm.startPrank(treasury);
+        memeToken.approve(address(this), getAmountThreshold(1));
+        vm.stopPrank();
+        memeToken.transferFrom(RECEIVER, SENDER, getAmountThreshold(1));
+
+        // Assert Sender
+        assertMEME404(SENDER, getAmountThreshold(1), TEST);
+        assertMEME1155(SENDER, 1, 1, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(treasury, getAmountThreshold(TIER) - getAmountThreshold(1), TEST);
+        assertMEME1155(treasury, 1, 0, TEST);
+        assertMEME721(treasury, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
     function test_transferFirstTierHaveSelector() public {
         string memory TEST = "FirstTierHaveSelector";
         uint256 TIER = 1;

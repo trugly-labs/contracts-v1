@@ -20,5 +20,7 @@ interface IMEME404 {
     /// @dev This function bypasses the NFT mint/burn, approval and any fees
     function transferFromNFT(address from, address to, uint256 nftTokenId) external returns (bool);
 
+    /// @dev Initialize the _tiers
+    /// @dev Is called automatically by the Memeception contract
     function initializeTiers(TierCreateParam[] memory _tierParams, address[] memory _exempt) external;
 }

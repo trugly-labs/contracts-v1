@@ -134,7 +134,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
     address internal treasury;
 
-    address internal factory;
+    address public immutable factory;
 
     constructor(
         address _v3Factory,
@@ -204,14 +204,13 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
 
         /// List of exempt addresses for MEME404 NFT minting
-        address[] memory exemptNFTMint = new address[](7);
+        address[] memory exemptNFTMint = new address[](6);
         exemptNFTMint[0] = address(this);
         exemptNFTMint[1] = address(vesting);
         exemptNFTMint[2] = address(v3PositionManager);
         exemptNFTMint[3] = address(treasury);
         exemptNFTMint[4] = pool;
         exemptNFTMint[5] = params.creator;
-        exemptNFTMint[6] = Constant.UNCX_TREASURY;
         IMEME404(memeToken).initializeTiers(tiers, exemptNFTMint);
 
         _createMeme(params, memeToken, pool);

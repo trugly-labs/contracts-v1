@@ -9,6 +9,8 @@ import {BaseParameters} from "../parameters/Base.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
+import {TruglyFactory} from "../../src/TruglyFactory.sol";
+import {TruglyFactoryNFT} from "../../src/TruglyFactoryNFT.sol";
 
 contract DeploymentsFn is BaseParameters {
     function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
@@ -57,14 +59,25 @@ contract DeploymentsFn is BaseParameters {
         return ADMIN;
     }
 
-    function deployMemeception(address vesting, address treasury, address multisig)
+    function deployFactory() public returns (TruglyFactory factory) {
+        console2.log("Deploying TruglyFactoryNFT..");
+        TruglyFactoryNFT factoryNFT = new TruglyFactoryNFT();
+        console2.log("TruglyFactoryNFT Deployed:", address(factoryNFT));
+
+        console2.log("Deploying TruglyFactory..");
+        factory = new TruglyFactory(address(factoryNFT));
+        console2.log("TruglyFactory Deployed:", address(factory));
+    }
+
+    function deployMemeception(address vesting, address treasury, address multisig, address factory)
         public
         returns (TruglyMemeception memeception)
     {
-        // console2.log("Deploying TruglyMemeception..");
-        // memeception =
-        //     new TruglyMemeception(V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig);
-        // // TruglyVesting(vesting).setMemeception(address(memeception), true);
-        // console2.log("TruglyMemeception Deployed:", address(memeception));
+        console2.log("Deploying TruglyMemeception..");
+        memeception = new TruglyMemeception(
+            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig, factory
+        );
+        // TruglyVesting(vesting).setMemeception(address(memeception), true);
+        console2.log("TruglyMemeception Deployed:", address(memeception));
     }
 }
