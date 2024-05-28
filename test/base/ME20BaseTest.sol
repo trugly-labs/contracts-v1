@@ -59,7 +59,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         (memeTokenAddr, pool) = memeceptionContract.createMeme(params);
         MEMECREATOR = params.creator;
 
-        uint256 startAt = params.startAt == 0 ? block.timestamp : params.startAt;
+        uint256 startAt = params.startAt > block.timestamp ? params.startAt : block.timestamp;
 
         /// Assert Token Creation
         MEME20 memeToken = MEME20(memeTokenAddr);

@@ -29,6 +29,16 @@ contract CreateMemeTest is DeployersME20 {
         createMeme("MEME");
     }
 
+    function test_createMeme_success_future() public {
+        createMemeParams.startAt = uint40(block.timestamp + 10 days);
+        createMeme("MEME");
+    }
+
+    function test_createMeme_success_past() public {
+        createMemeParams.startAt = uint40(block.timestamp - 10 days);
+        createMeme("MEME");
+    }
+
     function test_createMeme_success_zero_swap() public {
         createMemeParams.swapFeeBps = 0;
         createMeme("MEME");
@@ -47,7 +57,7 @@ contract CreateMemeTest is DeployersME20 {
     function test_createMemeSymbolExist_success() public {
         createMeme("MEME");
 
-        createMemeParams.salt = bytes32("4");
+        createMemeParams.salt = bytes32("6");
         memeceptionBaseTest.createMeme(createMemeParams);
     }
 

@@ -15,21 +15,17 @@ library Meme404AddressMiner {
         address _memeception,
         address _creator,
         address _factoryNFT
-    ) external pure returns (address, bytes32, bytes memory) {
+    ) external pure returns (address, bytes32) {
         address memeAddress;
-        // bytes memory creationCodeWithArgs = abi.encodePacked(
-        //     type(MockMEME404).creationCode, abi.encode(_name, _symbol, _memeception, _creator, _factoryNFT)
-        // );
-
         bytes memory creationCodeWithArgs = abi.encodePacked(
-            type(MEME404).creationCode, abi.encode(_name, _symbol, _memeception, _creator, _factoryNFT)
+            type(MockMEME404).creationCode, abi.encode(_name, _symbol, _memeception, _creator, _factoryNFT)
         );
 
         uint256 salt;
         for (salt; salt < MAX_LOOP; salt++) {
             memeAddress = computeAddress(deployer, salt, creationCodeWithArgs);
             if (memeAddress > _WETH9) {
-                return (memeAddress, bytes32(salt), type(MEME404).creationCode);
+                return (memeAddress, bytes32(salt));
             }
         }
         revert("MemeAddressMiner: could not find salt");

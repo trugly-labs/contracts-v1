@@ -41,7 +41,7 @@ contract ME404BaseTest is ME20BaseTest {
         (meme404Addr, pool) = memeceptionContract.createMeme404(params, _tierParams);
         MEMECREATOR = params.creator;
 
-        uint256 startAt = params.startAt == 0 ? block.timestamp : params.startAt;
+        uint256 startAt = params.startAt > block.timestamp ? params.startAt : block.timestamp;
 
         /// Assert Token Creation
         meme404 = MockMEME404(meme404Addr);

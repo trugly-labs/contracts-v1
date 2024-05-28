@@ -84,7 +84,6 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
         deployMemeception();
         deployUniversalRouter();
 
-
         memeception = memeceptionBaseTest.memeceptionContract();
         // Base
         swapRouter = ISwapRouter(SWAP_ROUTER);
@@ -128,8 +127,14 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     }
 
     function createMeme404(string memory symbol) public virtual returns (address meme) {
-        (address mineAddress, bytes32 salt,) = Meme404AddressMiner.find(
-            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR, address(factoryNFT)
+        (address mineAddress, bytes32 salt) = Meme404AddressMiner.find(
+            address(factory),
+            WETH9,
+            createMemeParams.name,
+            symbol,
+            address(memeception),
+            MEMECREATOR,
+            address(factoryNFT)
         );
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;

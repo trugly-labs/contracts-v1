@@ -225,6 +225,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     function _createMeme(MemeceptionCreationParams calldata params, address memeToken, address pool) internal {
         if (memeToken <= address(WETH9)) revert InvalidMemeAddress();
 
+        uint40 startAt = params.startAt > uint40(block.timestamp) ? params.startAt : uint40(block.timestamp);
+
         memeceptions[memeToken] = Memeception({
             targetETH: params.targetETH,
             collectedETH: 0,
@@ -232,7 +234,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             pool: pool,
             swapFeeBps: params.swapFeeBps,
             creator: params.creator,
-            startAt: params.startAt != uint40(0) ? params.startAt : uint40(block.timestamp),
+            startAt: startAt,
             endedAt: 0
         });
 
@@ -243,7 +245,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
                 address(memeToken),
                 params.creator,
                 vestingAlloc,
-                params.startAt != uint40(0) ? params.startAt : uint40(block.timestamp),
+                startAt,
                 Constant.VESTING_DURATION,
                 Constant.VESTING_CLIFF
             );
@@ -268,7 +270,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         Memeception memory memeception = memeceptions[memeToken];
         if (msg.value == 0) revert ZeroAmount();
         if (memeception.endedAt > 0) revert MemeLaunched();
-        if (block.timestamp < memeception.startAt) revert MemeceptionNotStarted();
+        if (uint40(block.timestamp) < memeception.startAt) revert MemeceptionNotStarted();
 
         uint256 price = _getPricePerETH(memeception);
 

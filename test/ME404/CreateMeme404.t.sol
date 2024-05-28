@@ -35,7 +35,7 @@ contract CreateMeme404Test is DeployersME404 {
     function test_404createMemeSymbolExist_success() public {
         createMeme404("MEME");
 
-        createMemeParams.salt = bytes32("8");
+        createMemeParams.salt = bytes32("1");
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 
