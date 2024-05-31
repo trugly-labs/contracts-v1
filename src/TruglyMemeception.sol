@@ -178,7 +178,6 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @inheritdoc ITruglyMemeception
     function createMeme404(MemeceptionCreationParams calldata params, IMEME404.TierCreateParam[] calldata tiers)
         external
-        virtual
         nonReentrant
         returns (address, address)
     {
@@ -245,6 +244,10 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         if (burnAllocBps > 0) {
             IMEME20(memeToken).transfer(address(0), MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(burnAllocBps, 1e4));
         }
+
+        uint160 sqrtPriceX96 =
+            _calcSqrtPriceX96(params.targetETH - _getUncxLockerFee(), Constant.TOKEN_MEMECEPTION_SUPPLY);
+        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
     }
 
     /// @dev Verify the validity of the parameters for the creation of a memeception
@@ -293,17 +296,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @param memeToken Address of the MEME20
     /// @param amountETH Amount of ETH to add to the pool
     /// @param amountMeme Amount of IMEME20 to add to the pool
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal virtual {
-        ILiquidityLocker.FeeStruct memory lockFee = uncxLocker.getFee("LVP");
-        uint256 amountETHMinusLockFee = amountETH;
-        if (lockFee.flatFee > 0 && lockFee.flatFeeToken == address(0)) {
-            if (lockFee.flatFee > Constant.MAX_LOCKER_FLAT_FEE) revert LockerFeeTooHigh();
-            amountETHMinusLockFee -= lockFee.flatFee;
-        }
-        if (lockFee.flatFee > 0 && lockFee.flatFeeToken != address(0)) revert InvalidLockerFeeStructure();
-        if (lockFee.lpFee > Constant.MAX_LOCKER_LP_FEE || lockFee.collectFee > Constant.MAX_LOCKER_COLLECT_FEE) {
-            revert InvalidLockerFeeStructure();
-        }
+    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal {
+        uint256 uncxLockFee = _getUncxLockerFee();
+        uint256 amountETHMinusLockFee = amountETH - uncxLockFee;
 
         IMEME20(memeToken).initialize(
             owner,
@@ -314,8 +309,6 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             SWAP_ROUTERS,
             EXEMPT_FEES
         );
-        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETHMinusLockFee, amountMeme);
-        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
 
         WETH9.deposit{value: amountETHMinusLockFee}();
         WETH9.approve(address(v3PositionManager), amountETHMinusLockFee);
@@ -337,7 +330,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
         (uint256 tokenId,,,) = v3PositionManager.mint(params);
 
-        uint256 lockId = _lockLiquidity(tokenId, lockFee.flatFee);
+        uint256 lockId = _lockLiquidity(tokenId, uncxLockFee);
         memeceptions[memeToken].tokenId = lockId;
 
         emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETHMinusLockFee);
@@ -346,7 +339,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @dev Lock the UniV3 liquidity in the UNCX Locker
     /// @param lpTokenId The UniV3 LP Token ID
     /// @return lockId The UNCX lock ID
-    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal returns (uint256 lockId) {
+    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal virtual returns (uint256 lockId) {
         lockId = uncxLocker.lock{value: lockFee}(
             ILiquidityLocker.LockParams({
                 nftPositionManager: v3PositionManager,
@@ -361,6 +354,19 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
                 r: new bytes[](0)
             })
         );
+    }
+
+    function _getUncxLockerFee() internal view virtual returns (uint256) {
+        ILiquidityLocker.FeeStruct memory lockFee = uncxLocker.getFee("LVP");
+        if (lockFee.flatFee > 0 && lockFee.flatFeeToken != address(0)) revert InvalidLockerFeeStructure();
+        if (lockFee.lpFee > Constant.MAX_LOCKER_LP_FEE || lockFee.collectFee > Constant.MAX_LOCKER_COLLECT_FEE) {
+            revert InvalidLockerFeeStructure();
+        }
+        if (lockFee.flatFee > 0 && lockFee.flatFeeToken == address(0)) {
+            if (lockFee.flatFee > Constant.MAX_LOCKER_FLAT_FEE) revert LockerFeeTooHigh();
+            return lockFee.flatFee;
+        }
+        return 0;
     }
 
     /// @inheritdoc ITruglyMemeception
