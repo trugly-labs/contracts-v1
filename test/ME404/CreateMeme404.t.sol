@@ -10,6 +10,7 @@ contract CreateMeme404Test is DeployersME404 {
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
     error ZeroAmount();
+    error MaxTargetETH();
 
     string constant symbol = "MEME";
 
@@ -62,5 +63,11 @@ contract CreateMeme404Test is DeployersME404 {
         createMemeParams.targetETH = 0;
         vm.expectRevert(ZeroAmount.selector);
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
+    }
+
+    function test_createMeme_fail_max_targetETH() public {
+        createMemeParams.targetETH = Constant.MAX_TARGET_ETH + 1;
+        vm.expectRevert(MaxTargetETH.selector);
+        memeceptionBaseTest.createMeme(createMemeParams);
     }
 }

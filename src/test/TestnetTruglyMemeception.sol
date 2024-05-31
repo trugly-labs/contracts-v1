@@ -20,17 +20,8 @@ contract TestnetTruglyMemeception is TruglyMemeception {
 
     address public testAdmin;
 
-    constructor(
-        address _v3Factory,
-        address _v3PositionManager,
-        address _uncxLockers,
-        address _WETH9,
-        address _vesting,
-        address _treasury,
-        address _multisig,
-        address _factory
-    )
-        TruglyMemeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig, _factory)
+    constructor(address _vesting, address _treasury, address _multisig, address _factory)
+        TruglyMemeception(_vesting, _treasury, _multisig, _factory)
     {
         testAdmin = msg.sender;
     }
@@ -57,7 +48,7 @@ contract TestnetTruglyMemeception is TruglyMemeception {
             memeceptions[memeToken].swapFeeBps,
             memeceptions[memeToken].pool,
             SWAP_ROUTERS,
-            EXEMPT_UNISWAP
+            EXEMPT_FEES
         );
         uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETHMinusLockFee, amountMeme);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);

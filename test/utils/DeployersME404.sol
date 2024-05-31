@@ -18,13 +18,12 @@ import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {MockTruglyFactory} from "../mock/MockTruglyFactory.sol";
 import {MockTruglyFactoryNFT} from "../mock/MockTruglyFactoryNFT.sol";
 import {Meme404AddressMiner} from "./Meme404AddressMiner.sol";
-import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
 import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 
-contract DeployersME404 is Test, TestHelpers, BaseParameters {
+contract DeployersME404 is Test, TestHelpers {
     using LibString for *;
 
     // Global variables
@@ -45,18 +44,16 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
     uint256[] EMPTY_UINT_ARRAY = new uint256[](0);
 
-    address[] internal SWAP_ROUTERS = [
-        0x2626664c2603336E57B271c5C0b26F421741e481, // SwapRouter02
-        0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD // UniswapRouter
-    ];
+    address WETH9 = Constant.BASE_WETH9;
 
-    address[] internal EXEMPT_UNISWAP = [
-        0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1, // LP Positions
-        0x42bE4D6527829FeFA1493e1fb9F3676d2425C3C1, // Staker Address
-        0x067170777BA8027cED27E034102D54074d062d71, // Fee Collector
-        0x231278eDd38B00B07fBd52120CEf685B9BaEBCC1, // UNCX_V3_LOCKERS
-        0xe22dDaFcE4A76DC48BBE590F3237E741e2F58Be7, // TruglyRouter (Prod)
-        0x0B3cC9681b151c5BbEa095629CDD56700B5b6c87 // TruglyRouter (Testnet)
+    address[] internal SWAP_ROUTERS = [Constant.UNISWAP_BASE_SWAP_ROUTER, Constant.UNISWAP_BASE_UNIVERSAL_ROUTER];
+
+    address[] internal EXEMPT_FEES = [
+        Constant.UNISWAP_BASE_STAKER_ADDRESS,
+        Constant.UNISWAP_BASE_FEE_COLLECTOR,
+        Constant.UNISWAP_BASE_V3_POSITION_MANAGER,
+        Constant.UNCX_BASE_V3_LOCKERS,
+        Constant.TRUGLY_BASE_UNIVERSAL_ROUTER
     ];
 
     // Parameters
@@ -86,9 +83,9 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
         memeception = memeceptionBaseTest.memeceptionContract();
         // Base
-        swapRouter = ISwapRouter(SWAP_ROUTER);
+        swapRouter = ISwapRouter(Constant.UNISWAP_BASE_SWAP_ROUTER);
 
-        uncxLocker = IUNCX_LiquidityLocker_UniV3(UNCX_V3_LOCKERS);
+        uncxLocker = IUNCX_LiquidityLocker_UniV3(Constant.UNCX_BASE_V3_LOCKERS);
     }
 
     function deployVesting() public virtual {
@@ -121,7 +118,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
             20,
             makeAddr("pool"),
             SWAP_ROUTERS,
-            EXEMPT_UNISWAP
+            EXEMPT_FEES
         );
         vm.stopPrank();
     }
@@ -129,7 +126,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
     function createMeme404(string memory symbol) public virtual returns (address meme) {
         (address mineAddress, bytes32 salt) = Meme404AddressMiner.find(
             address(factory),
-            WETH9,
+            Constant.BASE_WETH9,
             createMemeParams.name,
             symbol,
             address(memeception),
@@ -205,7 +202,7 @@ contract DeployersME404 is Test, TestHelpers, BaseParameters {
 
     function initSwapFromSwapRouter(uint256 amountIn, address recipient) public {
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: WETH9,
+            tokenIn: Constant.BASE_WETH9,
             tokenOut: address(memeToken),
             fee: Constant.UNI_LP_SWAPFEE,
             recipient: recipient,

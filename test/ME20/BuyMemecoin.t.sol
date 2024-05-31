@@ -75,7 +75,7 @@ contract BuyMemecoinTest is DeployersME20 {
 
         IUNCX_LiquidityLocker_UniV3.Lock memory lock = uncxLocker.getLock(memeceptionData.tokenId);
         assertEq(lock.pool, memeceptionData.pool, "lock.pool");
-        assertEq(address(lock.nftPositionManager), V3_POSITION_MANAGER, "lock.nftPositionManager");
+        assertEq(address(lock.nftPositionManager), Constant.UNISWAP_BASE_V3_POSITION_MANAGER, "lock.nftPositionManager");
         assertEq(lock.lock_id, memeceptionData.tokenId, "lock.lock_id");
         assertEq(lock.owner, memeceptionBaseTest.MULTISIG(), "lock.owner");
         assertEq(lock.pendingOwner, address(0), "lock.pendingOwner");

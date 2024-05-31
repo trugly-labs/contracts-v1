@@ -42,9 +42,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
     address public MEMECREATOR;
 
     constructor(address _vesting, address _treasury, address _mockFactory) {
-        memeceptionContract = new TruglyMemeception(
-            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, _vesting, _treasury, MULTISIG, _mockFactory
-        );
+        memeceptionContract = new TruglyMemeception(_vesting, _treasury, MULTISIG, _mockFactory);
 
         assertEq(address(memeceptionContract.v3Factory()), V3_FACTORY);
         assertEq(address(memeceptionContract.v3PositionManager()), V3_POSITION_MANAGER);
