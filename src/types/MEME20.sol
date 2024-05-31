@@ -85,7 +85,7 @@ contract MEME20 is ERC20 {
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
         if (amount == 0) return super.transferFrom(from, to, 0);
 
-        _transferFees(from, to, amount);
+        amount = _transferFees(from, to, amount);
 
         return super.transferFrom(from, to, amount);
     }
@@ -93,12 +93,12 @@ contract MEME20 is ERC20 {
     function transfer(address to, uint256 amount) public virtual override returns (bool) {
         if (amount == 0) return super.transfer(to, 0);
 
-        _transferFees(msg.sender, to, amount);
+        amount = _transferFees(msg.sender, to, amount);
 
         return super.transfer(to, amount);
     }
 
-    function _transferFees(address from, address to, uint256 amount) internal {
+    function _transferFees(address from, address to, uint256 amount) internal returns (uint256) {
         /// @dev Forbid trading until UniV3 LP is initialized
         if (!_initialized && msg.sender != _protocol) revert PoolNotInitialized();
 
@@ -112,6 +112,8 @@ contract MEME20 is ERC20 {
             if (feesCreator > 0) super.transfer(creator, feesCreator);
             if (feesProtocol > 0) super.transfer(_pTreasury, feesProtocol);
         }
+
+        return amount;
     }
 
     function isExempt(address account) public view returns (bool) {

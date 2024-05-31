@@ -20,17 +20,8 @@ contract TestnetTruglyMemeception is TruglyMemeception {
 
     address public testAdmin;
 
-    constructor(
-        address _v3Factory,
-        address _v3PositionManager,
-        address _uncxLockers,
-        address _WETH9,
-        address _vesting,
-        address _treasury,
-        address _multisig,
-        address _factory
-    )
-        TruglyMemeception(_v3Factory, _v3PositionManager, _uncxLockers, _WETH9, _vesting, _treasury, _multisig, _factory)
+    constructor(address _vesting, address _treasury, address _multisig, address _factory)
+        TruglyMemeception(_vesting, _treasury, _multisig, _factory)
     {
         testAdmin = msg.sender;
     }
@@ -42,47 +33,13 @@ contract TestnetTruglyMemeception is TruglyMemeception {
         bypassLock = _bypassLock;
     }
 
-    function _addLiquidityToUniV3Pool(address memeToken, uint256 amountETH, uint256 amountMeme) internal override {
-        if (!bypassLock) {
-            _addLiquidityToUniV3Pool(memeToken, amountETH, amountMeme);
-            return;
-        }
+    function _lockLiquidity(uint256 lpTokenId, uint256 lockFee) internal override returns (uint256) {
+        if (bypassLock) return lpTokenId;
+        return super._lockLiquidity(lpTokenId, lockFee);
+    }
 
-        uint256 amountETHMinusLockFee = amountETH;
-
-        IMEME20(memeToken).initialize(
-            owner,
-            treasury,
-            MEME20Constant.MAX_PROTOCOL_FEE_BPS,
-            memeceptions[memeToken].swapFeeBps,
-            memeceptions[memeToken].pool,
-            SWAP_ROUTERS,
-            EXEMPT_UNISWAP
-        );
-        uint160 sqrtPriceX96 = _calcSqrtPriceX96(amountETHMinusLockFee, amountMeme);
-        IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
-
-        WETH9.deposit{value: amountETHMinusLockFee}();
-        WETH9.approve(address(v3PositionManager), amountETHMinusLockFee);
-        IMEME20(memeToken).approve(address(v3PositionManager), amountMeme);
-
-        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
-            token0: address(WETH9),
-            token1: memeToken,
-            fee: Constant.UNI_LP_SWAPFEE,
-            tickLower: Constant.TICK_LOWER,
-            tickUpper: Constant.TICK_UPPER,
-            amount0Desired: amountETHMinusLockFee,
-            amount1Desired: amountMeme,
-            amount0Min: amountETHMinusLockFee.mulDiv(99, 100),
-            amount1Min: amountMeme.mulDiv(99, 100),
-            recipient: address(this),
-            deadline: block.timestamp + 30 minutes
-        });
-
-        (uint256 tokenId,,,) = v3PositionManager.mint(params);
-        memeceptions[memeToken].tokenId = tokenId;
-
-        emit MemeLiquidityAdded(memeToken, memeceptions[memeToken].pool, amountMeme, amountETHMinusLockFee);
+    function _getUncxLockerFee() internal view override returns (uint256) {
+        if (bypassLock) return 0;
+        return super._getUncxLockerFee();
     }
 }

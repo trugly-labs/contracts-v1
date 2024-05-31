@@ -13,13 +13,12 @@ import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {MockTruglyFactory} from "../mock/MockTruglyFactory.sol";
 import {MockTruglyFactoryNFT} from "../mock/MockTruglyFactoryNFT.sol";
 import {Meme20AddressMiner} from "./Meme20AddressMiner.sol";
-import {BaseParameters} from "../../script/parameters/Base.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
 import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 
-contract DeployersME20 is Test, TestHelpers, BaseParameters {
+contract DeployersME20 is Test, TestHelpers {
     // Global variables
     ME20BaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
@@ -32,6 +31,8 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
     IUNCX_LiquidityLocker_UniV3 uncxLocker;
 
     address MEMECREATOR = makeAddr("creator");
+
+    address WETH9 = Constant.BASE_WETH9;
 
     // Parameters
     ITruglyMemeception.MemeceptionCreationParams public createMemeParams = ITruglyMemeception.MemeceptionCreationParams({
@@ -55,9 +56,9 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
 
         memeception = memeceptionBaseTest.memeceptionContract();
         // Base
-        swapRouter = ISwapRouter(SWAP_ROUTER);
+        swapRouter = ISwapRouter(Constant.UNISWAP_BASE_SWAP_ROUTER);
 
-        uncxLocker = IUNCX_LiquidityLocker_UniV3(UNCX_V3_LOCKERS);
+        uncxLocker = IUNCX_LiquidityLocker_UniV3(Constant.UNCX_BASE_V3_LOCKERS);
     }
 
     function deployVesting() public virtual {
@@ -81,7 +82,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
 
     function createMeme(string memory symbol) public virtual returns (address meme) {
         (address mineAddress, bytes32 salt) = Meme20AddressMiner.find(
-            address(factory), WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR
+            address(factory), Constant.BASE_WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR
         );
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
@@ -152,7 +153,7 @@ contract DeployersME20 is Test, TestHelpers, BaseParameters {
 
     function initSwapFromSwapRouter(uint256 amountIn, address recipient) public {
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: WETH9,
+            tokenIn: Constant.BASE_WETH9,
             tokenOut: address(memeToken),
             fee: Constant.UNI_LP_SWAPFEE,
             recipient: recipient,

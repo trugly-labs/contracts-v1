@@ -4,20 +4,28 @@ pragma solidity ^0.8.23;
 import "forge-std/Script.sol";
 import {console2} from "forge-std/Test.sol";
 
+import {Constant} from "../../src/libraries/Constant.sol";
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
-import {BaseParameters} from "../parameters/Base.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
 import {TruglyFactory} from "../../src/TruglyFactory.sol";
 import {TruglyFactoryNFT} from "../../src/TruglyFactoryNFT.sol";
 import {TestnetTruglyMemeception} from "../../src/test/TestnetTruglyMemeception.sol";
 
-contract TestnetDeploymentsFn is BaseParameters {
+contract TestnetDeploymentsFn {
+    address public constant UNSUPPORTED_PROTOCOL = address(0);
+    address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    bytes32 public constant ROUTER_PAIR_INIT_CODE_HASH =
+        0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
+    address public constant TREASURY = 0x2f5417Dee5bF31fe270Bb9e7F48962dDDA77b755;
+    address public constant ADMIN = 0xb2660C551AB31FAc6D01a75f628Af2d200FfD1F2;
+
     function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
         console2.log("Deploying TruglyUniversalRouter..");
         RouterParameters memory params = RouterParameters({
             permit2: PERMIT2,
-            weth9: WETH9,
+            weth9: Constant.BASE_WETH9,
             seaportV1_5: UNSUPPORTED_PROTOCOL,
             seaportV1_4: UNSUPPORTED_PROTOCOL,
             openseaConduit: UNSUPPORTED_PROTOCOL,
@@ -32,8 +40,8 @@ contract TestnetDeploymentsFn is BaseParameters {
             routerRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareRewardsDistributor: UNSUPPORTED_PROTOCOL,
             looksRareToken: UNSUPPORTED_PROTOCOL,
-            v2Factory: V2_FACTORY,
-            v3Factory: V3_FACTORY,
+            v2Factory: UNSUPPORTED_PROTOCOL,
+            v3Factory: Constant.UNISWAP_BASE_V3_FACTORY,
             pairInitCodeHash: ROUTER_PAIR_INIT_CODE_HASH,
             poolInitCodeHash: POOL_INIT_CODE_HASH
         });
@@ -69,9 +77,7 @@ contract TestnetDeploymentsFn is BaseParameters {
         returns (TestnetTruglyMemeception memeception)
     {
         console2.log("Deploying TruglyMemeception..");
-        memeception = new TestnetTruglyMemeception(
-            V3_FACTORY, V3_POSITION_MANAGER, UNCX_V3_LOCKERS, WETH9, vesting, treasury, multisig, factory
-        );
+        memeception = new TestnetTruglyMemeception(vesting, treasury, multisig, factory);
         // TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }

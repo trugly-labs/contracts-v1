@@ -164,7 +164,7 @@ contract CreateMemeKOLTest is DeployersME20 {
     function test_createMemeKOLSymbolExist_success() public {
         createMemeKOL("MEME");
 
-        createMemeParams.salt = bytes32("4");
+        createMemeParams.salt = bytes32("2");
         memeception.createMemeKOL(createMemeParams);
     }
 
