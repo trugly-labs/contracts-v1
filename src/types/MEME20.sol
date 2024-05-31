@@ -83,9 +83,22 @@ contract MEME20 is ERC20 {
     }
 
     function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
-        if (amount == 0) {
-            return super.transferFrom(from, to, 0);
-        }
+        if (amount == 0) return super.transferFrom(from, to, 0);
+
+        _transferFees(from, to, amount);
+
+        return super.transferFrom(from, to, amount);
+    }
+
+    function transfer(address to, uint256 amount) public virtual override returns (bool) {
+        if (amount == 0) return super.transfer(to, 0);
+
+        _transferFees(msg.sender, to, amount);
+
+        return super.transfer(to, amount);
+    }
+
+    function _transferFees(address from, address to, uint256 amount) internal {
         /// @dev Forbid trading until UniV3 LP is initialized
         if (!_initialized && msg.sender != _protocol) revert PoolNotInitialized();
 
@@ -99,29 +112,6 @@ contract MEME20 is ERC20 {
             if (feesCreator > 0) super.transfer(creator, feesCreator);
             if (feesProtocol > 0) super.transfer(_pTreasury, feesProtocol);
         }
-
-        return super.transferFrom(from, to, amount);
-    }
-
-    function transfer(address to, uint256 amount) public virtual override returns (bool) {
-        if (amount == 0) {
-            return super.transfer(to, 0);
-        }
-        /// @dev Forbid trading until UniV3 LP is initialized
-        if (!_initialized && msg.sender != _protocol) revert PoolNotInitialized();
-
-        // @dev skip to avoid double fees;
-        bool skip = _routersAndPools[msg.sender] && _routersAndPools[to];
-
-        if (!_exemptFees[msg.sender] && !_exemptFees[to] && !skip && _routersAndPools[msg.sender]) {
-            uint256 feesCreator = amount.mulDiv(feeBps, 1e4);
-            uint256 feesProtocol = amount.mulDiv(_pFeesBps, 1e4);
-            amount = amount - feesCreator - feesProtocol;
-            if (feesCreator > 0) super.transfer(creator, feesCreator);
-            if (feesProtocol > 0) super.transfer(_pTreasury, feesProtocol);
-        }
-
-        return super.transfer(to, amount);
     }
 
     function isExempt(address account) public view returns (bool) {
