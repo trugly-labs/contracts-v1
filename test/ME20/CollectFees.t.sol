@@ -15,7 +15,7 @@ contract CollectFees is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initBuyMemecoin(createMemeParams.targetETH);
+        initBuyMemecoinFullCap();
     }
 
     function test_collectFees_success() public {

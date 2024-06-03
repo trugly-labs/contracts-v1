@@ -15,7 +15,7 @@ contract CollectFees404 is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
-        initBuyMemecoin(createMemeParams.targetETH);
+        initBuyMemecoinFullCap();
     }
 
     function test_404collectFees_success() public {

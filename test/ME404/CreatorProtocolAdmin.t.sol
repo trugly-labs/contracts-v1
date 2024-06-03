@@ -24,7 +24,7 @@ contract CreatorProtocolAdmin404Test is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
-        initBuyMemecoin(createMemeParams.targetETH);
+        initBuyMemecoinFullCap();
 
         assertEq(memeToken.creator(), MEMECREATOR, "creator post setup");
 
