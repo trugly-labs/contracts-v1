@@ -186,8 +186,10 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             ITruglyFactory(factory).createMeme404(params.name, params.symbol, params.creator, params.salt);
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
 
+        address[] memory exemptFeesAddresses = _getExemptFeesAddresses();
+
         /// List of exempt addresses for MEME404 NFT minting
-        address[] memory exemptNFTMint = new address[](5 + SWAP_ROUTERS.length + EXEMPT_FEES.length);
+        address[] memory exemptNFTMint = new address[](5 + SWAP_ROUTERS.length + exemptFeesAddresses.length);
         exemptNFTMint[0] = address(this);
         exemptNFTMint[1] = address(vesting);
         exemptNFTMint[2] = address(treasury);
@@ -198,8 +200,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             exemptNFTMint[i + 5] = SWAP_ROUTERS[i];
         }
 
-        for (uint256 i = 0; i < EXEMPT_FEES.length; i++) {
-            exemptNFTMint[i + 5 + SWAP_ROUTERS.length] = EXEMPT_FEES[i];
+        for (uint256 i = 0; i < exemptFeesAddresses.length; i++) {
+            exemptNFTMint[i + 5 + SWAP_ROUTERS.length] = exemptFeesAddresses[i];
         }
         IMEME404(memeToken).initializeTiers(tiers, exemptNFTMint);
 
@@ -425,6 +427,10 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @dev receive ERC721 tokens for Univ3 LP Positions
     function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
         return this.onERC721Received.selector;
+    }
+
+    function _getExemptFeesAddresses() internal view virtual returns (address[] memory) {
+        return EXEMPT_FEES;
     }
 
     /// @notice Only the owner can call this function
