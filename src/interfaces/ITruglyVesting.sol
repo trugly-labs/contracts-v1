@@ -18,18 +18,9 @@ interface ITruglyVesting {
     /// @dev Start vesting for a token
     /// @param token The token to vest
     /// @param creator The creator of the token, who will receive the vested tokens
-    /// @param totalAllocation The total allocation of the token to vest
-    /// @param start The start time of the vesting
     /// @param duration The duration of the vesting
     /// @param cliff The cliff time of the vesting
-    function startVesting(
-        address token,
-        address creator,
-        uint256 totalAllocation,
-        uint64 start,
-        uint64 duration,
-        uint64 cliff
-    ) external;
+    function startVesting(address token, address creator, uint64 duration, uint64 cliff) external;
 
     /// @dev Get the vesting information for a token
     /// @param token The token to get the vesting information for

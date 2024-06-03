@@ -38,22 +38,14 @@ contract TruglyVesting is ITruglyVesting, Owned {
 
     /// @dev Error when the caller is not a memeception
     error NotMemeception();
-    /// @dev Error when the vesting of `token` is already started
-    error VestingAlreadyStarted();
-    /// @dev Error when the `totalAllocation` is zero
-    error VestingAmountCannotBeZero();
     /// @dev Error when the `duration` is zero
     error VestingDurationCannotBeZero();
     /// @dev Error when the `creator` is address(0)
     error VestingCreatorCannotBeAddressZero();
     /// @dev Error when the `token` is address(0)
     error VestingTokenCannotBeAddressZero();
-    /// @dev Error when the `start` is in the past
-    error VestingStartInPast();
     /// @dev Error when the `cliff` is greater than `duration`
     error VestingCliffCannotBeGreaterThanDuration();
-    /// @dev Error when the contract does not have enough balance
-    error InsufficientBalance();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -66,34 +58,33 @@ contract TruglyVesting is ITruglyVesting, Owned {
     constructor() payable Owned(msg.sender) {}
 
     /// @inheritdoc ITruglyVesting
-    function startVesting(
-        address token,
-        address creator,
-        uint256 totalAllocation,
-        uint64 start,
-        uint64 duration,
-        uint64 cliff
-    ) external {
+    function startVesting(address token, address creator, uint64 duration, uint64 cliff) external {
+        if (ERC20(token).balanceOf(address(this)) == 0) return;
+
         if (!_memeceptionContracts[msg.sender]) revert NotMemeception();
-        if (_vestingInfo[token].start != 0) revert VestingAlreadyStarted();
-        if (totalAllocation == 0) revert VestingAmountCannotBeZero();
         if (duration == 0) revert VestingDurationCannotBeZero();
-        if (start < block.timestamp) revert VestingStartInPast();
         if (creator == address(0)) revert VestingCreatorCannotBeAddressZero();
         if (token == address(0)) revert VestingTokenCannotBeAddressZero();
         if (cliff > duration) revert VestingCliffCannotBeGreaterThanDuration();
-        if (ERC20(token).balanceOf(address(this)) != totalAllocation) revert InsufficientBalance();
 
         _vestingInfo[token] = VestingInfo({
-            totalAllocation: totalAllocation,
+            totalAllocation: ERC20(token).balanceOf(address(this)),
             released: 0,
-            start: start,
+            start: uint64(block.timestamp),
             duration: duration,
             cliff: cliff,
             creator: creator
         });
 
-        emit MEMERC20VestingStarted(token, creator, ERC20(token).symbol(), totalAllocation, start, duration, cliff);
+        emit MEMERC20VestingStarted(
+            token,
+            creator,
+            ERC20(token).symbol(),
+            _vestingInfo[token].totalAllocation,
+            _vestingInfo[token].start,
+            duration,
+            cliff
+        );
     }
 
     /// @inheritdoc ITruglyVesting
