@@ -23,6 +23,7 @@ contract BuyMemecoin404Test is DeployersME404 {
     error ZeroAmount();
     error MemeceptionEnded();
     error MemeceptionNotStarted();
+    error MaxTargetETH();
 
     /// @dev Emitted when a user buy memecoins in the fair launch
     event MemecoinBuy(address indexed memeToken, address indexed user, uint256 buyETHAmount, uint256 amountMeme);
@@ -124,5 +125,10 @@ contract BuyMemecoin404Test is DeployersME404 {
     function test_404buyMemecoin_fail_unknown_meme() public {
         vm.expectRevert();
         memeceptionBaseTest.buyMemecoin{value: 1 ether}(address(1));
+    }
+
+    function test_404buyMemecoin__fail_max_buy() public {
+        vm.expectRevert(MaxTargetETH.selector);
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.targetETH / 10 + 1}(address(memeToken));
     }
 }
