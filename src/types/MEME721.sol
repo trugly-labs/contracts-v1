@@ -120,7 +120,7 @@ contract MEME721 is ERC721 {
     }
 
     function mint(address account, uint256 id) external onlyMemecoin {
-        _mint(account, id);
+        _safeMint(account, id);
 
         Owner storage owner = _owners[account];
         _set(owner.ids, _balanceOf[account], uint32(id));

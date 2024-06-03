@@ -1840,18 +1840,16 @@ contract MEME404TansferFromTest is DeployersME404 {
         assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
 
         // Assert RECEIVER
-        uint256[] memory receiverTokenIds = new uint256[](1);
-        receiverTokenIds[0] = 2;
         assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
         assertMEME1155(RECEIVER, 1, 0, TEST);
-        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
 
         // Assert MEME404 Burn and Unminted
         uint256[] memory burnTokenIds = new uint256[](1);
         burnTokenIds[0] = 1;
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 3, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
     }
 
@@ -1875,17 +1873,15 @@ contract MEME404TansferFromTest is DeployersME404 {
 
         // Assert RECEIVER
         uint256[] memory receiverTokenIds = new uint256[](1);
-        receiverTokenIds[0] = 2;
+        receiverTokenIds[0] = 1;
         assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
         assertMEME1155(RECEIVER, 1, 0, TEST);
         assertMEME721(RECEIVER, receiverTokenIds, TEST);
 
         // Assert MEME404 Burn and Unminted
-        uint256[] memory burnTokenIds = new uint256[](1);
-        burnTokenIds[0] = 1;
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 3, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
     }
 

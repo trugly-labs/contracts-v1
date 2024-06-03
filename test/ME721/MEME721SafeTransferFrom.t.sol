@@ -1547,27 +1547,27 @@ contract MEME721SafeTransferFromTest is DeployersME404 {
         initWalletWithTokens(SENDER, getAmountThreshold(TIER));
 
         vm.startPrank(SENDER);
+        vm.expectRevert();
         meme721.approve(address(this), 1);
         vm.stopPrank();
 
+        vm.expectRevert();
         meme721.safeTransferFrom(SENDER, RECEIVER, 1);
 
         // Assert Sender
-        assertMEME404(SENDER, 0, TEST);
+        assertMEME404(SENDER, getAmountThreshold(TIER), TEST);
         assertMEME1155(SENDER, 1, 0, TEST);
         assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
 
         // Assert RECEIVER
-        uint256[] memory receiverTokenIds = new uint256[](1);
-        receiverTokenIds[0] = 1;
-        assertMEME404(RECEIVER, getAmountThreshold(TIER), TEST);
+        assertMEME404(RECEIVER, 0, TEST);
         assertMEME1155(RECEIVER, 1, 0, TEST);
-        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
 
         // Assert MEME404 Burn and Unminted
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, tierParams[3].lowerId, TEST);
     }
 
