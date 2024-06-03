@@ -258,6 +258,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     function buyMemecoin(address memeToken) external payable nonReentrant {
         Memeception memory memeception = memeceptions[memeToken];
         if (msg.value == 0) revert ZeroAmount();
+        if (msg.value > _getMaxBuyAmountETH(memeToken)) revert MaxTargetETH();
         if (memeception.endedAt > 0) revert MemeLaunched();
         if (uint40(block.timestamp) < memeception.startAt) revert MemeceptionNotStarted();
 
@@ -426,6 +427,15 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
     function _getExemptFeesAddresses() internal view virtual returns (address[] memory) {
         return EXEMPT_FEES;
+    }
+
+    /// @inheritdoc ITruglyMemeception
+    function getMaxBuyAmountETH(address memeToken) external view returns (uint256) {
+        return _getMaxBuyAmountETH(memeToken);
+    }
+
+    function _getMaxBuyAmountETH(address memeToken) internal view virtual returns (uint256) {
+        return memeceptions[memeToken].targetETH.rawDiv(10);
     }
 
     /// @notice Only the owner can call this function

@@ -97,6 +97,13 @@ contract DeployersME20 is Test, TestHelpers {
         memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
     }
 
+    function initBuyMemecoinFullCap() public virtual {
+        uint256 buyAmountPerTx = createMemeParams.targetETH / 10;
+        for (uint256 i = 0; i < 10; i++) {
+            initBuyMemecoin(buyAmountPerTx);
+        }
+    }
+
     function deployUniversalRouter() public virtual {
         routerBaseTest = new RouterBaseTest();
     }

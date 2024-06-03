@@ -24,7 +24,7 @@ contract CreatorProtocolAdminTest is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
-        initBuyMemecoin(10 ether);
+        initBuyMemecoinFullCap();
 
         assertEq(memeToken.creator(), MEMECREATOR, "creator post setup");
 

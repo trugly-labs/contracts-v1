@@ -16,7 +16,7 @@ contract MEME20Transfers is DeployersME404 {
     function setUp() public override {
         super.setUp();
         initCreateMeme404();
-        initBuyMemecoin(createMemeParams.targetETH);
+        initBuyMemecoinFullCap();
 
         ALICE = makeAddr("Alice");
         initTreasuryBal = memeToken.balanceOf(treasury);

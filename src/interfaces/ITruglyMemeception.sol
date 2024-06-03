@@ -94,4 +94,9 @@ interface ITruglyMemeception is IERC721Receiver {
     /// @param memeToken Address of the memecoin
     /// @return price Amount of tokens per ETH
     function getPricePerETH(address memeToken) external view returns (uint256 price);
+
+    /// @dev Get the max buy amount in ETH per transaction for a given memecoin
+    /// @param memeToken Address of the memecoin
+    /// @return maxBuyAmountETH Max amount of ETH per transaction
+    function getMaxBuyAmountETH(address memeToken) external view returns (uint256);
 }

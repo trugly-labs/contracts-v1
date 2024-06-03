@@ -13,12 +13,12 @@ contract DeployAll is Script, DeploymentsFn {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        // TruglyVesting vesting = deployVesting();
+        TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
         address multisig = deployMultisig();
         TruglyFactory factory = deployFactory();
         deployMemeception(
-            0xD309DcF90f6A4eAd4D0fddD7760f33fAc511c71d, //Vesting
+            address(vesting), //Vesting
             treasury,
             multisig,
             address(factory)

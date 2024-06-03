@@ -51,4 +51,9 @@ contract TestnetTruglyMemeception is TruglyMemeception {
         exemptFees[EXEMPT_FEES.length - 1] = 0x0B3cC9681b151c5BbEa095629CDD56700B5b6c87; // TruglyUniversalRouter Testnet
         return EXEMPT_FEES;
     }
+
+    function _getMaxBuyAmountETH(address memeToken) internal view override returns (uint256) {
+        if (bypassLock) return type(uint256).max;
+        return super._getMaxBuyAmountETH(memeToken);
+    }
 }

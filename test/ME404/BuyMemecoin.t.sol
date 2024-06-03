@@ -23,6 +23,7 @@ contract BuyMemecoin404Test is DeployersME404 {
     error ZeroAmount();
     error MemeceptionEnded();
     error MemeceptionNotStarted();
+    error MaxTargetETH();
 
     /// @dev Emitted when a user buy memecoins in the fair launch
     event MemecoinBuy(address indexed memeToken, address indexed user, uint256 buyETHAmount, uint256 amountMeme);
@@ -65,9 +66,18 @@ contract BuyMemecoin404Test is DeployersME404 {
     }
 
     function test_404buyMemecoin_capReached_success() public {
-        uint256 amount = createMemeParams.targetETH;
+        uint256 amount = createMemeParams.targetETH / 10;
+        for (uint256 i = 0; i < 9; i++) {
+            address SENDER = makeAddr(i.toString());
+            startHoax(SENDER, amount);
+            vm.expectEmit(true, true, false, true);
+            emit MemecoinBuy(address(memeToken), SENDER, amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+            memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
+            vm.stopPrank();
+        }
+
         vm.expectEmit(true, true, false, true);
-        emit MemecoinBuy(address(memeToken), address(this), amount, Constant.TOKEN_MEMECEPTION_SUPPLY);
+        emit MemecoinBuy(address(memeToken), address(this), amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
 
         memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
 
@@ -85,16 +95,27 @@ contract BuyMemecoin404Test is DeployersME404 {
     }
 
     function test_404buyMemecoin_capReached_over_success() public {
-        uint256 amount = createMemeParams.targetETH / 2;
-        vm.expectEmit(true, true, false, true);
-        emit MemecoinBuy(address(memeToken), makeAddr("alice"), amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 2);
-        hoax(makeAddr("alice"), amount);
-        memeception.buyMemecoin{value: amount}(address(memeToken));
+        uint256 amount = createMemeParams.targetETH / 10;
+        for (uint256 i = 0; i < 10; i++) {
+            uint256 expectedMeme = Constant.TOKEN_MEMECEPTION_SUPPLY / 10;
+            if (i == 9) {
+                amount = amount / 10 * 9;
+                expectedMeme = Constant.TOKEN_MEMECEPTION_SUPPLY / 100 * 9;
+            }
+            address SENDER = makeAddr(i.toString());
+            startHoax(SENDER, amount);
+            vm.expectEmit(true, true, false, true);
+            emit MemecoinBuy(address(memeToken), SENDER, amount, expectedMeme);
+            memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
+            vm.stopPrank();
+        }
 
         vm.expectEmit(true, true, false, true);
-        emit MemecoinBuy(address(memeToken), address(this), amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 2);
+        emit MemecoinBuy(
+            address(memeToken), address(this), createMemeParams.targetETH / 100, Constant.TOKEN_MEMECEPTION_SUPPLY / 100
+        );
 
-        memeceptionBaseTest.buyMemecoin{value: amount + 1}(address(memeToken));
+        memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
     }
 
     function test_404buyMemecoin_success_duplicate_og() public {
@@ -114,8 +135,7 @@ contract BuyMemecoin404Test is DeployersME404 {
     }
 
     function test_404buyMemecoin_fail_meme_launched() public {
-        hoax(makeAddr("alice"), createMemeParams.targetETH);
-        memeception.buyMemecoin{value: createMemeParams.targetETH}(address(memeToken));
+        initBuyMemecoinFullCap();
 
         vm.expectRevert(MemeLaunched.selector);
         memeceptionBaseTest.buyMemecoin{value: 1 ether}(address(memeToken));
@@ -124,5 +144,10 @@ contract BuyMemecoin404Test is DeployersME404 {
     function test_404buyMemecoin_fail_unknown_meme() public {
         vm.expectRevert();
         memeceptionBaseTest.buyMemecoin{value: 1 ether}(address(1));
+    }
+
+    function test_404buyMemecoin__fail_max_buy() public {
+        vm.expectRevert(MaxTargetETH.selector);
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.targetETH / 10 + 1}(address(memeToken));
     }
 }
