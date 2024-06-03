@@ -10,6 +10,7 @@ import {IMEME404} from "../../src/interfaces/IMEME404.sol";
 
 contract MEME721TansferFromTest is DeployersME404 {
     error PoolNotInitialized();
+
     using LibString for uint256;
 
     address BOB = makeAddr("bob");
@@ -537,7 +538,7 @@ contract MEME721TansferFromTest is DeployersME404 {
     /// @notice Scenario #17: Test Wallet A (Tier 4 + Tier 4 - 1 / ERC721 #2001) -> #2001 -> Wallet B (Tier 4 / ERC721 #2002)
     /// @notice Burn list empty
     /// @notice Available unminted tokens
-    /// Expected: Wallet A (Tier 4 - 1 / ERC721 #1 #3 #4 #5 .... #20) -> Wallet B (Tier 4 * 2 / ERC721 #2001 #2002)
+    /// Expected: Wallet A (Tier 4 - 1 / ERC721 #1 #3 #4 #5 .... #19) -> Wallet B (Tier 4 * 2 / ERC721 #2001 #2002)
     /// Expected: Tier 3 Burn: []
     /// Expected: Tier 4 Burn: []
     function test_721transferFromScenario17_success() public {
@@ -550,8 +551,8 @@ contract MEME721TansferFromTest is DeployersME404 {
         meme721.transferFrom(SENDER, RECEIVER, 2001);
 
         // Assert Sender
-        uint256[] memory senderTokenIds = new uint256[](20);
-        for (uint256 i = 0; i < 20; i++) {
+        uint256[] memory senderTokenIds = new uint256[](19);
+        for (uint256 i = 0; i < senderTokenIds.length; i++) {
             senderTokenIds[i] = 1 + i;
         }
         assertMEME404(SENDER, getAmountThreshold(4) - 1, TEST);
@@ -569,7 +570,7 @@ contract MEME721TansferFromTest is DeployersME404 {
         // Assert MEME404 Burn and Unminted
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 21, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 20, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2003, TEST);
     }
 
@@ -647,11 +648,11 @@ contract MEME721TansferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2003, TEST);
     }
 
-    /// @notice Scenario #25: Test Wallet A (Tier 4 + Tier 4 - 1 / ERC721 #2001) -> ERC721 #2001 -> Wallet B (Tier 4 - 1 / ERC721 #1 #2 ... #19 #20)
+    /// @notice Scenario #25: Test Wallet A (Tier 4 + Tier 4 - 1 / ERC721 #2001) -> ERC721 #2001 -> Wallet B (Tier 4 - 1 / ERC721 #1 #2 ... #19)
     /// @notice Burn list empty
     /// @notice Available unminted tokens
-    /// Expected: Wallet A (Tier 4 - 1 /  ERC721 #21 #22 .. #39 #40) -> Wallet B (Tier 4 * 2 - 1 / ERC721 #2001)
-    /// Expected: Tier 3 Burn: [#1, #20  #19, .. #2]
+    /// Expected: Wallet A (Tier 4 - 1 /  ERC721 #20 #21 .. #38) -> Wallet B (Tier 4 * 2 - 1 / ERC721 #2001)
+    /// Expected: Tier 3 Burn: [#1,#19, .. #2]
     /// Expected: Tier 4 Burn: []
     function test_721transferFromScenario25_success() public {
         // Init Test
@@ -662,9 +663,9 @@ contract MEME721TansferFromTest is DeployersME404 {
         meme721.transferFrom(SENDER, RECEIVER, 2001);
 
         // Assert Sender
-        uint256[] memory senderTokenIds = new uint256[](20);
-        for (uint256 i = 0; i < 20; i++) {
-            senderTokenIds[i] = 21 + i;
+        uint256[] memory senderTokenIds = new uint256[](19);
+        for (uint256 i = 0; i < senderTokenIds.length; i++) {
+            senderTokenIds[i] = 20 + i;
         }
         assertMEME404(SENDER, getAmountThreshold(4) - 1, TEST);
         assertMEME1155(SENDER, 1, 0, TEST);
@@ -678,14 +679,14 @@ contract MEME721TansferFromTest is DeployersME404 {
         assertMEME721(RECEIVER, receiverTokenIds, TEST);
 
         // Assert MEME404 Burn and Unminted
-        uint256[] memory burnTokenIds = new uint256[](20);
+        uint256[] memory burnTokenIds = new uint256[](19);
         burnTokenIds[0] = 1;
         for (uint256 i = 1; i < burnTokenIds.length; i++) {
             burnTokenIds[i] = burnTokenIds.length - i + 1;
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 41, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 39, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2002, TEST);
     }
 
@@ -1355,8 +1356,8 @@ contract MEME721TansferFromTest is DeployersME404 {
     }
 
     /// @notice Scenario 42: Tier 5 that is Tier 4 threshold + 10
-    /// @notice Wallet A -> #2001 -> Wallet B (Tier 3 + 10, #1)
-    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 4 + Tier 3 + 10 / #3001)
+    /// @notice Wallet A (Tier 4, ERC721 #2001)-> #2001 -> Wallet B (Tier 3 + 10, ERC721 #1)
+    /// Expected: Wallet A ( / 0) -> Wallet B (Tier 4 + Tier 3 + 10 / ERC721 #3001)
     /// Expect Tier 3 Burn: [#1]
     /// Expect Tier 4 Burn: [#2001]
     function test_721transferFromScenario42_success() public {
@@ -1366,7 +1367,7 @@ contract MEME721TansferFromTest is DeployersME404 {
                 baseURL: "https://elite.com/",
                 nftName: "Elite NFT",
                 nftSymbol: "ELITE",
-                amountThreshold: 88_888_900 ether,
+                amountThreshold: 100_000_010 ether,
                 nftId: 2,
                 lowerId: 3001,
                 upperId: 3100,
@@ -1377,7 +1378,7 @@ contract MEME721TansferFromTest is DeployersME404 {
         initCreateMeme404();
 
         initWalletWithTokens(SENDER, getAmountThreshold(4));
-        initWalletWithTokens(RECEIVER, getAmountThreshold(3) + 12 ether);
+        initWalletWithTokens(RECEIVER, getAmountThreshold(3) + 10 ether);
 
         meme721.transferFrom(SENDER, RECEIVER, 2001);
 
@@ -1389,7 +1390,7 @@ contract MEME721TansferFromTest is DeployersME404 {
         // Assert RECEIVER
         uint256[] memory receiverTokenIds = new uint256[](1);
         receiverTokenIds[0] = 3001;
-        assertMEME404(RECEIVER, getAmountThreshold(4) + getAmountThreshold(3) + 12 ether, TEST);
+        assertMEME404(RECEIVER, getAmountThreshold(4) + getAmountThreshold(3) + 10 ether, TEST);
         assertMEME1155(RECEIVER, 1, 0, TEST);
         assertMEME721(RECEIVER, receiverTokenIds, TEST);
 
@@ -1582,5 +1583,4 @@ contract MEME721TansferFromTest is DeployersME404 {
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas used for MEME721.transferFrom:", gasUsed);
     }
-
 }

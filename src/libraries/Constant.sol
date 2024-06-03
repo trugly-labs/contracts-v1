@@ -7,7 +7,7 @@ library Constant {
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
     /// @dev Supply dedicated for the fair launch (45% of total supply)
-    uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_000_000_000 ether;
+    uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_500_000_000 ether;
 
     /// @dev Maximum creator vesting allocation (in bps)
     uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 1000;
@@ -35,7 +35,7 @@ library Constant {
     uint256 internal constant MAX_TARGET_ETH = 100_000 ether;
 
     address internal constant UNISWAP_BASE_STAKER_ADDRESS = 0x42bE4D6527829FeFA1493e1fb9F3676d2425C3C1;
-    address internal constant UNISWAP_BASE_FEE_COLLECTOR = 0x067170777BA8027cED27E034102D54074d062d71;
+    address internal constant UNISWAP_BASE_FEE_COLLECTOR = 0x5d64D14D2CF4fe5fe4e65B1c7E3D11e18D493091;
 
     address internal constant UNISWAP_BASE_UNIVERSAL_ROUTER = 0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD;
     address internal constant UNISWAP_BASE_SWAP_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;

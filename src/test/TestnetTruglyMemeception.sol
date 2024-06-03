@@ -42,4 +42,13 @@ contract TestnetTruglyMemeception is TruglyMemeception {
         if (bypassLock) return 0;
         return super._getUncxLockerFee();
     }
+
+    function _getExemptFeesAddresses() internal view override returns (address[] memory) {
+        address[] memory exemptFees = new address[](EXEMPT_FEES.length + 1);
+        for (uint256 i = 0; i < EXEMPT_FEES.length; i++) {
+            exemptFees[i] = EXEMPT_FEES[i];
+        }
+        exemptFees[EXEMPT_FEES.length - 1] = 0x0B3cC9681b151c5BbEa095629CDD56700B5b6c87; // TruglyUniversalRouter Testnet
+        return EXEMPT_FEES;
+    }
 }
