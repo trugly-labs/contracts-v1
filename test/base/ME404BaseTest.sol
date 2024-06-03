@@ -92,59 +92,6 @@ contract ME404BaseTest is ME20BaseTest {
             params.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
             "vestingAllocSupply"
         );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(meme404)).totalAllocation,
-            params.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
-            "Vesting.totalAllocation"
-        );
-        assertEq(memeceptionContract.vesting().getVestingInfo(address(meme404)).released, 0, "Vesting.released");
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(meme404)).start,
-            params.vestingAllocBps == 0 ? 0 : startAt,
-            "Vesting.start"
-        );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(meme404)).duration,
-            params.vestingAllocBps == 0 ? 0 : Constant.VESTING_DURATION,
-            "Vesting.duration"
-        );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(meme404)).cliff,
-            params.vestingAllocBps == 0 ? 0 : Constant.VESTING_CLIFF,
-            "Vesting.cliff"
-        );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(meme404)).creator,
-            params.vestingAllocBps == 0 ? address(0) : MEMECREATOR,
-            "Vesting.creator"
-        );
-
-        assertEq(memeceptionContract.vesting().releasable(address(meme404)), 0, "Vesting.releasable");
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(block.timestamp)),
-            0,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(startAt + Constant.VESTING_CLIFF - 1)),
-            0,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(startAt + 91.25 days)),
-            vestingAllocSupply / 8,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(startAt + 365 days)),
-            vestingAllocSupply / 2,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(meme404), uint64(startAt + 365 days * 2)),
-            vestingAllocSupply,
-            "Vesting.vestedAmount"
-        );
     }
 
     function _checkERC1155Received(address _contract, address _operator, address _from, uint256 _id, uint256 _value)

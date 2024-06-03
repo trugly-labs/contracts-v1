@@ -7,14 +7,10 @@ import {MEME20} from "../../src/types/MEME20.sol";
 
 contract StartVestingTest is DeployersME20 {
     error NotMemeception();
-    error VestingAlreadyStarted();
-    error VestingAmountCannotBeZero();
     error VestingDurationCannotBeZero();
     error VestingCreatorCannotBeAddressZero();
     error VestingTokenCannotBeAddressZero();
-    error VestingStartInPast();
     error VestingCliffCannotBeGreaterThanDuration();
-    error InsufficientBalance();
 
     event MEMERC20VestingStarted(
         address indexed token,
@@ -48,14 +44,7 @@ contract StartVestingTest is DeployersME20 {
             Constant.VESTING_DURATION,
             Constant.VESTING_CLIFF
         );
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
+        vesting.startVesting(address(mockMemeToken), address(3), Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
 
         assertEq(
             vesting.getVestingInfo(address(mockMemeToken)).totalAllocation,
@@ -75,102 +64,26 @@ contract StartVestingTest is DeployersME20 {
     function test_startVesting_fail_not_memeception() public {
         vm.expectRevert(NotMemeception.selector);
         hoax(makeAddr("alice"));
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
-    }
-
-    function test_startVesting_fail_already_started() public {
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
-        vm.expectRevert(VestingAlreadyStarted.selector);
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
-    }
-
-    function test_startVesting_fail_amount_zero() public {
-        vm.expectRevert(VestingAmountCannotBeZero.selector);
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            0,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
+        vesting.startVesting(address(mockMemeToken), address(3), Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
     }
 
     function test_startVesting_fail_duration_zero() public {
         vm.expectRevert(VestingDurationCannotBeZero.selector);
-        vesting.startVesting(
-            address(mockMemeToken), address(3), VESTING_ALLOCATION, uint64(block.timestamp), 0, Constant.VESTING_CLIFF
-        );
+        vesting.startVesting(address(mockMemeToken), address(3), 0, Constant.VESTING_CLIFF);
     }
 
     function test_startVesting_fail_creator_zero() public {
         vm.expectRevert(VestingCreatorCannotBeAddressZero.selector);
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(0),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
+        vesting.startVesting(address(mockMemeToken), address(0), Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
     }
 
     function test_startVesting_fail_token_zero() public {
         vm.expectRevert(VestingTokenCannotBeAddressZero.selector);
-        vesting.startVesting(
-            address(0),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
+        vesting.startVesting(address(0), address(3), Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
     }
 
     function test_startVesting_fail_cliff_greater_than_duration() public {
         vm.expectRevert(VestingCliffCannotBeGreaterThanDuration.selector);
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_CLIFF,
-            Constant.VESTING_CLIFF + 1
-        );
-    }
-
-    function test_startVesting_fail_insufficient_balance() public {
-        MEME20 mockMemeToken2 = new MEME20("MEME", "MEME", address(this), address(this));
-        mockMemeToken2.transfer(address(vesting), VESTING_ALLOCATION - 1);
-        vm.expectRevert(InsufficientBalance.selector);
-        vesting.startVesting(
-            address(mockMemeToken2),
-            address(3),
-            VESTING_ALLOCATION,
-            uint64(block.timestamp),
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
+        vesting.startVesting(address(mockMemeToken), address(3), Constant.VESTING_CLIFF, Constant.VESTING_CLIFF + 1);
     }
 }

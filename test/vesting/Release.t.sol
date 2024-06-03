@@ -34,15 +34,8 @@ contract ReleaseTest is DeployersME20 {
         mockMemeToken.transfer(address(vesting), VESTING_ALLOCATION);
 
         mockMemeToken.initialize(makeAddr("owner"), treasury, 50, 20, makeAddr("pool"), SWAP_ROUTERS, EXEMPT_UNISWAP);
-        VESTING_START = uint64(block.timestamp + 3 days);
-        vesting.startVesting(
-            address(mockMemeToken),
-            address(3),
-            VESTING_ALLOCATION,
-            VESTING_START,
-            Constant.VESTING_DURATION,
-            Constant.VESTING_CLIFF
-        );
+        VESTING_START = uint64(block.timestamp);
+        vesting.startVesting(address(mockMemeToken), address(3), Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
     }
 
     function test_release_success_before_cliff() public {

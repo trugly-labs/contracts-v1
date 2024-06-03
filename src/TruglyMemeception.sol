@@ -233,14 +233,6 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         if (params.vestingAllocBps > 0) {
             uint256 vestingAlloc = MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(params.vestingAllocBps, 1e4);
             IMEME20(memeToken).transfer(address(vesting), vestingAlloc);
-            vesting.startVesting(
-                address(memeToken),
-                params.creator,
-                vestingAlloc,
-                startAt,
-                Constant.VESTING_DURATION,
-                Constant.VESTING_CLIFF
-            );
         }
         uint256 burnAllocBps = Constant.CREATOR_MAX_VESTED_ALLOC_BPS - params.vestingAllocBps;
         if (burnAllocBps > 0) {
@@ -283,6 +275,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
             /// Adding liquidity to Uni V3 Pool
             _addLiquidityToUniV3Pool(memeToken, memeception.targetETH, Constant.TOKEN_MEMECEPTION_SUPPLY);
+
+            /// Start Vesting
+            vesting.startVesting(memeToken, memeception.creator, Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
 
             // Refund
             msg.sender.safeTransferETH(msg.value - buyEthAmount);
