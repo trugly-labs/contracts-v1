@@ -33,6 +33,9 @@ contract MEME404InitializerTest is DeployersME404 {
     /// @dev When a NFT sequence is followed by a fungible one
     error FungibleAfterNonFungible();
 
+    /// @dev When a NFT sequence has nftId that is less than the previous one or is the same but isFungible is different
+    error IncorrectOrder();
+
     MockMEME404 meme404;
 
     address[] public exemptAddresses;
@@ -211,6 +214,30 @@ contract MEME404InitializerTest is DeployersME404 {
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 5, 2, 1, 1, true
         );
         vm.expectRevert(FungibleAfterNonFungible.selector);
+        meme404.initializeTiers(_tierParams, exemptAddresses);
+    }
+
+    function test_initializeTiersIncorrectOrderNFTId_revert() public {
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](2);
+        _tierParams[0] = IMEME404.TierCreateParam(
+            "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 2, 1, 1, true
+        );
+        _tierParams[1] = IMEME404.TierCreateParam(
+            "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 5, 1, 2, 2, true
+        );
+        vm.expectRevert(IncorrectOrder.selector);
+        meme404.initializeTiers(_tierParams, exemptAddresses);
+    }
+
+    function test_initializeTiersIncorrectOrderFungible_revert() public {
+        IMEME404.TierCreateParam[] memory _tierParams = new IMEME404.TierCreateParam[](2);
+        _tierParams[0] = IMEME404.TierCreateParam(
+            "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 1, 1, true
+        );
+        _tierParams[1] = IMEME404.TierCreateParam(
+            "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 5, 1, 2, 20000, false
+        );
+        vm.expectRevert(IncorrectOrder.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 

@@ -44,6 +44,8 @@ contract MEME404 is IMEME404, MEME20 {
     error NotEnoughNFTs();
     /// @dev When a NFT sequence is followed by a fungible one
     error FungibleAfterNonFungible();
+    /// @dev When a NFT sequence has nftId that is less than the previous one or is the same but isFungible is different
+    error IncorrectOrder();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -129,6 +131,11 @@ contract MEME404 is IMEME404, MEME20 {
             });
             if (i > 0) {
                 Tier memory previousTier = _tiers[i];
+                if (_tierParams[i - 1].nftId > _tierParams[i].nftId) revert IncorrectOrder();
+                if (
+                    _tierParams[i - 1].nftId == _tierParams[i].nftId
+                        && _tierParams[i - 1].isFungible != _tierParams[i].isFungible
+                ) revert IncorrectOrder();
                 if (previousTier.amountThreshold >= tier.amountThreshold) revert AmountThreshold();
                 if (!previousTier.isFungible && tier.isFungible) revert FungibleAfterNonFungible();
                 if (existingNFTAddr != address(0) && previousTier.upperId >= tier.lowerId) {
