@@ -59,12 +59,12 @@ contract TruglyVesting is ITruglyVesting, Owned {
 
     /// @inheritdoc ITruglyVesting
     function startVesting(address token, address creator, uint64 duration, uint64 cliff) external {
+        if (token == address(0)) revert VestingTokenCannotBeAddressZero();
         if (ERC20(token).balanceOf(address(this)) == 0) return;
 
         if (!_memeceptionContracts[msg.sender]) revert NotMemeception();
         if (duration == 0) revert VestingDurationCannotBeZero();
         if (creator == address(0)) revert VestingCreatorCannotBeAddressZero();
-        if (token == address(0)) revert VestingTokenCannotBeAddressZero();
         if (cliff > duration) revert VestingCliffCannotBeGreaterThanDuration();
 
         _vestingInfo[token] = VestingInfo({

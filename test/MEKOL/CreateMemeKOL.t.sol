@@ -87,59 +87,6 @@ contract CreateMemeKOLTest is DeployersME20 {
             createMemeParams.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
             "vestingAllocSupply"
         );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).totalAllocation,
-            createMemeParams.vestingAllocBps == 0 ? 0 : vestingAllocSupply,
-            "Vesting.totalAllocation"
-        );
-        assertEq(memeceptionContract.vesting().getVestingInfo(address(memeToken)).released, 0, "Vesting.released");
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).start,
-            createMemeParams.vestingAllocBps == 0 ? 0 : startAt,
-            "Vesting.start"
-        );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).duration,
-            createMemeParams.vestingAllocBps == 0 ? 0 : Constant.VESTING_DURATION,
-            "Vesting.duration"
-        );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).cliff,
-            createMemeParams.vestingAllocBps == 0 ? 0 : Constant.VESTING_CLIFF,
-            "Vesting.cliff"
-        );
-        assertEq(
-            memeceptionContract.vesting().getVestingInfo(address(memeToken)).creator,
-            createMemeParams.vestingAllocBps == 0 ? address(0) : MEMECREATOR,
-            "Vesting.creator"
-        );
-
-        assertEq(memeceptionContract.vesting().releasable(address(memeToken)), 0, "Vesting.releasable");
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp)),
-            0,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + Constant.VESTING_CLIFF - 1)),
-            0,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + 91.25 days)),
-            vestingAllocSupply / 8,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + 365 days)),
-            vestingAllocSupply / 2,
-            "Vesting.vestedAmount"
-        );
-        assertEq(
-            memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(startAt + 365 days * 2)),
-            vestingAllocSupply,
-            "Vesting.vestedAmount"
-        );
     }
 
     function test_createMemeKOL_success_simple() public {
