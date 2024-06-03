@@ -149,13 +149,13 @@ contract MEME404 is IMEME404, MEME20 {
     /// @dev Transfer of memecoins
     /// @dev If balance of sender or recipient changes tier, mint or burn NFTs accordingly
     function transfer(address to, uint256 amount) public override returns (bool) {
-        _TierEligibility memory beforeTierFrom = _getTierEligility(msg.sender);
-        _TierEligibility memory beforeTierTo = _getTierEligility(to);
+        _TierEligibility memory beforeTierFrom = _getTierEligibility(msg.sender);
+        _TierEligibility memory beforeTierTo = _getTierEligibility(to);
 
         bool success = super.transfer(to, amount);
 
-        _TierEligibility memory afterTierFrom = _getTierEligility(msg.sender);
-        _TierEligibility memory afterTierTo = _getTierEligility(to);
+        _TierEligibility memory afterTierFrom = _getTierEligibility(msg.sender);
+        _TierEligibility memory afterTierTo = _getTierEligibility(to);
 
         // handle burn
         _burnTier(msg.sender, beforeTierFrom, afterTierFrom, 0);
@@ -170,13 +170,13 @@ contract MEME404 is IMEME404, MEME20 {
     /// @dev Transfer of memecoins
     /// @dev If balance of sender or recipient changes tier, mint or burn NFTs accordingly
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-        _TierEligibility memory beforeTierFrom = _getTierEligility(from);
-        _TierEligibility memory beforeTierTo = _getTierEligility(to);
+        _TierEligibility memory beforeTierFrom = _getTierEligibility(from);
+        _TierEligibility memory beforeTierTo = _getTierEligibility(to);
 
         bool success = super.transferFrom(from, to, amount);
 
-        _TierEligibility memory afterTierFrom = _getTierEligility(from);
-        _TierEligibility memory afterTierTo = _getTierEligility(to);
+        _TierEligibility memory afterTierFrom = _getTierEligibility(from);
+        _TierEligibility memory afterTierTo = _getTierEligibility(to);
 
         _burnTier(from, beforeTierFrom, afterTierFrom, 0);
         _burnTier(to, beforeTierTo, afterTierTo, 0);
@@ -215,7 +215,7 @@ contract MEME404 is IMEME404, MEME20 {
         Tier memory tier = _getTierFromNftTokenId(msg.sender, nftTokenId);
         if (tier.nft == address(0)) revert OnlyNFT();
 
-        _TierEligibility memory beforeTierTo = _getTierEligility(to);
+        _TierEligibility memory beforeTierTo = _getTierEligibility(to);
 
         balanceOf[from] -= tier.amountThreshold;
 
@@ -225,8 +225,8 @@ contract MEME404 is IMEME404, MEME20 {
             balanceOf[to] += tier.amountThreshold;
         }
 
-        _TierEligibility memory afterTierFrom = _getTierEligility(from);
-        _TierEligibility memory afterTierTo = _getTierEligility(to);
+        _TierEligibility memory afterTierFrom = _getTierEligibility(from);
+        _TierEligibility memory afterTierTo = _getTierEligibility(to);
 
         /// @dev NFT has already been transferred
         /// Need to check if the user has decreased in tier and mint the NFTs
@@ -340,7 +340,7 @@ contract MEME404 is IMEME404, MEME20 {
     /// @dev Get the tier eligibility of a user based on their memecoin balance
     /// @param _owner Address of the user
     /// @return _TierEligibility
-    function _getTierEligility(address _owner) internal view returns (_TierEligibility memory) {
+    function _getTierEligibility(address _owner) internal view returns (_TierEligibility memory) {
         if (_owner != address(0)) {
             uint256 balance = balanceOf[_owner];
             for (uint256 i = _tierCount; i > 0; i--) {
