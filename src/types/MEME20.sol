@@ -78,6 +78,11 @@ contract MEME20 is ERC20 {
         _exemptFees[address(0)] = true;
         _exemptFees[_creator] = true;
 
+        emit ExemptAdded(_memeception);
+        emit ExemptAdded(address(this));
+        emit ExemptAdded(address(0));
+        emit ExemptAdded(_creator);
+
         // Mint to Launchpad
         _mint(_memeception, MEME20Constant.TOKEN_TOTAL_SUPPLY);
     }
@@ -182,6 +187,9 @@ contract MEME20 is ERC20 {
 
         _exemptFees[_pTreasury] = true;
         _exemptFees[_protocolAddr] = true;
+
+        emit ExemptAdded(_pTreasury);
+        emit ExemptAdded(_protocolAddr);
 
         // Uniswap
         for (uint256 i = 0; i < _routers.length; i++) {
