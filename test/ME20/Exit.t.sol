@@ -71,7 +71,7 @@ contract ExitMemecoinTest is DeployersME20 {
         vm.stopPrank();
 
         assertEq(memeToken.balanceOf(address(ALICE)), 0, "#3");
-        assertApproxEq(memeToken.balanceOf(address(memeception)), Constant.TOKEN_MEMECEPTION_SUPPLY * 2, 0.01e18,"#4");
+        assertApproxEq(memeToken.balanceOf(address(memeception)), Constant.TOKEN_MEMECEPTION_SUPPLY * 2, 0.01e18, "#4");
         assertEq(address(memeception).balance, 0, "#5");
         assertEq(ALICE.balance, createMemeParams.targetETH / 4, "#6");
     }
