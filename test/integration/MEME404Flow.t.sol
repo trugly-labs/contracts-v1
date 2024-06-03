@@ -7,7 +7,7 @@ import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 
-contract MEME404TransferTest is DeployersME404 {
+contract MEME404FlowTest is DeployersME404 {
     using LibString for uint256;
 
     address BOB = makeAddr("bob");
@@ -49,7 +49,7 @@ contract MEME404TransferTest is DeployersME404 {
     /// @notice Burn list empty
     /// @notice Available unminted tokens
     /// @notice Actions:
-    /// - Janet (Tier 4 - 1 ether / #2 #3 .. #21) -> 1 Ether -> Charlie (Tier 3 + Tier 2 + 1 ether / ERC721 #1)
+    /// - Janet (Tier 4 - 1 ether / #2 #3 .. #20) -> 1 Ether -> Charlie (Tier 3 + Tier 2 + 1 ether / ERC721 #1)
     /// - Charlie (Tier 2 + 1 ether / ERC1155 #2) -> ERC721 #1 -> ALICE (Tier 3 + Tier 2 + Tier 1 / ERC721 #1)
     /// - Charlie (Tier 2 / ERC1155 #2) -> 1 ether -> JANET (Tier 4 / ERC721 #2002)
     /// - Charlie (0 / 0) -> ERC1155 #2 -> JANET (Tier 4 + Tier2 / ERC721 #2002)
@@ -70,8 +70,8 @@ contract MEME404TransferTest is DeployersME404 {
         vm.stopPrank();
 
         // Assert Sender
-        uint256[] memory senderTokenIds = new uint256[](20);
-        for (uint256 i = 0; i < 20; i++) {
+        uint256[] memory senderTokenIds = new uint256[](19);
+        for (uint256 i = 0; i < senderTokenIds.length; i++) {
             senderTokenIds[i] = i + 2;
         }
         assertMEME404(JANET, getAmountThreshold(4) - 1 ether, TEST);
@@ -90,7 +90,7 @@ contract MEME404TransferTest is DeployersME404 {
         burnTokenIds[0] = 2001;
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, burnTokenIds, 2002, TEST);
 
         /// - Charlie (Tier 2 + 1 ether / ERC1155 #2) -> ERC721 #1 -> ALICE (Tier 3 + Tier 2 + Tier 1 / ERC721 #1)
@@ -121,7 +121,7 @@ contract MEME404TransferTest is DeployersME404 {
         burnTokenIds[0] = 2001;
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, burnTokenIds, 2002, TEST);
 
         /// - Charlie (Tier 2 / ERC1155 #2) -> 1 ether -> JANET (Tier 4 / ERC721 #2002)
@@ -147,19 +147,19 @@ contract MEME404TransferTest is DeployersME404 {
         assertMEME721(JANET, receiverTokenIds, TEST);
 
         // Assert MEME404 Burn and Unminted
-        burnTokenIds = new uint256[](20);
-        for (uint256 i = 0; i < 20; i++) {
+        burnTokenIds = new uint256[](19);
+        for (uint256 i = 0; i < burnTokenIds.length; i++) {
             burnTokenIds[i] = burnTokenIds.length + 1 - i;
         }
         uint256[] memory HTburnTokenIds = new uint256[](1);
         HTburnTokenIds[0] = 2001;
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2003, TEST);
 
         /// - Charlie (0 / 0) -> ERC1155 #2 -> JANET (Tier 4 + Tier2 / ERC721 #2002)
-        TEST = "Flow #0 - Charlie -> Janet";
+        TEST = "Flow #0 - Charlie -> Janet #2";
 
         vm.expectRevert();
         meme1155.safeTransferFrom(CHARLIE, JANET, 2, 1, "");
@@ -181,15 +181,15 @@ contract MEME404TransferTest is DeployersME404 {
         assertMEME721(JANET, receiverTokenIds, TEST);
 
         // Assert MEME404 Burn and Unminted
-        burnTokenIds = new uint256[](20);
-        for (uint256 i = 0; i < 20; i++) {
+        burnTokenIds = new uint256[](19);
+        for (uint256 i = 0; i < burnTokenIds.length; i++) {
             burnTokenIds[i] = burnTokenIds.length + 1 - i;
         }
         HTburnTokenIds = new uint256[](1);
         HTburnTokenIds[0] = 2001;
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2003, TEST);
 
         /// - BACK AND FORTH: Janet -> ERC721 #2002 -> BOB (Tier 1 * 10)
@@ -211,7 +211,7 @@ contract MEME404TransferTest is DeployersME404 {
             // Assert MEME404 Burn and Unminted
             assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
             assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-            assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+            assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
             assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2003, TEST);
 
             meme721.transferFrom(BOB, JANET, 2002);
@@ -230,7 +230,7 @@ contract MEME404TransferTest is DeployersME404 {
             // Assert MEME404 Burn and Unminted
             assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
             assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-            assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+            assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
             assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2003, TEST);
         }
 
@@ -260,11 +260,11 @@ contract MEME404TransferTest is DeployersME404 {
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2101, TEST);
 
         /// - Mint Tier 4 * 2 -> BOB (Tier 1 * 10 + Tier 4 * 2)
-        TEST = "Flow #0 -Mint Tier 4 * 2 -> BOB (Tier 1 * 10 + Tier 4 * 2)";
+        TEST = "Flow #0: Mint Tier 4 * 2 -> BOB (Tier 1 * 10 + Tier 4 * 2)";
         initWalletWithTokens(BOB, getAmountThreshold(4) * 2);
         // Assert RECEIVER
         receiverTokenIds = new uint256[](2);
@@ -280,11 +280,11 @@ contract MEME404TransferTest is DeployersME404 {
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2101, TEST);
 
         /// - Mint Tier 4 * 2 -> ALICE (Tier 4 * 2 + Tier 3 + Tier 2 + Tier 1)
-        TEST = "Flow #0 -Mint Tier 4 * 2 -> ALICE (Tier 4 * 2 + Tier 3 + Tier 2 + Tier 1)";
+        TEST = "Flow #0: Mint Tier 4 * 2 -> ALICE (Tier 4 * 2 + Tier 3 + Tier 2 + Tier 1)";
         initWalletWithTokens(ALICE, getAmountThreshold(4) * 2);
         // Assert RECEIVER
         receiverTokenIds = new uint256[](2);
@@ -298,7 +298,7 @@ contract MEME404TransferTest is DeployersME404 {
         assertMEME1155(ALICE, 1, 0, TEST);
         assertMEME721(ALICE, receiverTokenIds, TEST);
 
-        burnTokenIds = new uint256[](21);
+        burnTokenIds = new uint256[](20);
         for (uint256 i = 0; i < burnTokenIds.length; i++) {
             burnTokenIds[i] = burnTokenIds.length - i;
         }
@@ -308,7 +308,7 @@ contract MEME404TransferTest is DeployersME404 {
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 22, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2101, TEST);
     }
 }

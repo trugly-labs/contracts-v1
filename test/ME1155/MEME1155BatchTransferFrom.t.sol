@@ -7,6 +7,7 @@ import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 import {IMEME404} from "../../src/interfaces/IMEME404.sol";
+import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 
 contract MEME1155BatchTransferFromTest is DeployersME404 {
     using LibString for uint256;
@@ -181,12 +182,12 @@ contract MEME1155BatchTransferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
     }
 
-    /// @notice Scenario #13: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 ... #20)
+    /// @notice Scenario #13: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 ... #19)
     /// @notice sHTBurn []
     /// @notice HTBurn []
     /// @notice Unminted.length = 0
     /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 4 - 1 + Tier 2 / ERC721 #2001)
-    /// Expected: Tier 3 Burn: [#20 .. #1]
+    /// Expected: Tier 3 Burn: [#19 .. #1]
     /// Expected: Tier 4 Burn: []
     function test_1155safeBatchTransferFromScenario13_success() public {
         // Init Test
@@ -209,13 +210,14 @@ contract MEME1155BatchTransferFromTest is DeployersME404 {
         assertMEME721(RECEIVER, receiverTokenIds, TEST);
 
         // Assert MEME404 Burn and Unminted
-        uint256[] memory burnTokenIds = new uint256[](20);
+        uint256 expectedBurnLength = (getAmountThreshold(4) - 1) / getAmountThreshold(3);
+        uint256[] memory burnTokenIds = new uint256[](expectedBurnLength);
         for (uint256 i = 0; i < burnTokenIds.length; i++) {
             burnTokenIds[i] = burnTokenIds.length - i;
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, expectedBurnLength + 1, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2002, TEST);
     }
 
@@ -433,12 +435,12 @@ contract MEME1155BatchTransferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2001, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
     }
-    /// @notice Scenario #28: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 .. #20)
+    /// @notice Scenario #28: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 .. #19)
     /// @notice sHTBurn []
     /// @notice HTBurn [ERC721 #2001 #2003 .. #2097 #2099]
     /// @notice Unminted.length = 0
     /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 4 - 1 + Tier 2 / ERC721 #2099)
-    /// Expected: Tier 3 Burn: [#20 .. #1]
+    /// Expected: Tier 3 Burn: [#19 .. #1]
     /// Expected: Tier 4 Burn: [#2001, #2003 .. #2097]
 
     function test_1155safeBatchTransferFromScenario28_success() public {
@@ -470,7 +472,8 @@ contract MEME1155BatchTransferFromTest is DeployersME404 {
         assertMEME721(RECEIVER, receiverTokenIds, TEST);
 
         // Assert MEME404 Burn and Unminted
-        uint256[] memory burnTokenIds = new uint256[](20);
+        uint256 expectedBurnLength = (getAmountThreshold(4) - 1) / getAmountThreshold(3);
+        uint256[] memory burnTokenIds = new uint256[](expectedBurnLength);
         for (uint256 i = 0; i < burnTokenIds.length; i++) {
             burnTokenIds[i] = burnTokenIds.length - i;
         }
@@ -482,7 +485,7 @@ contract MEME1155BatchTransferFromTest is DeployersME404 {
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 21, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, expectedBurnLength + 1, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2101, TEST);
     }
 
