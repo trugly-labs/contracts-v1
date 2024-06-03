@@ -374,7 +374,6 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @inheritdoc ITruglyMemeception
     function exitMemecoin(address memeToken, uint256 amountMeme) external nonReentrant {
         Memeception memory memeception = memeceptions[memeToken];
-        if (memeception.startAt == 0) revert InvalidMemeAddress();
         if (memeception.endedAt > 0) revert MemeLaunched();
 
         uint256 price = _getPricePerETH(memeception);
