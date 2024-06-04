@@ -350,6 +350,7 @@ contract DeployersME404 is Test, TestHelpers {
         string memory test
     ) public {
         MockMEME404.Tier memory tier = memeToken.getTier(_tierId);
+        MockMEME721 _meme721 = MockMEME721(tier.nft);
         assertEq(tier.burnLength, _expectedBurnIds.length, string.concat(test, ": Burn Length"));
         for (uint256 i = 1; i <= _expectedBurnIds.length; i++) {
             assertEq(
@@ -358,7 +359,7 @@ contract DeployersME404 is Test, TestHelpers {
                 string.concat(test, ": Burn Token Id: ", _expectedBurnIds[i - 1].toString())
             );
 
-            assertEq(meme721.getIndexForToken(_expectedBurnIds[i - 1]), 0, string.concat(test, ": getIndexForToken"));
+            assertEq(_meme721.getIndexForToken(_expectedBurnIds[i - 1]), 0, string.concat(test, ": getIndexForToken"));
         }
         assertEq(
             memeToken.nextBurnId(_tierId),

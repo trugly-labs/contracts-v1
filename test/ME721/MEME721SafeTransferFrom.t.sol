@@ -7,6 +7,7 @@ import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 import {IMEME404} from "../../src/interfaces/IMEME404.sol";
+import {MEME721} from "../../src/types/MEME721.sol";
 
 contract MEME721SafeTransferFromTest is DeployersME404 {
     using LibString for uint256;
@@ -1448,6 +1449,124 @@ contract MEME721SafeTransferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 39, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 0, TEST);
+    }
+
+    /// @notice Scenario 44: user already owns the NFT in tier 3 and then receives the NFT in tier 4,
+    /// @notice Wallet A (Tier 4 / #2001) -> #2001 -> Wallet B (Tier 3, #1)
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 3 + Tier 4 / ERC721 #2001)
+    /// Expect Tier 3 Burn: [#1]
+    /// Expect Tier 4 Burn: []
+    function test_721safeTransferFromScenario44_success() public {
+        string memory TEST = "Scenario 44";
+        initWalletWithTokens(SENDER, getAmountThreshold(4));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(3));
+
+        meme721.safeTransferFrom(SENDER, RECEIVER, 2001);
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 2001;
+        assertMEME404(RECEIVER, getAmountThreshold(3) + getAmountThreshold(4), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](1);
+        burnTokenIds[0] = 1;
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2002, TEST);
+    }
+
+    /// @notice Scenario 45: user already owns the NFT in tier 2 and then receives the NFT in tier 3,
+    /// @notice Wallet A (Tier 3 / #1) -> #1 -> Wallet B (Tier 2, ERC1155 #2)
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 2 + Tier 3 / ERC721 #1)
+    /// Expect Tier 3 Burn: []
+    /// Expect Tier 4 Burn: []
+    function test_721safeTransferFromScenario45_success() public {
+        string memory TEST = "Scenario 45";
+        initWalletWithTokens(SENDER, getAmountThreshold(3));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(2));
+
+        meme721.safeTransferFrom(SENDER, RECEIVER, 1);
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 1;
+        assertMEME404(RECEIVER, getAmountThreshold(2) + getAmountThreshold(3), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario 46: user already owns the NFT in tier 3 and then receives the NFT in tier 4 (Diff NFT Collection),
+    /// @notice Wallet A (Tier 4 / #1) -> #1 -> Wallet B (Tier 3, ERC721 #1)
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 3 + Tier 4 / ERC721 #1)
+    /// Expect Tier 3 Burn: [#1]
+    /// Expect Tier 4 Burn: []
+    function test_721safeTransferFromScenario46_success() public {
+        string memory TEST = "Scenario 46";
+
+        tierParams[tierParams.length - 1] = IMEME404.TierCreateParam({
+            baseURL: "https://super.elite.com/",
+            nftName: "SUPER ELITE NFT",
+            nftSymbol: "ELITE",
+            amountThreshold: 100_000_010 ether,
+            nftId: 3,
+            lowerId: 1,
+            upperId: 100,
+            isFungible: false
+        });
+        createMemeParams.symbol = "SUPERELITEMEME";
+        initCreateMeme404();
+        initWalletWithTokens(SENDER, getAmountThreshold(4));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(3));
+
+        MEME721 tier4NFT = MEME721(memeToken.getTier(4).nft);
+        MEME721 tier3NFT = MEME721(memeToken.getTier(3).nft);
+
+        tier4NFT.safeTransferFrom(SENDER, RECEIVER, 1);
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertEq(tier3NFT.balanceOf(SENDER), 0, "Sender Tier 3 NFT Balance");
+        assertEq(tier4NFT.balanceOf(SENDER), 0, "Sender Tier 4 NFT Balance");
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 1;
+        assertMEME404(RECEIVER, getAmountThreshold(3) + getAmountThreshold(4), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+
+        assertEq(tier3NFT.balanceOf(RECEIVER), 0, "Sender Tier 3 NFT Balance");
+        assertEq(tier4NFT.balanceOf(RECEIVER), 1, "Receiver Tier 4 NFT Balance");
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+        assertEq(tier3NFT.nextOwnedTokenId(RECEIVER), 0, string.concat(TEST, ": nextOwnedTokenId"));
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](1);
+        burnTokenIds[0] = 1;
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2, TEST);
     }
 
     function test_721safeTransferFrom2HTHaveSelector() public {
