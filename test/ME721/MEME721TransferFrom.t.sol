@@ -7,6 +7,7 @@ import {ContractWithoutSelector} from "../utils/ContractWithoutSelector.sol";
 import {LibString} from "@solmate/utils/LibString.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 import {IMEME404} from "../../src/interfaces/IMEME404.sol";
+import {MEME721} from "../../src/types/MEME721.sol";
 
 contract MEME721TansferFromTest is DeployersME404 {
     error PoolNotInitialized();
@@ -1507,6 +1508,60 @@ contract MEME721TansferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario 46: user already owns the NFT in tier 3 and then receives the NFT in tier 4 (Diff NFT Collection),
+    /// @notice Wallet A (Tier 4 / #1) -> #1 -> Wallet B (Tier 3, ERC721 #1)
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 3 + Tier 4 / ERC721 #1)
+    /// Expect Tier 3 Burn: [#1]
+    /// Expect Tier 4 Burn: []
+    function test_721transferFromScenario46_success() public {
+        string memory TEST = "Scenario 46";
+
+        tierParams[tierParams.length - 1] = IMEME404.TierCreateParam({
+            baseURL: "https://super.elite.com/",
+            nftName: "SUPER ELITE NFT",
+            nftSymbol: "ELITE",
+            amountThreshold: 100_000_010 ether,
+            nftId: 3,
+            lowerId: 1,
+            upperId: 100,
+            isFungible: false
+        });
+        createMemeParams.symbol = "SUPERELITEMEME";
+        initCreateMeme404();
+        initWalletWithTokens(SENDER, getAmountThreshold(4));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(3));
+
+        MEME721 tier4NFT = MEME721(memeToken.getTier(4).nft);
+        MEME721 tier3NFT = MEME721(memeToken.getTier(3).nft);
+
+        tier4NFT.transferFrom(SENDER, RECEIVER, 1);
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertEq(tier3NFT.balanceOf(SENDER), 0, "Sender Tier 3 NFT Balance");
+        assertEq(tier4NFT.balanceOf(SENDER), 0, "Sender Tier 4 NFT Balance");
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 1;
+        assertMEME404(RECEIVER, getAmountThreshold(3) + getAmountThreshold(4), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+
+        assertEq(tier3NFT.balanceOf(RECEIVER), 0, "Sender Tier 3 NFT Balance");
+        assertEq(tier4NFT.balanceOf(RECEIVER), 1, "Receiver Tier 4 NFT Balance");
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+        assertEq(tier3NFT.nextOwnedTokenId(RECEIVER), 0, string.concat(TEST, ": nextOwnedTokenId"));
+
+        // Assert MEME404 Burn and Unminted
+        uint256[] memory burnTokenIds = new uint256[](1);
+        burnTokenIds[0] = 1;
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2, TEST);
     }
 
     function test_721transferFrom2HTHaveSelector() public {

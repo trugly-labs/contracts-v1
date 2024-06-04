@@ -255,7 +255,7 @@ contract MEME404 is IMEME404, MEME20, ReentrancyGuard {
         }
 
         if (afterTierTo.tierId != beforeTierTo.tierId) {
-            if (tier.nft == afterTierTo.nft) {
+            if (tier.nft == beforeTierTo.nft) {
                 _burnTier(to, beforeTierTo, afterTierTo, 1);
             } else {
                 _burnTier(to, beforeTierTo, afterTierTo, 0);
@@ -314,6 +314,7 @@ contract MEME404 is IMEME404, MEME20, ReentrancyGuard {
     /// @param _owner Address of the user
     /// @param _beforeTierEligibility Before Transfer: Tier + NFT balance
     /// @param _afterTierEligibility Current Tier + NFT balance
+    /// @param _incrementFromNFTTransfer Balance is incremented from transferFromNFT
     function _burnTier(
         address _owner,
         _TierEligibility memory _beforeTierEligibility,
