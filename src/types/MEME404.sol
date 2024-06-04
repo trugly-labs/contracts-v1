@@ -35,7 +35,7 @@ contract MEME404 is IMEME404, MEME20 {
     /// @dev When a non-fungible sequence has incorrect upperId and lowerId
     error NonFungibleIds();
     /// @dev tokenId is 0
-    error INvalidTierParamsZeroId();
+    error InvalidTierParamsZeroId();
     /// @dev Only NFT collection can call this function
     error OnlyNFT();
     /// @dev When the contract is already initialized
@@ -101,7 +101,7 @@ contract MEME404 is IMEME404, MEME20 {
         if (_tierParams.length > 9) revert MaxTiers();
 
         for (uint256 i = 0; i < _tierParams.length; i++) {
-            if (_tierParams[i].lowerId == 0) revert INvalidTierParamsZeroId();
+            if (_tierParams[i].lowerId == 0) revert InvalidTierParamsZeroId();
             if (_tierParams[i].amountThreshold == 0 || _tierParams[i].amountThreshold > totalSupply) {
                 revert AmountThreshold();
             }
