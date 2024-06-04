@@ -11,6 +11,7 @@ contract CreateMemeTest is DeployersME20 {
     error VestingAllocTooHigh();
     error ZeroAmount();
     error MaxTargetETH();
+    error Paused();
 
     string constant symbol = "MEME";
 
@@ -90,6 +91,15 @@ contract CreateMemeTest is DeployersME20 {
     function test_createMeme_fail_max_targetETH() public {
         createMemeParams.targetETH = Constant.MAX_TARGET_ETH + 1;
         vm.expectRevert(MaxTargetETH.selector);
+        memeception.createMeme(createMemeParams);
+    }
+
+    function test_createMeme_fail_paused() public {
+        vm.startPrank(memeceptionBaseTest.MULTISIG());
+        memeception.setPaused(true);
+        vm.stopPrank();
+
+        vm.expectRevert(Paused.selector);
         memeception.createMeme(createMemeParams);
     }
 }
