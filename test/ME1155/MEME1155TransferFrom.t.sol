@@ -349,7 +349,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
             amountThreshold: getAmountThreshold(2) + 20,
             nftId: 2,
             lowerId: 2001,
-            upperId: 80000000100,
+            upperId: type(uint32).max - 1,
             isFungible: false
         });
         createMemeParams.symbol = "CUSTOMMEME404";
