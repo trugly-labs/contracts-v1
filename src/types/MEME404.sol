@@ -47,6 +47,8 @@ contract MEME404 is IMEME404, MEME20, ReentrancyGuard {
     error FungibleAfterNonFungible();
     /// @dev When a NFT sequence has nftId that is less than the previous one or is the same but isFungible is different
     error IncorrectOrder();
+    /// @dev Thrown when the upperId is greater than the max uint32 value
+    error MaxUpperId();
 
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
@@ -106,6 +108,8 @@ contract MEME404 is IMEME404, MEME20, ReentrancyGuard {
             if (_tierParams[i].amountThreshold == 0 || _tierParams[i].amountThreshold > totalSupply) {
                 revert AmountThreshold();
             }
+            if (_tierParams[i].upperId >= type(uint32).max) revert MaxUpperId();
+
             if (_tierParams[i].isFungible) {
                 if (_tierParams[i].lowerId != _tierParams[i].upperId) revert FungibleThreshold();
             } else {
