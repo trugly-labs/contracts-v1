@@ -474,7 +474,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
         }
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
         assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
-        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, expectedBurnLength+1, TEST);
+        assertMEME404BurnAndUmintedForTier(3, burnTokenIds, expectedBurnLength + 1, TEST);
         assertMEME404BurnAndUmintedForTier(4, HTburnTokenIds, 2101, TEST);
     }
 
@@ -506,6 +506,35 @@ contract MEME1155TansferFromTest is DeployersME404 {
         assertMEME404(treasury, getAmountThreshold(1), TEST);
         assertMEME1155(treasury, 1, 0, TEST);
         assertMEME721(treasury, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 1, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
+    /// @notice Scenario 30: user already owns the NFT in tier 1 and then receives the NFT in tier 2
+    /// @notice Wallet A (Tier 2 / #2) -> ERC1155 #2 -> Wallet B (Tier 1, #1)
+    /// Expected: Wallet A (0 / 0) -> Treasury (Tier 1 + Tier 2 / #2)
+    /// Expect Tier 3 Burn: []
+    /// Expect Tier 4 Burn: []
+    function test_1155transferFromScenario30_success() public {
+        string memory TEST = "Scenario 30";
+        initWalletWithTokens(SENDER, getAmountThreshold(2));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(1));
+
+        meme1155.safeTransferFrom(SENDER, RECEIVER, 2, 1, "");
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 2, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        assertMEME404(RECEIVER, getAmountThreshold(1) + getAmountThreshold(2), TEST);
+        assertMEME1155(RECEIVER, 2, 1, TEST);
+        assertMEME721(RECEIVER, EMPTY_UINT_ARRAY, TEST);
 
         // Assert MEME404 Burn and Unminted
         assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
