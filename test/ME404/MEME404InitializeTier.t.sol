@@ -22,7 +22,7 @@ contract MEME404InitializerTest is DeployersME404 {
     error NonFungibleIds();
 
     /// @dev tokenId is 0
-    error INvalidTierParamsZeroId();
+    error InvalidTierParamsZeroId();
 
     /// @dev When the contract is already initialized
     error TiersAlreadyInitialized();
@@ -192,7 +192,7 @@ contract MEME404InitializerTest is DeployersME404 {
         _tierParams[0] = IMEME404.TierCreateParam(
             "https://nft.com/", "NAME", "SYMBOL", MEME20Constant.TOKEN_TOTAL_SUPPLY / 10, 1, 0, 15, false
         );
-        vm.expectRevert(INvalidTierParamsZeroId.selector);
+        vm.expectRevert(InvalidTierParamsZeroId.selector);
         meme404.initializeTiers(_tierParams, exemptAddresses);
     }
 
