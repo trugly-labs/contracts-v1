@@ -9,6 +9,7 @@ import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CollectFees is DeployersME20 {
     error InvalidMemeAddress();
+    error Paused();
 
     uint256 amountIn = 0.01 ether;
 
@@ -69,5 +70,15 @@ contract CollectFees is DeployersME20 {
         uint256 beforeBal = memeToken.balanceOf(treasury);
         memeceptionBaseTest.collectFees(address(memeToken));
         assertEq(memeToken.balanceOf(treasury), beforeBal + 29700000000000000000000, "treasuryBalance");
+    }
+
+    function test_collectFee_fail_paused() public {
+        initSwapFromSwapRouter(amountIn, address(this));
+        vm.startPrank(memeceptionBaseTest.MULTISIG());
+        memeception.setPaused(true);
+        vm.stopPrank();
+
+        vm.expectRevert(Paused.selector);
+        memeception.collectFees(address(memeToken));
     }
 }

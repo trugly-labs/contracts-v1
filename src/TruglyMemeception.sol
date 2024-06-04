@@ -100,6 +100,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @dev Thrown when the Locker fee structure is invalid
     error InvalidLockerFeeStructure();
 
+    /// @dev Thrown when the action is paused
+    error Paused();
+
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -136,6 +139,13 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
     address public immutable factory;
 
+    bool internal _paused;
+
+    modifier whenNotPaused() {
+        if (_paused) revert Paused();
+        _;
+    }
+
     constructor(address _vesting, address _treasury, address _multisig, address _factory) Owned(_multisig) {
         if (_vesting == address(0) || _treasury == address(0) || _factory == address(0) || _multisig == address(0)) {
             revert ZeroAddress();
@@ -150,7 +160,12 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     }
 
     /// @inheritdoc ITruglyMemeception
-    function createMeme(MemeceptionCreationParams calldata params) external nonReentrant returns (address, address) {
+    function createMeme(MemeceptionCreationParams calldata params)
+        external
+        whenNotPaused
+        nonReentrant
+        returns (address, address)
+    {
         _verifyCreateMeme(params);
         address memeToken =
             ITruglyFactory(factory).createMeme20(params.name, params.symbol, params.creator, params.salt);
@@ -164,6 +179,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     function createMemeKOL(MemeceptionCreationParams calldata params)
         external
         nonReentrant
+        whenNotPaused
         returns (address, address)
     {
         _verifyCreateMeme(params);
@@ -179,6 +195,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     function createMeme404(MemeceptionCreationParams calldata params, IMEME404.TierCreateParam[] calldata tiers)
         external
         nonReentrant
+        whenNotPaused
         returns (address, address)
     {
         _verifyCreateMeme(params);
@@ -255,7 +272,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     }
 
     /// @inheritdoc ITruglyMemeception
-    function buyMemecoin(address memeToken) external payable nonReentrant {
+    function buyMemecoin(address memeToken) external payable nonReentrant whenNotPaused {
         Memeception memory memeception = memeceptions[memeToken];
         if (msg.value == 0) revert ZeroAmount();
         if (msg.value > _getMaxBuyAmountETH(memeToken)) revert MaxTargetETH();
@@ -384,7 +401,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     }
 
     /// @inheritdoc ITruglyMemeception
-    function collectFees(address memeToken) external nonReentrant {
+    function collectFees(address memeToken) external nonReentrant whenNotPaused {
         if (memeceptions[memeToken].tokenId == 0) revert InvalidMemeAddress();
         (uint256 amount0, uint256 amount1, uint256 fee0, uint256 fee1) =
             uncxLocker.collect(memeceptions[memeToken].tokenId, treasury, type(uint128).max, type(uint128).max);
@@ -445,5 +462,12 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         if (_newTreasury == address(0)) revert ZeroAddress();
         emit TreasuryUpdated(treasury, _newTreasury);
         treasury = _newTreasury;
+    }
+
+    /// @notice Only the owner can call this function
+    /// @dev Pause the contract
+    /// @param _isPaused The new paused state
+    function setPaused(bool _isPaused) external onlyOwner {
+        _paused = _isPaused;
     }
 }
