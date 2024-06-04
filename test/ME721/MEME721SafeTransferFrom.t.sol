@@ -1483,6 +1483,37 @@ contract MEME721SafeTransferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2002, TEST);
     }
 
+    /// @notice Scenario 45: user already owns the NFT in tier 2 and then receives the NFT in tier 3,
+    /// @notice Wallet A (Tier 3 / #1) -> #1 -> Wallet B (Tier 2, ERC1155 #2)
+    /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 2 + Tier 3 / ERC721 #1)
+    /// Expect Tier 3 Burn: []
+    /// Expect Tier 4 Burn: []
+    function test_721safeTransferFromScenario45_success() public {
+        string memory TEST = "Scenario 45";
+        initWalletWithTokens(SENDER, getAmountThreshold(3));
+        initWalletWithTokens(RECEIVER, getAmountThreshold(2));
+
+        meme721.safeTransferFrom(SENDER, RECEIVER, 1);
+
+        // Assert Sender
+        assertMEME404(SENDER, 0, TEST);
+        assertMEME1155(SENDER, 1, 0, TEST);
+        assertMEME721(SENDER, EMPTY_UINT_ARRAY, TEST);
+
+        // Assert RECEIVER
+        uint256[] memory receiverTokenIds = new uint256[](1);
+        receiverTokenIds[0] = 1;
+        assertMEME404(RECEIVER, getAmountThreshold(2) + getAmountThreshold(3), TEST);
+        assertMEME1155(RECEIVER, 1, 0, TEST);
+        assertMEME721(RECEIVER, receiverTokenIds, TEST);
+
+        // Assert MEME404 Burn and Unminted
+        assertMEME404BurnAndUmintedForTier(1, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(2, EMPTY_UINT_ARRAY, 0, TEST);
+        assertMEME404BurnAndUmintedForTier(3, EMPTY_UINT_ARRAY, 2, TEST);
+        assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
+    }
+
     function test_721safeTransferFrom2HTHaveSelector() public {
         string memory TEST = "2HTHaveSelector";
         uint256 TIER = 3;
