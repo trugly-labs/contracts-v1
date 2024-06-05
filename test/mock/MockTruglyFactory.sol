@@ -13,7 +13,7 @@ contract MockTruglyFactory is TruglyFactory {
         override
         returns (address)
     {
-        MockMEME404 meme404 = new MockMEME404{salt: salt}(name, symbol, msg.sender, creator, factoryNFT);
+        MockMEME404 meme404 = new MockMEME404{salt: salt}(name, symbol, msg.sender, creator, _factoryNFT);
         return address(meme404);
     }
 }

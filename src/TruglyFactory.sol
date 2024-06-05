@@ -7,10 +7,10 @@ import {ITruglyFactory} from "./interfaces/ITruglyFactory.sol";
 
 /// @title Trugly's Factory to create memecoins
 contract TruglyFactory is ITruglyFactory {
-    address public factoryNFT;
+    address internal _factoryNFT;
 
-    constructor(address _factoryNFT) {
-        factoryNFT = _factoryNFT;
+    constructor(address factoryNFT) {
+        _factoryNFT = factoryNFT;
     }
 
     function createMeme20(string memory name, string memory symbol, address creator, bytes32 salt)
@@ -26,7 +26,7 @@ contract TruglyFactory is ITruglyFactory {
         virtual
         returns (address)
     {
-        MEME404 meme404 = new MEME404{salt: salt}(name, symbol, msg.sender, creator, factoryNFT);
+        MEME404 meme404 = new MEME404{salt: salt}(name, symbol, msg.sender, creator, _factoryNFT);
         return address(meme404);
     }
 }
