@@ -1,17 +1,21 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 import {DeployersME404} from "../utils/DeployersME404.sol";
 import {Meme20AddressMiner} from "../utils/Meme20AddressMiner.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CreateMeme404Test is DeployersME404 {
+    using FixedPointMathLib for uint256;
+
     error InvalidMemeAddress();
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
     error ZeroAmount();
     error MaxTargetETH();
     error Paused();
+    error MaxBuyETHTooLow();
 
     string constant symbol = "MEME";
 
@@ -69,7 +73,7 @@ contract CreateMeme404Test is DeployersME404 {
     function test_404createMeme_fail_max_targetETH() public {
         createMemeParams.targetETH = Constant.MAX_TARGET_ETH + 1;
         vm.expectRevert(MaxTargetETH.selector);
-        memeceptionBaseTest.createMeme(createMemeParams);
+        memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 
     function test_404createMeme_fail_paused() public {
@@ -78,6 +82,12 @@ contract CreateMeme404Test is DeployersME404 {
         vm.stopPrank();
 
         vm.expectRevert(Paused.selector);
-        memeception.createMeme(createMemeParams);
+        memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
+    }
+
+    function test_404createMeme_fail_maxBuy_too_low() public {
+        createMemeParams.maxBuyETH = 0.099 ether;
+        vm.expectRevert(MaxBuyETHTooLow.selector);
+        memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
 }

@@ -23,7 +23,7 @@ contract DeployAll is Script, DeploymentsFn {
             multisig,
             address(factory)
         );
-        // deployUniversalRouter(treasury);
+        deployUniversalRouter(treasury);
         vm.stopBroadcast();
     }
 }

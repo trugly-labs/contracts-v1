@@ -1,17 +1,21 @@
 /// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {FixedPointMathLib} from "@solady/utils/FixedPointMathLib.sol";
 import {DeployersME20} from "../utils/DeployersME20.sol";
 import {Meme20AddressMiner} from "../utils/Meme20AddressMiner.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 
 contract CreateMemeTest is DeployersME20 {
+    using FixedPointMathLib for uint256;
+
     error InvalidMemeAddress();
     error MemeSwapFeeTooHigh();
     error VestingAllocTooHigh();
     error ZeroAmount();
     error MaxTargetETH();
     error Paused();
+    error MaxBuyETHTooLow();
 
     string constant symbol = "MEME";
 
@@ -100,6 +104,12 @@ contract CreateMemeTest is DeployersME20 {
         vm.stopPrank();
 
         vm.expectRevert(Paused.selector);
+        memeception.createMeme(createMemeParams);
+    }
+
+    function test_createMeme_fail_maxBuy_too_low() public {
+        createMemeParams.maxBuyETH = 0.099 ether;
+        vm.expectRevert(MaxBuyETHTooLow.selector);
         memeception.createMeme(createMemeParams);
     }
 }

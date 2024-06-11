@@ -20,6 +20,7 @@ contract CreateMemeKOLTest is DeployersME20 {
     error ZeroAmount();
     error MaxTargetETH();
     error Paused();
+    error MaxBuyETHTooLow();
 
     string constant symbol = "MEME";
 
@@ -154,6 +155,12 @@ contract CreateMemeKOLTest is DeployersME20 {
         vm.stopPrank();
 
         vm.expectRevert(Paused.selector);
+        memeception.createMemeKOL(createMemeParams);
+    }
+
+    function test_createMemeKOL_fail_maxBuy_too_low() public {
+        createMemeParams.maxBuyETH = 0.099 ether;
+        vm.expectRevert(MaxBuyETHTooLow.selector);
         memeception.createMemeKOL(createMemeParams);
     }
 }

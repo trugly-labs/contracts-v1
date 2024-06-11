@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 
+import {LibString} from "@solmate/utils/LibString.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {ITruglyMemeception} from "../../src/interfaces/ITruglyMemeception.sol";
 import {ME20BaseTest} from "../base/ME20BaseTest.sol";
@@ -19,6 +20,8 @@ import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_L
 import {TestHelpers} from "./TestHelpers.sol";
 
 contract DeployersME20 is Test, TestHelpers {
+    using LibString for uint256;
+
     // Global variables
     ME20BaseTest memeceptionBaseTest;
     RouterBaseTest routerBaseTest;
@@ -43,7 +46,8 @@ contract DeployersME20 is Test, TestHelpers {
         vestingAllocBps: 500,
         salt: "",
         creator: MEMECREATOR,
-        targetETH: 10 ether
+        targetETH: 10 ether,
+        maxBuyETH: 1 ether
     });
 
     function setUp() public virtual {
@@ -98,9 +102,11 @@ contract DeployersME20 is Test, TestHelpers {
     }
 
     function initBuyMemecoinFullCap() public virtual {
-        uint256 buyAmountPerTx = createMemeParams.targetETH / 10;
+        uint256 buyAmountPerTx = createMemeParams.maxBuyETH;
         for (uint256 i = 0; i < 10; i++) {
+            startHoax(makeAddr(i.toString()), buyAmountPerTx);
             initBuyMemecoin(buyAmountPerTx);
+            vm.stopPrank();
         }
     }
 
