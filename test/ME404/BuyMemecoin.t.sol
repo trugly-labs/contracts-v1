@@ -140,6 +140,15 @@ contract BuyMemecoin404Test is DeployersME404 {
         memeceptionBaseTest.buyMemecoin{value: createMemeParams.targetETH / 10 + 1}(address(memeToken));
     }
 
+    function test_404buyMemecoin__fail_max_buy_after_exit() public {
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH}(address(memeToken));
+        memeceptionBaseTest.exitMemecoin(address(memeToken), memeToken.balanceOf(address(this)) / 2);
+
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH / 2}(address(memeToken));
+        vm.expectRevert(MaxTargetETH.selector);
+        memeceptionBaseTest.buyMemecoin{value: 1}(address(memeToken));
+    }
+
     function test_404buyMemecoin_fail_paused() public {
         vm.startPrank(memeceptionBaseTest.MULTISIG());
         memeception.setPaused(true);

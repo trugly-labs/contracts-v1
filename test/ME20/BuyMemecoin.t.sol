@@ -140,6 +140,15 @@ contract BuyMemecoinTest is DeployersME20 {
         memeceptionBaseTest.buyMemecoin{value: createMemeParams.targetETH / 10 + 1}(address(memeToken));
     }
 
+    function test_buyMemecoin__fail_max_buy_after_exit() public {
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH}(address(memeToken));
+        memeceptionBaseTest.exitMemecoin(address(memeToken), memeToken.balanceOf(address(this)) / 2);
+
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH / 2}(address(memeToken));
+        vm.expectRevert(MaxTargetETH.selector);
+        memeceptionBaseTest.buyMemecoin{value: 1}(address(memeToken));
+    }
+
     function test_buyMemecoin__fail_max_buy_over_multiple_tx() public {
         memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH}(address(memeToken));
 
