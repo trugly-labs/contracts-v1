@@ -25,6 +25,8 @@ interface ITruglyMemeception is IERC721Receiver {
         uint40 startAt;
         /// @dev Epoch when the memeception ended
         uint40 endedAt;
+        /// @dev Max Buy ETH
+        uint256 maxBuyETH;
     }
 
     /// @dev Containing the parameters to create a MEME20
@@ -45,6 +47,8 @@ interface ITruglyMemeception is IERC721Receiver {
         address creator;
         /// @dev Target ETH
         uint256 targetETH;
+        /// @dev Max Buy ETH
+        uint256 maxBuyETH;
     }
 
     /// @dev Create a MEME20, its UniV3 Pool and setup the Memeception

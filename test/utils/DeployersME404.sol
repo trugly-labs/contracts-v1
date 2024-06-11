@@ -65,7 +65,8 @@ contract DeployersME404 is Test, TestHelpers {
         vestingAllocBps: 500,
         salt: "",
         creator: MEMECREATOR,
-        targetETH: 10 ether
+        targetETH: 10 ether,
+        maxBuyETH: 1 ether
     });
 
     // Tier Parameters
@@ -147,9 +148,11 @@ contract DeployersME404 is Test, TestHelpers {
     }
 
     function initBuyMemecoinFullCap() public virtual {
-        uint256 buyAmountPerTx = createMemeParams.targetETH / 10;
+        uint256 buyAmountPerTx = createMemeParams.maxBuyETH;
         for (uint256 i = 0; i < 10; i++) {
+            startHoax(makeAddr(i.toString()), buyAmountPerTx);
             initBuyMemecoin(buyAmountPerTx);
+            vm.stopPrank();
         }
     }
 

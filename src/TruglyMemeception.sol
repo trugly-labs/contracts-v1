@@ -103,6 +103,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @dev Thrown when the action is paused
     error Paused();
 
+    /// @dev Thrown when the max buy eth is too low
+    error MaxBuyETHTooLow();
+
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
     /*                       STORAGE                     */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
@@ -145,6 +148,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         if (_paused) revert Paused();
         _;
     }
+
+    mapping(address => mapping(address => uint256)) internal _buyAmountETH;
 
     constructor(address _vesting, address _treasury, address _multisig, address _factory) Owned(_multisig) {
         if (_vesting == address(0) || _treasury == address(0) || _factory == address(0) || _multisig == address(0)) {
@@ -244,7 +249,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             swapFeeBps: params.swapFeeBps,
             creator: params.creator,
             startAt: startAt,
-            endedAt: 0
+            endedAt: 0,
+            maxBuyETH: params.maxBuyETH
         });
 
         if (params.vestingAllocBps > 0) {
@@ -269,13 +275,14 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         if (params.vestingAllocBps > Constant.CREATOR_MAX_VESTED_ALLOC_BPS) revert VestingAllocTooHigh();
         if (params.targetETH == 0) revert ZeroAmount();
         if (params.targetETH > Constant.MAX_TARGET_ETH) revert MaxTargetETH();
+        if (params.maxBuyETH < 0.1 ether) revert MaxBuyETHTooLow();
     }
 
     /// @inheritdoc ITruglyMemeception
     function buyMemecoin(address memeToken) external payable nonReentrant whenNotPaused {
         Memeception memory memeception = memeceptions[memeToken];
         if (msg.value == 0) revert ZeroAmount();
-        if (msg.value > _getMaxBuyAmountETH(memeToken)) revert MaxTargetETH();
+        if (_buyAmountETH[msg.sender][memeToken] + msg.value > _getMaxBuyAmountETH(memeToken)) revert MaxTargetETH();
         if (memeception.endedAt > 0) revert MemeLaunched();
         if (uint40(block.timestamp) < memeception.startAt) revert MemeceptionNotStarted();
 
@@ -303,6 +310,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
         memeceptions[memeToken].collectedETH += buyEthAmount;
         IMEME20(memeToken).transfer(msg.sender, tokenAmount);
+        _buyAmountETH[msg.sender][memeToken] += buyEthAmount;
 
         emit MemecoinBuy(memeToken, msg.sender, buyEthAmount, tokenAmount);
     }
@@ -395,6 +403,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
         uint256 refundAmount = amountMeme.rawDiv(price);
 
         memeceptions[memeToken].collectedETH -= refundAmount;
+        _buyAmountETH[msg.sender][memeToken] -=
+            _buyAmountETH[msg.sender][memeToken] < refundAmount ? _buyAmountETH[msg.sender][memeToken] : refundAmount;
         msg.sender.safeTransferETH(refundAmount);
 
         emit MemecoinExit(memeToken, msg.sender, refundAmount, amountMeme);
@@ -452,7 +462,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     }
 
     function _getMaxBuyAmountETH(address memeToken) internal view virtual returns (uint256) {
-        return memeceptions[memeToken].targetETH.rawDiv(10);
+        return memeceptions[memeToken].maxBuyETH;
     }
 
     /// @notice Only the owner can call this function

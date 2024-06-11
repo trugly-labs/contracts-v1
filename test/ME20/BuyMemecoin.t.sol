@@ -54,18 +54,6 @@ contract BuyMemecoinTest is DeployersME20 {
         }
     }
 
-    function test_buyMemecoin_under_cap_multiple_same_user() public {
-        address SENDER = makeAddr("BOB");
-        for (uint256 i = 0; i < 10; i++) {
-            uint256 amount = createMemeParams.targetETH / 10;
-            startHoax(SENDER, amount);
-            vm.expectEmit(true, true, false, true);
-            emit MemecoinBuy(address(memeToken), SENDER, amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
-            memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
-            vm.stopPrank();
-        }
-    }
-
     function test_buyMemecoin_capReached_success() public {
         uint256 amount = createMemeParams.targetETH / 10;
         for (uint256 i = 0; i < 9; i++) {
@@ -120,8 +108,8 @@ contract BuyMemecoinTest is DeployersME20 {
     }
 
     function test_buyMemecoin_success_duplicate_og() public {
-        memeceptionBaseTest.buyMemecoin{value: 1 ether}(address(memeToken));
-        memeceptionBaseTest.buyMemecoin{value: 1 ether}(address(memeToken));
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH / 2}(address(memeToken));
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH / 2}(address(memeToken));
     }
 
     function test_buyMemecoin_fail_zero_amount() public {
@@ -150,6 +138,13 @@ contract BuyMemecoinTest is DeployersME20 {
     function test_buyMemecoin__fail_max_buy() public {
         vm.expectRevert(MaxTargetETH.selector);
         memeceptionBaseTest.buyMemecoin{value: createMemeParams.targetETH / 10 + 1}(address(memeToken));
+    }
+
+    function test_buyMemecoin__fail_max_buy_over_multiple_tx() public {
+        memeceptionBaseTest.buyMemecoin{value: createMemeParams.maxBuyETH}(address(memeToken));
+
+        vm.expectRevert(MaxTargetETH.selector);
+        memeceptionBaseTest.buyMemecoin{value: 1}(address(memeToken));
     }
 
     function test_buyMemecoin_fail_paused() public {

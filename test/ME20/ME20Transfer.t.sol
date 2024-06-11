@@ -21,7 +21,9 @@ contract MEME20Transfers is DeployersME20 {
         initTreasuryBal = memeToken.balanceOf(treasury);
         initCreatorBal = memeToken.balanceOf(MEMECREATOR);
 
+        vm.startPrank(makeAddr("0"));
         memeToken.transfer(address(memeception), 10 ether);
+        vm.stopPrank();
     }
 
     function test_transfer_exempt() public {

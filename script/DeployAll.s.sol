@@ -16,12 +16,13 @@ contract DeployAll is Script, DeploymentsFn {
         TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
         address multisig = deployMultisig();
-        TruglyFactory factory = deployFactory();
+        // TruglyFactory factory = deployFactory();
         deployMemeception(
             address(vesting), //Vesting
             treasury,
             multisig,
-            address(factory)
+            0x4f773Bfa7249BE81107e0E1944b99dfA26482270 // Factory
+                // address(factory)
         );
         // deployUniversalRouter(treasury);
         vm.stopBroadcast();

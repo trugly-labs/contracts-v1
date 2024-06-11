@@ -16,13 +16,14 @@ contract TestnetDeployAll is Script, TestnetDeploymentsFn {
         vm.startBroadcast(deployerPrivateKey);
         TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
-        TruglyFactory factory = deployFactory();
+        // TruglyFactory factory = deployFactory();
         console2.log("Deployer Address: ", 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD);
         deployMemeception(
             address(vesting), // Vesting
             treasury,
             TESTNET_DEPLOYER, // Owner
-            address(factory) // Factory
+            0xFee41B9d16426913F95AC1f6AF1FA6Aa8Ac48220 // Factory
+                // address(factory) // Factory
         );
         // deployUniversalRouter(treasury);
         vm.stopBroadcast();

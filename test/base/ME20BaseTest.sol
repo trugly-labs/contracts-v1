@@ -89,6 +89,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         assertEq(memeception.creator, MEMECREATOR, "memeception.creator");
         assertEq(memeception.startAt, startAt, "memeception.startAt");
         assertEq(memeception.endedAt, 0, "memeception.endedAt");
+        assertEq(memeception.maxBuyETH, params.maxBuyETH, "memeception.maxBuyETH");
 
         /// Assert Uniswap V3 Pool
         assertEq(IUniswapV3Pool(pool).fee(), Constant.UNI_LP_SWAPFEE, "v3Pool.fee");
