@@ -13,7 +13,7 @@ library Meme20AddressMiner {
         string memory _symbol,
         address _memeception,
         address _creator
-    ) external pure returns (address, bytes32) {
+    ) external pure returns (address, bytes32, bytes memory) {
         address memeAddress;
         bytes memory creationCodeWithArgs =
             abi.encodePacked(type(MEME20).creationCode, abi.encode(_name, _symbol, _memeception, _creator));
@@ -22,7 +22,7 @@ library Meme20AddressMiner {
         for (salt; salt < MAX_LOOP; salt++) {
             memeAddress = computeAddress(deployer, salt, creationCodeWithArgs);
             if (memeAddress > _WETH9) {
-                return (memeAddress, bytes32(salt));
+                return (memeAddress, bytes32(salt), type(MEME20).creationCode);
             }
         }
         revert("MemeAddressMiner: could not find salt");

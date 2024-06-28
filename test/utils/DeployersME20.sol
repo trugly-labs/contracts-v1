@@ -93,7 +93,7 @@ contract DeployersME20 is Test, TestHelpers {
     }
 
     function createMeme(string memory symbol) public virtual returns (address meme) {
-        (address mineAddress, bytes32 salt) = Meme20AddressMiner.find(
+        (address mineAddress, bytes32 salt,) = Meme20AddressMiner.find(
             address(factory), Constant.BASE_WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR
         );
         createMemeParams.symbol = symbol;

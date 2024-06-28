@@ -23,7 +23,7 @@ contract CreateMemeTest is DeployersME20 {
         super.setUp();
 
         uint40 startAt = 0;
-        (, bytes32 salt) = Meme20AddressMiner.find(
+        (, bytes32 salt,) = Meme20AddressMiner.find(
             address(factory), WETH9, createMemeParams.name, symbol, address(memeception), address(memeceptionBaseTest)
         );
         createMemeParams.startAt = startAt;
