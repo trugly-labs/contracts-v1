@@ -34,7 +34,7 @@ contract CreateMemeKOLTest is DeployersME20 {
     function createMemeKOL(string memory name) public {
         uint40 startAt = createMemeParams.startAt == 0 ? uint40(block.timestamp) : createMemeParams.startAt;
         createMemeParams.name = name;
-        (, bytes32 salt,) = Meme20AddressMiner.find(
+        (, bytes32 salt) = Meme20AddressMiner.find(
             address(factory), WETH9, createMemeParams.name, symbol, address(memeception), MEMECREATOR
         );
         createMemeParams.startAt = startAt;

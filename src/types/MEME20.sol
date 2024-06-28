@@ -71,6 +71,8 @@ contract MEME20 is ERC20 {
         _addExempt(address(this));
         _addExempt(address(0));
 
+        address(this).balance;
+
         // Mint to Launchpad
         _mint(_memeception, MEME20Constant.TOKEN_TOTAL_SUPPLY);
     }
