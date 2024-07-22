@@ -70,13 +70,8 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         assertEq(memeToken.creator(), MEMECREATOR, "creator");
         assertEq(
             memeToken.balanceOf(address(memeceptionContract)),
-            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
+            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - params.vestingAllocBps, 1e4),
             "memeSupplyMinted"
-        );
-        assertEq(
-            memeToken.balanceOf(address(0)),
-            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4) - vestingAllocSupply,
-            "memeSupplyBurned"
         );
 
         /// Assert Memeception Creation
@@ -90,6 +85,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
         assertEq(memeception.startAt, startAt, "memeception.startAt");
         assertEq(memeception.endedAt, 0, "memeception.endedAt");
         assertEq(memeception.maxBuyETH, params.maxBuyETH, "memeception.maxBuyETH");
+        assertEq(memeception.memeceptionSupply, MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - params.vestingAllocBps, 1e4) / 2, "memeception.memeceptionSupply");
 
         /// Assert Uniswap V3 Pool
         assertEq(IUniswapV3Pool(pool).fee(), Constant.UNI_LP_SWAPFEE, "v3Pool.fee");
@@ -151,7 +147,7 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
             assertApproxEq(
                 afterBal.poolMeme,
                 // 0.8% is taken by UNCX
-                Constant.TOKEN_MEMECEPTION_SUPPLY.mulDiv(992, 1000),
+                memeception.memeceptionSupply.mulDiv(992, 1000),
                 0.0000000001e18,
                 "PoolMemeBalance (Cap reached)"
             );
@@ -197,29 +193,29 @@ contract ME20BaseTest is Test, TestHelpers, BaseParameters {
             assertEq(
                 memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp)),
                 0,
-                "Vesting.vestedAmount"
+                "Vesting.vestedAmount (at start)"
             );
             assertEq(
                 memeceptionContract.vesting().vestedAmount(
                     address(memeToken), uint64(block.timestamp + Constant.VESTING_CLIFF - 1)
                 ),
                 0,
-                "Vesting.vestedAmount"
+                "Vesting.vestedAmount (before cliff)"
             );
             assertEq(
-                memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp + 91.25 days)),
-                vestingAllocSupply / 8,
-                "Vesting.vestedAmount"
+                memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp + Constant.VESTING_CLIFF)),
+                vestingAllocSupply / 12,
+                "Vesting.vestedAmount (post-cliff)"
             );
             assertEq(
-                memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp + 365 days)),
+                memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp + Constant.VESTING_DURATION / 2)),
                 vestingAllocSupply / 2,
-                "Vesting.vestedAmount"
+                "Vesting.vestedAmount (half duration)"
             );
             assertEq(
-                memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp + 365 days * 2)),
+                memeceptionContract.vesting().vestedAmount(address(memeToken), uint64(block.timestamp + Constant.VESTING_DURATION)),
                 vestingAllocSupply,
-                "Vesting.vestedAmount"
+                "Vesting.vestedAmount (full)"
             );
         } else {
             /// Cap is not reached

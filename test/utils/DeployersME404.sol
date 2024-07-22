@@ -62,7 +62,7 @@ contract DeployersME404 is Test, TestHelpers {
         symbol: "MEME404",
         startAt: 0,
         swapFeeBps: 80,
-        vestingAllocBps: 500,
+        vestingAllocBps: 1000,
         salt: "",
         creator: MEMECREATOR,
         targetETH: 10 ether,

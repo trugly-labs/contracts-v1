@@ -81,7 +81,7 @@ contract CreateMemeTest is DeployersME20 {
     }
 
     function test_createMeme_fail_vestingAlloc() public {
-        createMemeParams.vestingAllocBps = 1001;
+        createMemeParams.vestingAllocBps = Constant.CREATOR_MAX_VESTED_ALLOC_BPS + 1;
         vm.expectRevert(VestingAllocTooHigh.selector);
         memeceptionBaseTest.createMeme(createMemeParams);
     }

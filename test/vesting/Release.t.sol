@@ -56,16 +56,16 @@ contract ReleaseTest is DeployersME20 {
     function test_release_success_cliff() public {
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
         vm.warp(VESTING_START + Constant.VESTING_CLIFF);
-        assertEq(vesting.releasable(address(mockMemeToken)), VESTING_ALLOCATION / 8);
+        assertEq(vesting.releasable(address(mockMemeToken)), VESTING_ALLOCATION / 12);
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
-        emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 8);
+        emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 12);
         vesting.release(address(mockMemeToken));
 
-        assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 8);
+        assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 12);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
-        assertEq(vesting.getVestingInfo(address(mockMemeToken)).released, VESTING_ALLOCATION / 8);
-        assertEq(vesting.vestedAmount(address(mockMemeToken), uint64(block.timestamp)), VESTING_ALLOCATION / 8);
+        assertEq(vesting.getVestingInfo(address(mockMemeToken)).released, VESTING_ALLOCATION / 12);
+        assertEq(vesting.vestedAmount(address(mockMemeToken), uint64(block.timestamp)), VESTING_ALLOCATION / 12);
     }
 
     function test_release_success_half_duration() public {

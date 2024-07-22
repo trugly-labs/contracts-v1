@@ -46,7 +46,7 @@ contract DeployersME20 is Test, TestHelpers {
         symbol: "MEME",
         startAt: 0,
         swapFeeBps: 80,
-        vestingAllocBps: 500,
+        vestingAllocBps: 1000,
         salt: "",
         creator: MEMECREATOR,
         targetETH: 10 ether,

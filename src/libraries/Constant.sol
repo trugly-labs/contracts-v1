@@ -10,7 +10,7 @@ library Constant {
     uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_500_000_000 ether;
 
     /// @dev Maximum creator vesting allocation (in bps)
-    uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 1000;
+    uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 5000;
 
     /// @dev UniswapV3 Pool's fee (3%)
     uint24 internal constant UNI_LP_SWAPFEE = 3000;
@@ -23,9 +23,9 @@ library Constant {
 
     /// ~~~~~~~ VESTING / AUCTION ~~~~~~~
     //// @dev Vesting duration
-    uint64 internal constant VESTING_DURATION = 2 * 365 days;
+    uint64 internal constant VESTING_DURATION = 1 * 365 days;
     /// @dev Vesting cliff
-    uint64 internal constant VESTING_CLIFF = 91.25 days;
+    uint64 internal constant VESTING_CLIFF = 365 days / 12;
 
     /// UNCX Locker
     uint256 internal constant MAX_LOCKER_FLAT_FEE = 0.1 ether;

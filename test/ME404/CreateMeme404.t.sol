@@ -59,7 +59,7 @@ contract CreateMeme404Test is DeployersME404 {
     }
 
     function test_404createMeme_fail_vestingAlloc() public {
-        createMemeParams.vestingAllocBps = 1001;
+        createMemeParams.vestingAllocBps = Constant.CREATOR_MAX_VESTED_ALLOC_BPS+ 1;
         vm.expectRevert(VestingAllocTooHigh.selector);
         memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
     }
