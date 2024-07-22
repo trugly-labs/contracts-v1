@@ -22,7 +22,6 @@ contract TruglyStake is Owned, ReentrancyGuard {
     event MemecoinExitAndUnstake(address indexed memeToken, address indexed user, uint256 amountETH, uint256 amountMeme);
 
     event Withdrawn(address indexed user, uint256 amount);
-    event ExitAndUnstake(address indexed user, uint256 amount, uint256 amountETH);
     event DepositRewards(address indexed memeToken, uint256 amount);
 
     ITruglyMemeception public memeception;
