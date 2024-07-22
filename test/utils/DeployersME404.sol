@@ -12,6 +12,7 @@ import {MockMEME404} from "../mock/MockMEME404.sol";
 import {MockMEME721} from "../mock/MockMEME721.sol";
 import {IMEME404} from "../../src/interfaces/IMEME404.sol";
 import {MEME1155} from "../../src/types/MEME1155.sol";
+import {IMEME20} from "../../src/interfaces/IMEME20.sol";
 import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
@@ -39,6 +40,7 @@ contract DeployersME404 is Test, TestHelpers {
     TruglyMemeception memeception;
     ISwapRouter swapRouter;
     IUNCX_LiquidityLocker_UniV3 uncxLocker;
+    ITruglyMemeception.Memeception memeInfo;
 
     address MEMECREATOR = makeAddr("creator");
 
@@ -62,7 +64,7 @@ contract DeployersME404 is Test, TestHelpers {
         symbol: "MEME404",
         startAt: 0,
         swapFeeBps: 80,
-        vestingAllocBps: 500,
+        vestingAllocBps: 1000,
         salt: "",
         creator: MEMECREATOR,
         targetETH: 10 ether,
@@ -141,6 +143,7 @@ contract DeployersME404 is Test, TestHelpers {
         (meme,) = memeceptionBaseTest.createMeme404(createMemeParams, tierParams);
         assertEq(meme, mineAddress, "mine memeAddress");
         memeToken = MockMEME404(meme);
+        memeInfo = memeception.getMemeception(meme);
     }
 
     function initBuyMemecoin(uint256 amount) public virtual {
@@ -295,7 +298,11 @@ contract DeployersME404 is Test, TestHelpers {
     }
 
     function initWalletWithTokens(address _account, uint256 _amount) public {
-        vm.startPrank(address(memeceptionBaseTest.memeceptionContract()));
+        if (IMEME20(address(memeToken)).balanceOf(address(memeception)) < _amount) {
+            vm.startPrank(address(memeception.vesting()));
+        } else {
+            vm.startPrank(address(memeceptionBaseTest.memeceptionContract()));
+        }
         memeToken.transfer(_account, _amount);
         vm.stopPrank();
     }

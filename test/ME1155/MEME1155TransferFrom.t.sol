@@ -425,6 +425,7 @@ contract MEME1155TansferFromTest is DeployersME404 {
         assertMEME404BurnAndUmintedForTier(3, burnTokenIds, 2001, TEST);
         assertMEME404BurnAndUmintedForTier(4, EMPTY_UINT_ARRAY, 2001, TEST);
     }
+
     /// @notice Scenario #28: Test Wallet A (Tier 2 / ERC1155 #2) -> ERC1155 #2 -> Wallet B (Tier 4 - 1 / ERC721 #1 .. #19)
     /// @notice sHTBurn []
     /// @notice HTBurn [ERC721 #2001 #2003 .. #2097 #2099]
@@ -432,7 +433,6 @@ contract MEME1155TansferFromTest is DeployersME404 {
     /// Expected: Wallet A (0 / 0) -> Wallet B (Tier 4 - 1 + Tier 2 / ERC721 #2099)
     /// Expected: Tier 3 Burn: [#19 .. #1]
     /// Expected: Tier 4 Burn: [#2001, #2003 .. #2097]
-
     function test_1155safeTransferFromScenario28_success() public {
         // Init Test
         string memory TEST = "Scenario #28";

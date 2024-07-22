@@ -15,6 +15,12 @@ contract TruglyStake is Owned, ReentrancyGuard {
     /// @dev Thrown when the amount is 0
     error ZeroAmount();
 
+    /// @dev Emitted when a user buy memecoins in the fair launch
+    event MemecoinBuyAndStake(address indexed memeToken, address indexed user, uint256 amountETH, uint256 amountMeme);
+
+    /// @dev Emitted when a user exits the fair launch and claims a refund
+    event MemecoinExitAndUnstake(address indexed memeToken, address indexed user, uint256 amountETH, uint256 amountMeme);
+
     event Withdrawn(address indexed user, uint256 amount);
     event DepositRewards(address indexed memeToken, uint256 amount);
 
@@ -47,6 +53,8 @@ contract TruglyStake is Owned, ReentrancyGuard {
         }
         _stakedBalances[memeToken][msg.sender] += amount;
         _stakeInfo[memeToken].totalStaked += amount;
+
+        emit MemecoinBuyAndStake(memeToken, msg.sender, msg.value, amount);
     }
 
     function exitAndUnstake(address memeToken) external nonReentrant {
@@ -64,6 +72,8 @@ contract TruglyStake is Owned, ReentrancyGuard {
         uint256 afterBal = address(this).balance;
 
         payable(msg.sender).transfer(afterBal - beforeBal);
+
+        emit MemecoinExitAndUnstake(memeToken, msg.sender, afterBal - beforeBal, amount);
     }
 
     function withdraw(address memeToken) external nonReentrant {

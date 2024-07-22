@@ -56,13 +56,8 @@ contract ME404BaseTest is ME20BaseTest {
         assertEq(meme404.creator(), MEMECREATOR, "creator");
         assertEq(
             meme404.balanceOf(address(memeceptionContract)),
-            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
+            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - params.vestingAllocBps, 1e4),
             "memeSupplyMinted"
-        );
-        assertEq(
-            meme404.balanceOf(address(0)),
-            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4) - vestingAllocSupply,
-            "memeSupplyBurned"
         );
 
         /// Assert Memeception Creation
@@ -76,6 +71,7 @@ contract ME404BaseTest is ME20BaseTest {
         assertEq(memeception.startAt, startAt, "memeception.startAt");
         assertEq(memeception.endedAt, 0, "memeception.endedAt");
         assertEq(memeception.maxBuyETH, params.maxBuyETH, "memeception.maxBuyETH");
+        assertEq(memeception.memeceptionSupply,MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - params.vestingAllocBps, 1e4) / 2 , "memeception.memeceptionSupply");
 
         /// Assert Uniswap V3 Pool
         assertEq(IUniswapV3Pool(pool).fee(), Constant.UNI_LP_SWAPFEE, "v3Pool.fee");

@@ -33,8 +33,8 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     /// @dev Emitted when a MEME20 is created
     event MemeCreated(address indexed memeToken, address pool, ITruglyMemeception.MemeceptionCreationParams params);
 
-    /// @dev Emitted when a MEMEKOL is created
-    event MemeKOLCreated(address indexed memeToken, address pool, ITruglyMemeception.MemeceptionCreationParams params);
+    /// @dev Emitted when a MEMEX is created
+    event MemeXCreated(address indexed memeToken, address pool, ITruglyMemeception.MemeceptionCreationParams params);
 
     /// @dev Emitted when a MEME404 is created
     event Meme404Created(
@@ -181,7 +181,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     }
 
     /// @inheritdoc ITruglyMemeception
-    function createMemeKOL(MemeceptionCreationParams calldata params)
+    function createMemeX(MemeceptionCreationParams calldata params)
         external
         nonReentrant
         whenNotPaused
@@ -192,7 +192,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             ITruglyFactory(factory).createMeme20(params.name, params.symbol, params.creator, params.salt);
         address pool = v3Factory.createPool(address(WETH9), address(memeToken), Constant.UNI_LP_SWAPFEE);
         _createMeme(params, memeToken, pool);
-        emit MemeKOLCreated(address(memeToken), pool, params);
+        emit MemeXCreated(address(memeToken), pool, params);
         return (address(memeToken), pool);
     }
 
@@ -241,6 +241,9 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
 
         uint40 startAt = params.startAt > uint40(block.timestamp) ? params.startAt : uint40(block.timestamp);
 
+        uint256 vestingAlloc = MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(params.vestingAllocBps, 1e4);
+        if (vestingAlloc > 0) IMEME20(memeToken).transfer(address(vesting), vestingAlloc);
+        
         memeceptions[memeToken] = Memeception({
             targetETH: params.targetETH,
             collectedETH: 0,
@@ -250,20 +253,12 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             creator: params.creator,
             startAt: startAt,
             endedAt: 0,
-            maxBuyETH: params.maxBuyETH
+            maxBuyETH: params.maxBuyETH,
+            memeceptionSupply: (MEME20Constant.TOKEN_TOTAL_SUPPLY - vestingAlloc).rawDiv(2)
         });
 
-        if (params.vestingAllocBps > 0) {
-            uint256 vestingAlloc = MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(params.vestingAllocBps, 1e4);
-            IMEME20(memeToken).transfer(address(vesting), vestingAlloc);
-        }
-        uint256 burnAllocBps = Constant.CREATOR_MAX_VESTED_ALLOC_BPS - params.vestingAllocBps;
-        if (burnAllocBps > 0) {
-            IMEME20(memeToken).transfer(address(0), MEME20Constant.TOKEN_TOTAL_SUPPLY.fullMulDiv(burnAllocBps, 1e4));
-        }
-
         uint160 sqrtPriceX96 =
-            _calcSqrtPriceX96(params.targetETH - _getUncxLockerFee(), Constant.TOKEN_MEMECEPTION_SUPPLY);
+            _calcSqrtPriceX96(params.targetETH - _getUncxLockerFee(), memeceptions[memeToken].memeceptionSupply);
         IUniswapV3Pool(memeceptions[memeToken].pool).initialize(sqrtPriceX96);
     }
 
@@ -299,7 +294,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
             tokenAmount = buyEthAmount.rawMul(price);
 
             /// Adding liquidity to Uni V3 Pool
-            _addLiquidityToUniV3Pool(memeToken, memeception.targetETH, Constant.TOKEN_MEMECEPTION_SUPPLY);
+            _addLiquidityToUniV3Pool(memeToken, memeception.targetETH, memeception.memeceptionSupply);
 
             /// Start Vesting
             vesting.startVesting(memeToken, memeception.creator, Constant.VESTING_DURATION, Constant.VESTING_CLIFF);
@@ -441,7 +436,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
     }
 
     function _getPricePerETH(Memeception memory memeception) internal pure returns (uint256) {
-        return Constant.TOKEN_MEMECEPTION_SUPPLY.rawDiv(memeception.targetETH);
+        return memeception.memeceptionSupply.rawDiv(memeception.targetETH);
     }
 
     /// @notice receive native tokens

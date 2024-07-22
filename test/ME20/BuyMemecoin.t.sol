@@ -32,12 +32,14 @@ contract BuyMemecoinTest is DeployersME20 {
     function setUp() public override {
         super.setUp();
         initCreateMeme();
+
+        memeInfo = memeception.getMemeception(address(memeToken));
     }
 
     function test_buyMemecoin_under_cap_success() public {
         uint256 amount = createMemeParams.targetETH / 10;
         vm.expectEmit(true, true, false, true);
-        emit MemecoinBuy(address(memeToken), address(this), amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        emit MemecoinBuy(address(memeToken), address(this), amount, memeInfo.memeceptionSupply / 10);
 
         memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
     }
@@ -48,7 +50,7 @@ contract BuyMemecoinTest is DeployersME20 {
             uint256 amount = createMemeParams.targetETH / 10;
             startHoax(SENDER, amount);
             vm.expectEmit(true, true, false, true);
-            emit MemecoinBuy(address(memeToken), SENDER, amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+            emit MemecoinBuy(address(memeToken), SENDER, amount, memeInfo.memeceptionSupply / 10);
             memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
             vm.stopPrank();
         }
@@ -60,13 +62,13 @@ contract BuyMemecoinTest is DeployersME20 {
             address SENDER = makeAddr(i.toString());
             startHoax(SENDER, amount);
             vm.expectEmit(true, true, false, true);
-            emit MemecoinBuy(address(memeToken), SENDER, amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+            emit MemecoinBuy(address(memeToken), SENDER, amount, memeInfo.memeceptionSupply / 10);
             memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
             vm.stopPrank();
         }
 
         vm.expectEmit(true, true, false, true);
-        emit MemecoinBuy(address(memeToken), address(this), amount, Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        emit MemecoinBuy(address(memeToken), address(this), amount, memeInfo.memeceptionSupply / 10);
 
         memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));
 
@@ -86,10 +88,10 @@ contract BuyMemecoinTest is DeployersME20 {
     function test_buyMemecoin_capReached_over_success() public {
         uint256 amount = createMemeParams.targetETH / 10;
         for (uint256 i = 0; i < 10; i++) {
-            uint256 expectedMeme = Constant.TOKEN_MEMECEPTION_SUPPLY / 10;
+            uint256 expectedMeme = memeInfo.memeceptionSupply / 10;
             if (i == 9) {
                 amount = amount / 10 * 9;
-                expectedMeme = Constant.TOKEN_MEMECEPTION_SUPPLY / 100 * 9;
+                expectedMeme = memeInfo.memeceptionSupply / 100 * 9;
             }
             address SENDER = makeAddr(i.toString());
             startHoax(SENDER, amount);
@@ -101,7 +103,7 @@ contract BuyMemecoinTest is DeployersME20 {
 
         vm.expectEmit(true, true, false, true);
         emit MemecoinBuy(
-            address(memeToken), address(this), createMemeParams.targetETH / 100, Constant.TOKEN_MEMECEPTION_SUPPLY / 100
+            address(memeToken), address(this), createMemeParams.targetETH / 100, memeInfo.memeceptionSupply / 100
         );
 
         memeceptionBaseTest.buyMemecoin{value: amount}(address(memeToken));

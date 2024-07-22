@@ -27,6 +27,8 @@ interface ITruglyMemeception is IERC721Receiver {
         uint40 endedAt;
         /// @dev Max Buy ETH
         uint256 maxBuyETH;
+        /// @dev Amount of MEME20 available for the Memeception 
+        uint256 memeceptionSupply;
     }
 
     /// @dev Containing the parameters to create a MEME20
@@ -57,11 +59,11 @@ interface ITruglyMemeception is IERC721Receiver {
     /// @return pool Address of the UniV3 Pool
     function createMeme(MemeceptionCreationParams calldata params) external returns (address memeToken, address pool);
 
-    /// @dev Create a MEMEKOL, its UniV3 Pool and setup the Memeception
-    /// @param params Parameters to create the MEME20 and its Memeception
-    /// @return memeToken Address of the MEME20
+    /// @dev Create a MEMEX, its UniV3 Pool and setup the Memeception
+    /// @param params Parameters to create the MEMEX and its Memeception
+    /// @return memeToken Address of the MEMEX
     /// @return pool Address of the UniV3 Pool
-    function createMemeKOL(MemeceptionCreationParams calldata params)
+    function createMemeX(MemeceptionCreationParams calldata params)
         external
         returns (address memeToken, address pool);
 

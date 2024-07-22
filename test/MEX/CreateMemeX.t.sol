@@ -11,7 +11,7 @@ import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20Constant} from "../../src/libraries/MEME20Constant.sol";
 import {MEME20} from "../../src/types/MEME20.sol";
 
-contract CreateMemeKOLTest is DeployersME20 {
+contract CreateMemeXTest is DeployersME20 {
     using FixedPointMathLib for uint256;
 
     error InvalidMemeAddress();
@@ -31,7 +31,7 @@ contract CreateMemeKOLTest is DeployersME20 {
         memeceptionContract = memeceptionBaseTest.memeceptionContract();
     }
 
-    function createMemeKOL(string memory name) public {
+    function createMemeX(string memory name) public {
         uint40 startAt = createMemeParams.startAt == 0 ? uint40(block.timestamp) : createMemeParams.startAt;
         createMemeParams.name = name;
         (, bytes32 salt) = Meme20AddressMiner.find(
@@ -41,7 +41,7 @@ contract CreateMemeKOLTest is DeployersME20 {
         createMemeParams.symbol = symbol;
         createMemeParams.salt = salt;
 
-        (address memeTokenAddr, address pool) = memeception.createMemeKOL(createMemeParams);
+        (address memeTokenAddr, address pool) = memeception.createMemeX(createMemeParams);
 
         MEMECREATOR = createMemeParams.creator;
 
@@ -55,13 +55,8 @@ contract CreateMemeKOLTest is DeployersME20 {
         assertEq(memeToken.creator(), MEMECREATOR, "creator");
         assertEq(
             memeToken.balanceOf(address(memeceptionBaseTest.memeceptionContract())),
-            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4),
+            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - createMemeParams.vestingAllocBps, 1e4),
             "memeSupplyMinted"
-        );
-        assertEq(
-            memeToken.balanceOf(address(0)),
-            MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(Constant.CREATOR_MAX_VESTED_ALLOC_BPS, 1e4) - vestingAllocSupply,
-            "memeSupplyBurned"
         );
 
         ITruglyMemeception.Memeception memory memeception = memeceptionContract.getMemeception(memeTokenAddr);
@@ -73,6 +68,8 @@ contract CreateMemeKOLTest is DeployersME20 {
         assertEq(memeception.creator, MEMECREATOR, "memeception.creator");
         assertEq(memeception.startAt, startAt, "memeception.startAt");
         assertEq(memeception.endedAt, 0, "memeception.endedAt");
+        assertEq(memeception.maxBuyETH, createMemeParams.maxBuyETH, "memeception.maxBuyETH");
+        assertEq(memeception.memeceptionSupply, MEME20Constant.TOKEN_TOTAL_SUPPLY.mulDiv(10000 - createMemeParams.vestingAllocBps, 1e4) / 2, "memeception.memeceptionSupply");
 
         /// Assert Uniswap V3 Pool
         assertEq(IUniswapV3Pool(pool).fee(), Constant.UNI_LP_SWAPFEE, "v3Pool.fee");
@@ -92,75 +89,75 @@ contract CreateMemeKOLTest is DeployersME20 {
         );
     }
 
-    function test_createMemeKOL_success_simple() public {
-        createMemeKOL("MEME");
+    function test_createMemeX_success_simple() public {
+        createMemeX("MEME");
     }
 
-    function test_createMemeKOL_success_zero_swap() public {
+    function test_createMemeX_success_zero_swap() public {
         createMemeParams.swapFeeBps = 0;
-        createMemeKOL("MEME");
+        createMemeX("MEME");
     }
 
-    function test_createMemeKOL_success_zero_vesting() public {
+    function test_createMemeX_success_zero_vesting() public {
         createMemeParams.vestingAllocBps = 0;
-        createMemeKOL("MEME");
+        createMemeX("MEME");
     }
 
-    function test_createMemeKOL_success_max_vesting() public {
+    function test_createMemeX_success_max_vesting() public {
         createMemeParams.vestingAllocBps = 1000;
-        createMemeKOL("MEME");
+        createMemeX("MEME");
     }
 
-    function test_createMemeKOLSymbolExist_success() public {
-        createMemeKOL("MEME");
+    function test_createMemeXSymbolExist_success() public {
+        createMemeX("MEME");
 
         createMemeParams.salt = bytes32("2");
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
     function test_createMemeSameSymbolAndSalt_collision_revert() public {
-        createMemeKOL("MEME");
+        createMemeX("MEME");
 
         vm.expectRevert();
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
-    function test_createMemeKOL_fail_swapFee() public {
+    function test_createMemeX_fail_swapFee() public {
         createMemeParams.swapFeeBps = 81;
         vm.expectRevert(MemeSwapFeeTooHigh.selector);
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
-    function test_createMemeKOL_fail_vestingAlloc() public {
-        createMemeParams.vestingAllocBps = 1001;
+    function test_createMemeX_fail_vestingAlloc() public {
+        createMemeParams.vestingAllocBps = Constant.CREATOR_MAX_VESTED_ALLOC_BPS + 1;
         vm.expectRevert(VestingAllocTooHigh.selector);
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
-    function test_createMemeKOL_fail_targetETH() public {
+    function test_createMemeX_fail_targetETH() public {
         createMemeParams.targetETH = 0;
         vm.expectRevert(ZeroAmount.selector);
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
-    function test_createMemeKOL_fail_max_targetETH() public {
+    function test_createMemeX_fail_max_targetETH() public {
         createMemeParams.targetETH = Constant.MAX_TARGET_ETH + 1;
         vm.expectRevert(MaxTargetETH.selector);
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
-    function test_createMemeKOL_fail_paused() public {
+    function test_createMemeX_fail_paused() public {
         vm.startPrank(memeceptionBaseTest.MULTISIG());
         memeception.setPaused(true);
         vm.stopPrank();
 
         vm.expectRevert(Paused.selector);
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 
-    function test_createMemeKOL_fail_maxBuy_too_low() public {
+    function test_createMemeX_fail_maxBuy_too_low() public {
         createMemeParams.maxBuyETH = 0.099 ether;
         vm.expectRevert(MaxBuyETHTooLow.selector);
-        memeception.createMemeKOL(createMemeParams);
+        memeception.createMemeX(createMemeParams);
     }
 }
