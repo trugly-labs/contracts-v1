@@ -10,27 +10,25 @@ import {TruglyStake} from "../src/TruglyStake.sol";
 import {TruglyFactory} from "../src/TruglyFactory.sol";
 
 contract TestnetDeployAll is Script, TestnetDeploymentsFn {
-    address public constant TESTNET_DEPLOYER = 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD;
+    address public constant TESTNET_DEPLOYER = 0x19a2b9B38790BE0061c859Bee6324251DF03EC8B;
 
     function run() external {
         /// REMEMBER TO SET THE MNEMONIC_FIRST_ACC_PRIV_KEY TO THE TESTNET DEPLOYER
-        uint256 deployerPrivateKey = vm.envUint("MNEMONIC_FIRST_ACC_PRIV_KEY");
+        uint256 deployerPrivateKey = vm.envUint("TESTNET_MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
         // TruglyVesting vesting = deployVesting();
-        // address treasury = deployTreasury();
+        address treasury = deployTreasury();
         // TruglyFactory factory = deployFactory();
-        console2.log("Deployer Address: ", 0x0D37fC458B1C02649ED99C7238Cd91Ea797f34FD);
-        // TestnetTruglyMemeception memeception = deployMemeception(
-        //     address(vesting), // Vesting
-        //     treasury,
-        //     TESTNET_DEPLOYER, // Owner
-        //     0xFee41B9d16426913F95AC1f6AF1FA6Aa8Ac48220 // Factory
-        //         // address(factory) // Factory
-        // );
+        console2.log("Deployer Address: ", TESTNET_DEPLOYER);
+        TestnetTruglyMemeception memeception = deployMemeception(
+            0xC301CB981445BDe7802C5B223aEb52a571e1Ef5f, // Vesting
+            treasury,
+            TESTNET_DEPLOYER, // Owner
+            0xFee41B9d16426913F95AC1f6AF1FA6Aa8Ac48220 // Factory
+        );
         // deployUniversalRouter(treasury);
         TruglyStake stake = deployStake(
-            0xd4698451717BC7181f5Ce4697c2cd6d84b41353a, // TestnetTruglyMemeception
-            // address(memeception),
+            address(memeception), // TestnetTruglyMemeception
             TESTNET_DEPLOYER
         );
         vm.stopBroadcast();

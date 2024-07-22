@@ -19,7 +19,7 @@ contract DeploymentsFn {
     bytes32 public constant ROUTER_PAIR_INIT_CODE_HASH =
         0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
     bytes32 public constant POOL_INIT_CODE_HASH = 0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
-    address public constant TREASURY = 0x2f5417Dee5bF31fe270Bb9e7F48962dDDA77b755;
+    address public constant TREASURY = 0xDdC78Bb84f18D7a975aCebb21c8ac2AFb07d8a58;
     address public constant ADMIN = 0xb2660C551AB31FAc6D01a75f628Af2d200FfD1F2;
 
     function deployUniversalRouter(address treasury) public returns (TruglyUniversalRouter router) {
