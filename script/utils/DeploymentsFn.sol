@@ -8,6 +8,7 @@ import {Constant} from "../../src/libraries/Constant.sol";
 import {RouterParameters} from "@trugly-labs/universal-router-fork/base/RouterImmutables.sol";
 import {TruglyUniversalRouter} from "../../src/TruglyUniversalRouter.sol";
 import {TruglyVesting} from "../../src/TruglyVesting.sol";
+import {TruglyStake} from "../../src/TruglyStake.sol";
 import {TruglyMemeception} from "../../src/TruglyMemeception.sol";
 import {TruglyFactory} from "../../src/TruglyFactory.sol";
 import {TruglyFactoryNFT} from "../../src/TruglyFactoryNFT.sol";
@@ -85,5 +86,11 @@ contract DeploymentsFn {
         memeception = new TruglyMemeception(vesting, treasury, multisig, factory);
         // TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
+    }
+
+    function deployStake(address memeception, address multisig) public returns (TruglyStake stake) {
+        console2.log("Deploying TruglyStake..");
+        stake = new TruglyStake(memeception, multisig);
+        console2.log("TruglyStake Deployed:", address(stake));
     }
 }

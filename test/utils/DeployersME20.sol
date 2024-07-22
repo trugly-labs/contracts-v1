@@ -16,6 +16,7 @@ import {MockTruglyFactoryNFT} from "../mock/MockTruglyFactoryNFT.sol";
 import {Meme20AddressMiner} from "./Meme20AddressMiner.sol";
 import {ISwapRouter} from "./ISwapRouter.sol";
 import {IUNCX_LiquidityLocker_UniV3} from "../../src/interfaces/external/IUNCX_LiquidityLocker_UniV3.sol";
+import {TruglyStake} from "../../src/TruglyStake.sol";
 
 import {TestHelpers} from "./TestHelpers.sol";
 
@@ -27,12 +28,14 @@ contract DeployersME20 is Test, TestHelpers {
     RouterBaseTest routerBaseTest;
     MEME20 memeToken;
     TruglyVesting vesting;
+    TruglyStake truglyStake;
     MockTruglyFactory factory;
     address treasury = address(1);
     TruglyMemeception memeception;
     ISwapRouter swapRouter;
     IUNCX_LiquidityLocker_UniV3 uncxLocker;
 
+    address public MULTISIG = makeAddr("multisig");
     address MEMECREATOR = makeAddr("creator");
 
     address WETH9 = Constant.BASE_WETH9;
@@ -59,6 +62,7 @@ contract DeployersME20 is Test, TestHelpers {
         deployUniversalRouter();
 
         memeception = memeceptionBaseTest.memeceptionContract();
+        deployStake();
         // Base
         swapRouter = ISwapRouter(Constant.UNISWAP_BASE_SWAP_ROUTER);
 
@@ -77,6 +81,10 @@ contract DeployersME20 is Test, TestHelpers {
     function deployMemeception() public virtual {
         memeceptionBaseTest = new ME20BaseTest(address(vesting), treasury, address(factory));
         vesting.setMemeception(address(memeceptionBaseTest.memeceptionContract()), true);
+    }
+
+    function deployStake() public virtual {
+        truglyStake = new TruglyStake(address(memeception), MULTISIG);
     }
 
     function initCreateMeme() public virtual {
