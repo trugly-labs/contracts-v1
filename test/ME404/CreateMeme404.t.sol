@@ -34,7 +34,7 @@ contract CreateMeme404Test is DeployersME404 {
     }
 
     function test_404createMeme_success_max_vesting() public {
-        createMemeParams.vestingAllocBps = 1000;
+        createMemeParams.vestingAllocBps = 5000;
         createMeme404("MEME");
     }
 

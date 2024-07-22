@@ -41,9 +41,9 @@ contract ExitMemecoinTest is DeployersME20 {
         initBuyMemecoin(createMemeParams.targetETH / 10);
         vm.expectEmit(true, true, false, true);
         emit MemecoinExit(
-            address(memeToken), address(this), createMemeParams.targetETH / 10, Constant.TOKEN_MEMECEPTION_SUPPLY / 10
+            address(memeToken), address(this), createMemeParams.targetETH / 10, memeInfo.memeceptionSupply / 10
         );
-        memeceptionBaseTest.exitMemecoin(address(memeToken), Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        memeceptionBaseTest.exitMemecoin(address(memeToken), memeInfo.memeceptionSupply / 10);
 
         address ALICE = makeAddr("alice");
         startHoax(ALICE, createMemeParams.targetETH / 20);
@@ -52,7 +52,7 @@ contract ExitMemecoinTest is DeployersME20 {
 
         assertApproxEq(
             memeToken.balanceOf(address(memeception)),
-            Constant.TOKEN_MEMECEPTION_SUPPLY * 2 - Constant.TOKEN_MEMECEPTION_SUPPLY / 20,
+            memeInfo.memeceptionSupply * 2 - memeInfo.memeceptionSupply / 20,
             0.01e18,
             "#1"
         );
@@ -63,13 +63,13 @@ contract ExitMemecoinTest is DeployersME20 {
             address(memeToken),
             address(makeAddr("alice")),
             createMemeParams.targetETH / 20,
-            Constant.TOKEN_MEMECEPTION_SUPPLY / 20
+            memeInfo.memeceptionSupply / 20
         );
         memeception.exitMemecoin(address(memeToken), memeToken.balanceOf(ALICE));
         vm.stopPrank();
 
         assertEq(memeToken.balanceOf(address(ALICE)), 0, "#3");
-        assertApproxEq(memeToken.balanceOf(address(memeception)), Constant.TOKEN_MEMECEPTION_SUPPLY * 2, 0.01e18, "#4");
+        assertApproxEq(memeToken.balanceOf(address(memeception)), memeInfo.memeceptionSupply * 2, 0.01e18, "#4");
         assertEq(address(memeception).balance, 0, "#5");
         assertEq(ALICE.balance, createMemeParams.targetETH / 20, "#6");
     }
@@ -89,20 +89,20 @@ contract ExitMemecoinTest is DeployersME20 {
         initBuyMemecoinFullCap();
 
         vm.expectRevert(MemeLaunched.selector);
-        memeceptionBaseTest.exitMemecoin(address(memeToken), Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        memeceptionBaseTest.exitMemecoin(address(memeToken), memeInfo.memeceptionSupply / 10);
     }
 
     function test_exitMemecoin_fail_invalid_meme_address() public {
         initBuyMemecoin(createMemeParams.targetETH / 10);
-        memeToken.approve(address(memeception), Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        memeToken.approve(address(memeception), memeInfo.memeceptionSupply / 10);
         vm.expectRevert(InvalidMemeAddress.selector);
-        memeception.exitMemecoin(address(1), Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        memeception.exitMemecoin(address(1), memeInfo.memeceptionSupply / 10);
     }
 
     function test_exitMemecoin_fail_unapproved() public {
         initBuyMemecoin(createMemeParams.targetETH / 10);
-        memeToken.approve(address(memeception), Constant.TOKEN_MEMECEPTION_SUPPLY / 10 - 1);
+        memeToken.approve(address(memeception), memeInfo.memeceptionSupply / 10 - 1);
         vm.expectRevert();
-        memeception.exitMemecoin(address(memeToken), Constant.TOKEN_MEMECEPTION_SUPPLY / 10);
+        memeception.exitMemecoin(address(memeToken), memeInfo.memeceptionSupply / 10);
     }
 }

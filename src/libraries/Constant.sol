@@ -6,9 +6,6 @@ library Constant {
     /*                       CONSTANTS                   */
     /* ¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯*/
 
-    /// @dev Supply dedicated for the fair launch (45% of total supply)
-    uint256 internal constant TOKEN_MEMECEPTION_SUPPLY = 4_500_000_000 ether;
-
     /// @dev Maximum creator vesting allocation (in bps)
     uint16 internal constant CREATOR_MAX_VESTED_ALLOC_BPS = 5000;
 

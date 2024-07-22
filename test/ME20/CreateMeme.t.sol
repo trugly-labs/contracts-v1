@@ -56,7 +56,7 @@ contract CreateMemeTest is DeployersME20 {
     }
 
     function test_createMeme_success_max_vesting() public {
-        createMemeParams.vestingAllocBps = 1000;
+        createMemeParams.vestingAllocBps = 5000;
         createMeme("MEME");
     }
 

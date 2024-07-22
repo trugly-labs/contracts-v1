@@ -34,6 +34,7 @@ contract DeployersME20 is Test, TestHelpers {
     TruglyMemeception memeception;
     ISwapRouter swapRouter;
     IUNCX_LiquidityLocker_UniV3 uncxLocker;
+    ITruglyMemeception.Memeception memeInfo;
 
     address public MULTISIG = makeAddr("multisig");
     address MEMECREATOR = makeAddr("creator");
@@ -103,6 +104,7 @@ contract DeployersME20 is Test, TestHelpers {
         (meme,) = memeceptionBaseTest.createMeme(createMemeParams);
         assertEq(meme, mineAddress, "mine memeAddress");
         memeToken = MEME20(meme);
+        memeInfo = memeception.getMemeception(meme);
     }
 
     function initBuyMemecoin(uint256 amount) public virtual {
