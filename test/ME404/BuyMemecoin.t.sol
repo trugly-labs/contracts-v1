@@ -79,7 +79,7 @@ contract BuyMemecoin404Test is DeployersME404 {
         assertEq(lock.owner, memeceptionBaseTest.MULTISIG(), "lock.owner");
         assertEq(lock.pendingOwner, address(0), "lock.pendingOwner");
         assertEq(lock.additionalCollector, address(memeception), "lock.additionalCollector");
-        assertEq(lock.unlockDate, type(uint256).max, "lock.unlockDate");
+        assertEq(lock.unlockDate, block.timestamp + 365 days, "lock.unlockDate");
         assertEq(lock.countryCode, 0, "lock.countryCode");
     }
 
