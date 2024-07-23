@@ -366,7 +366,7 @@ contract TruglyMemeception is ITruglyMemeception, Owned, ReentrancyGuard {
                 owner: owner,
                 additionalCollector: address(this),
                 collectAddress: treasury,
-                unlockDate: type(uint256).max,
+                unlockDate: block.timestamp + 365 days,
                 countryCode: 0,
                 feeName: "LVP",
                 r: new bytes[](0)
