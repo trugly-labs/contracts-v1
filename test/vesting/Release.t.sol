@@ -6,6 +6,8 @@ import {Constant} from "../../src/libraries/Constant.sol";
 import {MEME20} from "../../src/types/MEME20.sol";
 
 contract ReleaseTest is DeployersME20 {
+    error NotCreator();
+
     event MEMERC20Released(address indexed token, address indexed creator, uint256 amount);
 
     MEME20 mockMemeToken;
@@ -45,7 +47,10 @@ contract ReleaseTest is DeployersME20 {
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
         emit MEMERC20Released(address(mockMemeToken), CREATOR, 0);
+
+        vm.startPrank(CREATOR);
         vesting.release(address(mockMemeToken));
+        vm.stopPrank();
 
         assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
@@ -60,7 +65,10 @@ contract ReleaseTest is DeployersME20 {
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
         emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 12);
+
+        vm.startPrank(CREATOR);
         vesting.release(address(mockMemeToken));
+        vm.stopPrank();
 
         assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 12);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
@@ -75,7 +83,10 @@ contract ReleaseTest is DeployersME20 {
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
         emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION / 2);
+        
+        vm.startPrank(CREATOR);
         vesting.release(address(mockMemeToken));
+        vm.stopPrank();
 
         assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION / 2);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
@@ -90,7 +101,9 @@ contract ReleaseTest is DeployersME20 {
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
         emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION);
+        vm.startPrank(CREATOR);
         vesting.release(address(mockMemeToken));
+        vm.stopPrank();
 
         assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
@@ -105,11 +118,20 @@ contract ReleaseTest is DeployersME20 {
         vm.expectEmit(true, true, false, true);
         uint256 beforeBal = mockMemeToken.balanceOf(CREATOR);
         emit MEMERC20Released(address(mockMemeToken), CREATOR, VESTING_ALLOCATION);
+
+        vm.startPrank(CREATOR);
         vesting.release(address(mockMemeToken));
+        vm.stopPrank();
 
         assertEq(mockMemeToken.balanceOf(CREATOR), beforeBal + VESTING_ALLOCATION);
         assertEq(vesting.releasable(address(mockMemeToken)), 0);
         assertEq(vesting.getVestingInfo(address(mockMemeToken)).released, VESTING_ALLOCATION);
         assertEq(vesting.vestedAmount(address(mockMemeToken), uint64(block.timestamp)), VESTING_ALLOCATION);
+    }
+
+
+    function test_release_fail_not_owner() public {
+        vm.expectRevert(NotCreator.selector);
+        vesting.release(address(mockMemeToken));
     }
 }

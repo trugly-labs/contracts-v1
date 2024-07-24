@@ -46,4 +46,9 @@ interface ITruglyVesting {
     /// @param memeceptionContract The memeception contract to authorize or unauthorize
     /// @param isAuthorized Whether the memeception contract is authorized or not
     function setMemeception(address memeceptionContract, bool isAuthorized) external;
+
+    /// @dev Transfer the creator of a token
+    /// @param token The token to transfer the creator of
+    /// @param _newCreator The new creator of the token
+    function transferCreator(address token, address _newCreator) external;
 }

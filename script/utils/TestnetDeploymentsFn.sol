@@ -79,7 +79,7 @@ contract TestnetDeploymentsFn {
     {
         console2.log("Deploying TruglyMemeception..");
         memeception = new TestnetTruglyMemeception(vesting, treasury, multisig, factory);
-        // TruglyVesting(vesting).setMemeception(address(memeception), true);
+        TruglyVesting(vesting).setMemeception(address(memeception), true);
         console2.log("TruglyMemeception Deployed:", address(memeception));
     }
 

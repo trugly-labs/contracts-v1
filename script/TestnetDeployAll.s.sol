@@ -16,12 +16,12 @@ contract TestnetDeployAll is Script, TestnetDeploymentsFn {
         /// REMEMBER TO SET THE MNEMONIC_FIRST_ACC_PRIV_KEY TO THE TESTNET DEPLOYER
         uint256 deployerPrivateKey = vm.envUint("TESTNET_MNEMONIC_FIRST_ACC_PRIV_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        // TruglyVesting vesting = deployVesting();
+        TruglyVesting vesting = deployVesting();
         address treasury = deployTreasury();
         // TruglyFactory factory = deployFactory();
         console2.log("Deployer Address: ", TESTNET_DEPLOYER);
         TestnetTruglyMemeception memeception = deployMemeception(
-            0xC301CB981445BDe7802C5B223aEb52a571e1Ef5f, // Vesting
+            address(vesting), // Vesting
             treasury,
             TESTNET_DEPLOYER, // Owner
             0xFee41B9d16426913F95AC1f6AF1FA6Aa8Ac48220 // Factory

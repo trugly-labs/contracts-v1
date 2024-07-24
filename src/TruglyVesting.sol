@@ -38,6 +38,8 @@ contract TruglyVesting is ITruglyVesting, Owned {
 
     /// @dev Error when the caller is not a memeception
     error NotMemeception();
+    /// @dev Error when the caller is not the creator
+    error NotCreator();
     /// @dev Error when the `duration` is zero
     error VestingDurationCannotBeZero();
     /// @dev Error when the `creator` is address(0)
@@ -99,10 +101,13 @@ contract TruglyVesting is ITruglyVesting, Owned {
 
     /// @inheritdoc ITruglyVesting
     function release(address token) public virtual {
+        VestingInfo memory info = _vestingInfo[token];
+        if (msg.sender != info.creator) revert NotCreator();
+
         uint256 amount = releasable(token);
         _vestingInfo[token].released += amount;
-        ERC20(token).safeTransfer(_vestingInfo[token].creator, amount);
-        emit MEMERC20Released(token, _vestingInfo[token].creator, amount);
+        ERC20(token).safeTransfer(info.creator, amount);
+        emit MEMERC20Released(token, info.creator, amount);
     }
 
     /// @inheritdoc ITruglyVesting
@@ -122,5 +127,13 @@ contract TruglyVesting is ITruglyVesting, Owned {
     function setMemeception(address memeceptionContract, bool isAuthorized) external onlyOwner {
         _memeceptionContracts[memeceptionContract] = isAuthorized;
         emit MemeceptionAuthorized(memeceptionContract, isAuthorized);
+    }
+
+    /// @inheritdoc ITruglyVesting
+    function transferCreator(address token, address _newCreator) external {
+        VestingInfo memory info = _vestingInfo[token];
+        if (msg.sender != info.creator) revert NotCreator();
+
+        _vestingInfo[token].creator = _newCreator;
     }
 }
