@@ -41,11 +41,6 @@ contract TruglyMemeXTreasuyTest is Test {
         assertEq(address(accountOwner).balance, 10 ether);
     }
 
-    function test_deposit_error_not_owner() public {
-        vm.expectRevert("UNAUTHORIZED");
-        truglyMemeXTreasury.deposit{value: 10 ether}(memeToken);
-    }
-
     function test_transferToXAccountOwner_error_not_owner() public {
         vm.expectRevert("UNAUTHORIZED");
         truglyMemeXTreasury.transferToXAccountOwner(memeToken, makeAddr("ACCOUNT_OWNER"));

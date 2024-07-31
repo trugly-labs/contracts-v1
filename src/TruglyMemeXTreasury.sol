@@ -14,7 +14,7 @@ contract TruglyMemeXTreasury is Owned {
     event Deposited(address indexed memeToken, uint256 amount);
     event TransferToXOwner(address indexed memeToken, address accountOwner, uint256 amount);
 
-    function deposit(address memeToken) onlyOwner external payable {
+    function deposit(address memeToken) external payable {
         treasuryBalances[memeToken] += msg.value;
         emit Deposited(memeToken, msg.value);
     }
