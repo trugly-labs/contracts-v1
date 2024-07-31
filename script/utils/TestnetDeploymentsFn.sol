@@ -12,6 +12,7 @@ import {TruglyStake} from "../../src/TruglyStake.sol";
 import {TruglyFactory} from "../../src/TruglyFactory.sol";
 import {TruglyFactoryNFT} from "../../src/TruglyFactoryNFT.sol";
 import {TestnetTruglyMemeception} from "../../src/test/TestnetTruglyMemeception.sol";
+import {TruglyMemeXTreasury} from "../../src/TruglyMemeXTreasury.sol";
 
 contract TestnetDeploymentsFn {
     address public constant UNSUPPORTED_PROTOCOL = address(0);
@@ -87,5 +88,12 @@ contract TestnetDeploymentsFn {
         console2.log("Deploying TruglyStake..");
         stake = new TruglyStake(memeception, multisig);
         console2.log("TruglyStake Deployed:", address(stake));
+    }
+
+    function deployMemeXTreasury(address multisig) public returns (TruglyMemeXTreasury) {
+        console2.log("Deploying TruglyMemeXTreasury..");
+        TruglyMemeXTreasury memeXTreasury = new TruglyMemeXTreasury(multisig);
+        console2.log("TruglyMemeXTreasury Deployed:", address(memeXTreasury));
+        return memeXTreasury;
     }
 }
